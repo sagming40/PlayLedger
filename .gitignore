@@ -1,0 +1,114 @@
+# ─────────────────────────────────────────────
+#  PlayLedger — .gitignore
+#  Django (server/) + React Native (app/)
+# ─────────────────────────────────────────────
+
+# ===== 비밀값 — 가장 중요 =====
+# Django SECRET_KEY, DB 비밀번호, Steam API 키가 들어간다.
+# 이 두 줄이 없으면 첫 커밋에 비밀키가 그대로 올라간다.
+.env
+.env.*
+!.env.example
+
+# DB 접속 정보를 파일로 분리한 경우
+db_config.json
+secrets.json
+
+
+# ===== Python / Django =====
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# 가상환경
+venv/
+.venv/
+env/
+ENV/
+
+# Django
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+
+# 마이그레이션은 커밋한다 (아래 참고)
+# migrations/ 는 무시하지 않음
+
+# 사용자 업로드 파일
+media/
+
+# collectstatic 결과물
+staticfiles/
+/static/
+
+# 커버리지 / 테스트
+.coverage
+htmlcov/
+.pytest_cache/
+.tox/
+
+
+# ===== Node / React Native =====
+node_modules/
+npm-debug.log*
+yarn-error.log*
+yarn-debug.log*
+.pnpm-debug.log*
+
+# Metro 번들러
+.metro-health-check*
+.expo/
+.expo-shared/
+dist/
+web-build/
+
+# 빌드 결과물
+*.jsbundle
+app/android/app/build/
+app/android/build/
+app/android/.gradle/
+app/android/local.properties
+app/ios/build/
+app/ios/Pods/
+*.hprof
+
+# 서명 키 — 절대 커밋 금지
+*.keystore
+!debug.keystore
+*.jks
+*.p8
+*.p12
+*.mobileprovision
+
+
+# ===== 에디터 / OS =====
+.vscode/
+!.vscode/settings.json
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+
+.DS_Store
+Thumbs.db
+desktop.ini
+
+
+# ─────────────────────────────────────────────
+#  메모
+#
+#  · 마이그레이션 파일은 커밋한다.
+#    DB 구조 변경 이력이므로, 다른 기기에서 클론했을 때
+#    같은 순서로 테이블이 만들어져야 한다.
+#
+#  · .env.example 은 커밋한다.
+#    키 이름만 적고 값은 비워둔다.
+#    처음 클론한 사람이 무엇을 채워야 하는지 알 수 있어야 한다.
+#
+#  · 이미 커밋한 파일은 .gitignore에 추가해도 계속 추적된다.
+#    실수로 올렸다면:  git rm --cached <파일>
+#    비밀키를 올렸다면 파일 삭제로 끝나지 않는다.
+#    반드시 키를 새로 발급받을 것 (이력에 남아 있음).
+# ─────────────────────────────────────────────
