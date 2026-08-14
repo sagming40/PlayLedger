@@ -10,7 +10,7 @@
 
 ## 현재 상태
 
-**진행 중** · M1 (백엔드 기초) 착수 예정
+**진행 중** · M1 (백엔드 기초) — 모델 정의까지 완료, 인증 파트 착수 예정
 
 **환경 요약**
 | 항목 | 값 |
@@ -20,10 +20,10 @@
 | Node.js | v24.15.0 |
 | React Native | 0.87.0 (CLI) |
 | MariaDB | 12.2.2 |
-| RN 환경 | **React Native CLI로 확정** (Expo 아님 — 안드로이드 스튜디오 기설치, USB 실기기 연결 환경이라 CLI가 더 자연스러움) |
+| RN 환경 | React Native CLI로 확정 |
 | 테스트 기기 | 실기기 (갤럭시 S25 Edge, USB 디버깅) |
- 
-**다음에 할 일** · M1 착수 — ERD 기준 Django 모델 정의 (`accounts`, `library` 앱)
+
+**다음에 할 일** · M1 인증 파트 착수 — DRF 설치/설정, 회원가입 API, 로그인/토큰 발급 API, 권한 클래스 적용
 
 ---
 
@@ -62,7 +62,39 @@
 ---
  
 <!-- 새 기록은 이 아래에 추가한다 (최신이 위로) -->
- 
+
+## 2026-08-14 — M1 진행 중: accounts/library 모델 정의 및 마이그레이션까지 완료
+
+**관련 마일스톤**: M1 (백엔드 기초) → 진행 중
+
+**한 일**
+- `accounts`, `library` 앱 생성
+- 커스텀 `User` 모델 작성 (`AbstractUser` 확장, `steam_id` 추가) 및 `AUTH_USER_MODEL` 지정
+- 커스텀 User 모델은 첫 migrate 이전에 결정해야 한다는 것을 확인 → 기존 M0 DB를 DROP 후 재생성하고 진행
+- `library` 모델 4종(`Game`/`Genre`/`GameGenre`/`Entry`) 작성, ERD 그대로 반영
+  - `Entry`에 복합 UNIQUE(`uq_user_game`), 인덱스(`idx_user_status`) 적용
+- `settings.py` 정리: `EMAIL_BACKEND` 오타 수정, `TIME_ZONE`을 `Asia/Seoul`로 변경
+- 관리자 계정 생성 및 `/admin/`에서 장르 3개, 게임 1개 입력 테스트 → 정상 동작 확인
+
+**막혔던 점 / 트러블슈팅**
+- 증상: `python managy.py startapp` 오타로 실행 실패
+   - 원인: 단순 오타 (`manage.py` → `managy.py`)
+   - 해결: 재입력
+   - 교훈: 명령어 오타는 파일 탐색기로 실제 파일 존재 여부를 먼저 확인하면 빠르게 판별 가능
+- 증상: VS Code Problems 탭에 `django`/`dotenv` import 미해결 경고 4건 지속
+   - 원인: Pylance가 venv 인터프리터를 제대로 인식하지 못함 (인터프리터 재선택 시도 중 루트에 불필요한 venv 생성 시도 발생, 취소함)
+   - 해결: `pip show django`/`pip show python-dotenv`로 실제 venv(`server/venv`)에 정상 설치됨을 확인 → 실행에는 영향 없는 편집기 표시 문제로 판단하고 보류
+   - 교훈: Problems 탭 경고가 실제 실행 가능 여부와 항상 일치하는 건 아님. `pip show`로 실제 설치 위치를 확인하는 게 더 확실한 판단 근거
+- 증상: `createsuperuser`에서 약한 비밀번호 경고를 무시하고 생성 → 이후 `/admin/` 로그인 반복 실패
+   - 원인: 취약한 비밀번호 및 브라우저 자동완성이 다른 프로젝트의 저장된 비밀번호를 잘못 채워 넣었을 가능성
+   - 해결: `python manage.py changepassword admin`으로 비밀번호 재설정 후 정상 로그인
+   - 교훈: 비밀번호 검증 경고는 로컬 개발 환경이라도 가급적 무시하지 않는 편이 나음
+
+**다음에 할 일**
+- M1 인증 파트: DRF `TokenAuthentication` 설정, 회원가입 API, 로그인/토큰 발급 API, 권한 클래스(비로그인 접근 차단) 적용
+
+---
+
 ## 2026-08-14 — M0 완료: Django-MariaDB-RN 환경 구성
  
 **관련 마일스톤**: M0 (환경 구성) → 완료
@@ -82,27 +114,28 @@
 
 **막혔던 점 / 트러블슈팅**
 - 증상: `CREATE DATABASE` 시 `Unknown collation: 'utfmb4_unicode_ci'` 에러
-  원인: 콜레이션 이름 오타 (`utfmb4` → `utf8mb4` 누락)
-  해결: `utf8mb4_unicode_ci`로 정정 후 재실행
-  교훈: `utf8mb4` 관련 옵션은 철자 하나만 틀려도 조용히 실패하지 않고 바로 에러로 잡히니, 에러 메시지를 그대로 믿고 다시 치면 됨
+   - 원인: 콜레이션 이름 오타 (`utfmb4` → `utf8mb4` 누락)
+   - 해결: `utf8mb4_unicode_ci`로 정정 후 재실행
+   - 교훈: `utf8mb4` 관련 옵션은 철자 하나만 틀려도 조용히 실패하지 않고 바로 에러로 잡히니, 에러 메시지를 그대로 믿고 다시 치면 됨
 - 증상: `adb devices`에 기기가 `unauthorized`로만 표시됨
-  원인: 폰에서 "USB 디버깅 허용" 팝업을 아직 승인하지 않음
-  해결: 폰 화면 잠금 해제 후 팝업에서 "이 컴퓨터에서 항상 허용" 체크 후 허용
-  교훈: PC에서의 인식(daemon 연결)과 폰에서의 인증(authorized)은 별개 단계. `unauthorized`가 뜨면 폰 쪽 조작이 필요하다는 신호
+   - 원인: 폰에서 "USB 디버깅 허용" 팝업을 아직 승인하지 않음
+   - 해결: 폰 화면 잠금 해제 후 팝업에서 "이 컴퓨터에서 항상 허용" 체크 후 허용
+   - 교훈: PC에서의 인식(daemon 연결)과 폰에서의 인증(authorized)은 별개 단계. `unauthorized`가 뜨면 폰 쪽 조작이 필요하다는 신호
 - 증상: `run-android`는 `BUILD SUCCESSFUL`인데 폰에 빨간 에러 화면(`Unable to load script`)
-  원인: 네이티브 빌드(APK 설치)와 JS 번들 서버(Metro)는 별개 프로세스인데, Metro가 자동으로 안 켜짐
-  해결: 별도 터미널에서 `npx react-native start`로 Metro 수동 실행 후 앱 재시작
-  교훈: RN은 "네이티브 껍데기 설치"와 "JS 코드 제공"이 분리된 구조. 둘 다 확인해야 함. 앞으로는 항상 Metro(터미널 1)를 먼저 켜두고 `run-android`(터미널 2)를 실행하는 순서로 진행
+   - 원인: 네이티브 빌드(APK 설치)와 JS 번들 서버(Metro)는 별개 프로세스인데, Metro가 자동으로 안 켜짐
+   - 해결: 별도 터미널에서 `npx react-native start`로 Metro 수동 실행 후 앱 재시작
+   - 교훈: RN은 "네이티브 껍데기 설치"와 "JS 코드 제공"이 분리된 구조. 둘 다 확인해야 함. 앞으로는 항상 Metro(터미널 1)를 먼저 켜두고 `run-android`(터미널 2)를 실행하는 순서로 진행
 - 증상: RN 프로젝트 생성 로그에 `Initializing Git repository`가 찍힘
-  원인: RN CLI가 `app/` 폴더 안에 독자적인 `.git`을 새로 만듦 (루트 저장소와 중첩)
-  해결: `app/.git` 폴더 삭제 후 `git status`로 루트 저장소에 정상 편입됐는지 확인
-  교훈: 하위 폴더에 프로젝트를 생성하는 CLI 도구는 자체적으로 Git 저장소를 만드는 경우가 있으니, 생성 직후 반드시 `.git` 중첩 여부 확인할 것
+   - 원인: RN CLI가 `app/` 폴더 안에 독자적인 `.git`을 새로 만듦 (루트 저장소와 중첩)
+   - 해결: `app/.git` 폴더 삭제 후 `git status`로 루트 저장소에 정상 편입됐는지 확인
+   - 교훈: 하위 폴더에 프로젝트를 생성하는 CLI 도구는 자체적으로 Git 저장소를 만드는 경우가 있으니, 생성 직후 반드시 `.git` 중첩 여부 확인할 것
 
 **결정 기록**
 - RN 환경을 **Expo가 아닌 CLI로 확정**. 애초 리스크 대응책(`05_milestones.md` M0 리스크)은 "환경 구성 실패 시 Expo로 우회"였으나, 실제로는 안드로이드 스튜디오가 이미 설치돼 있고 USB 실기기 연결도 준비된 상태라 CLI 진입 장벽이 사실상 없었음. 학습 목적(네이티브 빌드 과정을 직접 보는 것)에도 CLI가 더 부합해 계획대로 진행
 
 **다음에 할 일**
 - M1 착수: `accounts`/`library` Django 앱 생성, ERD 기준 모델 정의(`Game`/`Genre`/`GameGenre`/`Entry`), 마이그레이션
+
 ---
 
 ## 2026-08-13 — 프로젝트 기획 및 문서 작성
