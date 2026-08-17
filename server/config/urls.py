@@ -20,4 +20,5 @@ from django.urls import path, include   # include 추가 필요
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('auth/', include('accounts.urls')),  # ⭐ 추가
+    path('', include('library.urls')),        # ⭐ 추가  
 ]
