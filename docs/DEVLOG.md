@@ -10,7 +10,7 @@
 
 ## 현재 상태
 
-**완료** · M1 (백엔드 기초) — 모델·인증·게임 CRUD 전 항목 완료, 계정 2개 교차 확인으로 사용자 데이터 격리 검증까지 완료
+**진행 중** · M2 (앱 연동) — React Navigation 설치 및 네비게이션 골격(하단 탭 + 라이브러리 스택 + 로그인 분기) 완료. 다음은 API 호출 모듈 작성
 
 **환경 요약**
 | 항목 | 값 |
@@ -20,10 +20,13 @@
 | Node.js | v24.15.0 |
 | React Native | 0.87.0 (CLI) |
 | MariaDB | 12.2.2 |
+| React Navigation | @react-navigation/native 7.3.16, bottom-tabs 7.18.16, native-stack 7.18.8 |
+| react-native-screens | 4.27.0 |
+| react-native-safe-area-context | 5.9.0 |
 | RN 환경 | React Native CLI로 확정 |
-| 테스트 기기 | 실기기 (갤럭시 S25 Edge, USB 디버깅) |
+| 테스트 기기 | 실기기 (갤럭시 S25 Edge, USB 디버깅), Android Studio 에뮬레이터(Pixel 8, API 37.1) |
 
-**다음에 할 일** · `03_api_spec.md` 작성 착수 (M1 완료로 DRF 기본 URL 구조 확정됨). 이후 M2(RN 화면 연동) 착수 — React Navigation 세팅, API 호출 모듈, 로그인 화면부터 순서대로. F-02 장르 입력은 M2 화면 설계와 함께 진행 예정
+**다음에 할 일** · API 호출 모듈 작성 (api/ — 서버 주소, 토큰 첨부 한 곳에) 착수. `03_api_spec.md`는 이 작업 시작 시점에 함께 쓰는 게 자연스러움 (실제 호출할 엔드포인트를 코드로 확인하며 작성)
 
 ---
 
@@ -62,6 +65,34 @@
 ---
  
 <!-- 새 기록은 이 아래에 추가한다 (최신이 위로) -->
+
+## 2026-08-17 — M2 착수: React Navigation 세팅 및 네비게이션 골격 구현
+
+**관련 마일스톤**: M2 (앱 연동) → 진행 중
+
+**한 일**
+- React Navigation 패키지 설치 (`@react-navigation/native`, `bottom-tabs`, `native-stack`, `react-native-screens`, `react-native-safe-area-context`)
+- `src/navigation/RootNavigator.tsx` — 로그인 여부(현재는 임시 state)에 따라 LoginScreen/MainTabs 분기
+- `src/navigation/MainTabs.tsx` — 하단 탭 3개(라이브러리/통계/설정) 등록
+- `src/navigation/LibraryStack.tsx` — 라이브러리 탭 내부 스택 뼈대 (S-03/S-04는 추후 추가 예정)
+- `src/screens/` — Login/Library/Stats/Settings 4종 placeholder 화면 작성
+- `App.tsx`를 RN 기본 템플릿에서 RootNavigator 호출로 교체
+- 에뮬레이터(Pixel 8, API 37.1) 처음 생성 및 실행 확인
+- 탭 3개 전환 및 각 화면 렌더링 실기기/에뮬레이터에서 확인
+
+**막혔던 점 / 트러블슈팅**
+- 증상: `run-android` 실행 시 에뮬레이터에서 빨간 에러 화면(`Unable to load script`)
+  - 원인: 실기기와 에뮬레이터를 동시에 연결한 상태로 `run-android`를 실행해 Metro 연결이 두 기기로 분산되며 꼬임
+  - 해결: 에뮬레이터 완전 종료 → Metro 재시작(`--reset-cache`) → 재연결로 해결
+  - 교훈: 에뮬레이터로 작업할 땐 실기기 USB를 뽑아두는 편이 연결 문제를 줄인다
+- 증상: `npm install @react-native-screens ...` 실행 시 `EINVALIDTAGNAME` 에러
+  - 원인: 스코프 없는 패키지(`react-native-screens`)에 실수로 `@`를 붙여 스코프 패키지로 오인시킴
+  - 해결: `@` 제거 후 재실행
+  - 교훈: `@단체명/패키지명` 형태(스코프 패키지)와 `패키지명`만 있는 형태를 헷갈리지 않도록 설치 전 npm 페이지에서 정확한 이름 확인
+
+**다음에 할 일**
+- API 호출 모듈 작성 (`api/`) — 이 작업과 함께 `03_api_spec.md` 작성 착수
+- S-01 로그인 화면 실제 폼 구현, 토큰 저장(AsyncStorage) 연결
 
 ## 2026-08-17 — M1 완료: 게임 CRUD (Serializer·View·URL) 완료, 계정 격리 검증까지 완료
 
