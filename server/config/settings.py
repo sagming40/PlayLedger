@@ -35,17 +35,22 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    # Django 기존 앱 (기존 그대로 두기)
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    
     # --- 외부 라이브러리 ---
-    "rest_framework",       # DRF (이미 있으면 중복 추가 X)
-    # --- 생성한 앱 ---
-    "accounts",
-    "library",
+    # 서드파티 — 남이 만들어서 갖다쓰는 앱
+    'rest_framework',                 # DRF (이미 있으면 중복 추가 X) / Django JSON API 서버로 만들어주는 층
+    'rest_framework.authtoken',       # Token을 DB에 저장하는 "회원증 명단" 테이블
+    
+    # --- 생성한 앱(내가 만든 앱) ---
+    'accounts',
+    'library',
 ]
 
 # 이 프로젝트에서 "사용자는 이걸 지칭한다" 라고 Django 전체에 공표하는 문장
@@ -133,6 +138,27 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
+# ─────────────────────────────────────────────────────────────────────
+# DRF 전역 설정
+# view마다 따로 쓰지 않으면 이 곳에 작성한 것이 기본값으로 적용됨.
+# 비유: "회사 취업규칙" ─ 부서(view)별로 예외를 두려면 그 뷰(view)에서 덮어쓴다.
+# ─────────────────────────────────────────────────────────────────────
+REST_FRAMEWORK = {
+    # [신원 확인] 요청이 들어왔을 때 "누구인지"를 판별하는 방법 목록
+    # 위에서부터 순서대로 시도하고, 순서대로 내려오다가 성공한 곳에서 멈춤
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        # 회원증 번호(Token)를 Header에 붙여 온 경우 → 앱이 사용할 방식
+        'rest_framework.authentication.TokenAuthentication',
+        # Browser Cookie로 도달한 경우 → DRF test 화면에서 Login 상태로 Click 시 필요
+        'rest_framework.authentication.SessionAuthentication',
+    ],
+    
+    # [출입 통제] 신원 확인이 끝난 뒤 "들어와도 되는지"를 판단
+    # IsAuthenticated = Login을 하지 않았다면 모두 401로 돌려보냄
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
+}
 
 # Email
 # https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration
