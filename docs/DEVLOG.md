@@ -10,7 +10,7 @@
 
 ## 현재 상태
 
-**진행 중** · M1 (백엔드 기초) — 모델 정의까지 완료, 인증 파트 착수 예정
+**진행 중** · M1 (백엔드 기초) — 인증 파트 3/4 완료 (DRF 설정·회원가입·로그인), 권한 클래스 검증은 게임 CRUD와 함께 다음 세션에서 확인 예정
 
 **환경 요약**
 | 항목 | 값 |
@@ -23,7 +23,7 @@
 | RN 환경 | React Native CLI로 확정 |
 | 테스트 기기 | 실기기 (갤럭시 S25 Edge, USB 디버깅) |
 
-**다음에 할 일** · M1 인증 파트 착수 — DRF 설치/설정, 회원가입 API, 로그인/토큰 발급 API, 권한 클래스 적용
+**다음에 할 일** · M1 게임 CRUD 착수 — Serializer 작성, 목록 조회, 등록(중복 판별), 단건 조회/수정/삭제, 사용자 격리 확인. CRUD 완성 시 권한 클래스(비로그인 차단) 실증 테스트도 함께 진행
 
 ---
 
@@ -62,6 +62,40 @@
 ---
  
 <!-- 새 기록은 이 아래에 추가한다 (최신이 위로) -->
+
+## 2026-08-17 — M1 진행 중: 인증 파트 (DRF 설정·회원가입·로그인) 완료
+
+**관련 마일스톤**: M1 (백엔드 기초) → 진행 중
+
+**한 일**
+- INSTALLED_APPS에 rest_framework, rest_framework.authtoken 추가
+- REST_FRAMEWORK 전역 설정 (TokenAuthentication + SessionAuthentication, IsAuthenticated 기본값)
+- authtoken 마이그레이션 실행, HeidiSQL/sqlmigrate로 authtoken_token 테이블 구조 확인
+- RegisterSerializer/RegisterView 작성, /auth/register/ 연결 및 실제 계정 생성 확인
+- 로그인 라우팅(obtain_auth_token) 연결, 토큰 발급 및 오답 비밀번호 거부(400) 확인
+
+**막혔던 점 / 트러블슈팅**
+- 증상: REST_FRAMEWORK 설정을 넣었는데도 admin 화면이 평소처럼 잘 됨
+  - 원인: `DEFAULT_AUTHENTICATION_CLASSES`를 `DEFAULT_AUTHENICATION_CLASSES`로 오타
+    (`rest_framework.authentication`도 `authenication`으로 오타). Django/DRF가 
+    이런 키 오타를 에러 없이 조용히 무시하고 기본값으로 폴백함
+  - 해결: 오타 수정
+  - 교훈: 설정 딕셔너리 키 오타는 서버가 정상 기동돼도 잡히지 않는다. 
+    admin이 잘 되는 건 세션 쿠키 때문이지 내 설정이 적용된 증거가 아님 — 
+    실제 토큰 인증 흐름을 태워봐야 진짜 검증이 됨
+- 증상: PowerShell에서 curl.exe로 로그인 POST 시 "JSON parse error - 
+  Expecting property name..." 반복 발생 (작은따옴표로 감싸도 동일)
+  - 원인: curl.exe는 네이티브 실행파일이라 PowerShell이 인자를 넘길 때 
+    Windows 커맨드라인 재조합 규칙을 한 번 더 거침 → JSON 내 큰따옴표가 
+    깨져서 전달됨
+  - 해결: PowerShell 네이티브 명령어(`Invoke-RestMethod` + `ConvertTo-Json`)로 전환
+  - 교훈: Windows PowerShell 환경에서는 curl.exe보다 Invoke-RestMethod가 
+    안정적. 이후 API 테스트는 이 방식을 기본으로 사용
+
+**다음에 할 일**
+- M1 게임 CRUD: Serializer 작성 → 목록 조회(본인 데이터만) → 등록(중복 판별) → 
+  단건 조회/수정/삭제 → 쿼리셋 필터로 사용자 격리 이중 적용
+- CRUD 완성 후 계정 2개로 교차 확인 (M1 완료 기준 검증)
 
 ## 2026-08-14 — M1 진행 중: accounts/library 모델 정의 및 마이그레이션까지 완료
 
