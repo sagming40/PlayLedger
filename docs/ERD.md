@@ -1,6 +1,6 @@
 # PlayLedger — 데이터 모델 (ERD)
 
-> 작성일: 2026-08-13 / 상태: 초안 (v0.1)
+> 작성일: 2026-08-13 / 상태: 실물 반영 (v0.2)
 > 관련 문서: `01_requirements.md`
 
 ---
@@ -164,7 +164,7 @@ F-11(장르별 통계)을 구현할 수 없다.
 | `status` | varchar(10) | NOT NULL | 진행 상태 (아래 참조) |
 | `purchased_at` | date | NULL | 구매일 |
 | `purchase_price` | int | NULL | 구매가 (원) |
-| `playtime_hours` | decimal(7,1) | NOT NULL, 기본 0 | 총 플레이타임 |
+| `playtime_hours` | decimal(6,1) | NOT NULL, 기본 0 | 총 플레이타임 |
 | `rating` | tinyint | NULL | 1~5 평점 |
 | `review` | text | NULL | 한줄평 |
 | `source` | varchar(10) | NOT NULL | `MANUAL` / `STEAM` |
@@ -284,3 +284,4 @@ GROUP BY gn.id;
 | 날짜 | 버전 | 내용 |
 |---|---|---|
 | 2026-08-13 | v0.1 | 최초 작성 |
+| 2026-08-17 | v0.2 | `entries.playtime_hours` 타입을 실제 구현(`models.py`) 기준으로 decimal(7,1) → decimal(6,1) 정정. max_digits=6, decimal_places=1로는 최대 99999.9시간까지 표현 가능해 실사용 범위를 충분히 커버하므로 코드가 아닌 문서를 실물에 맞춤 |
