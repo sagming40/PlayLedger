@@ -5,7 +5,7 @@
 - **작성일**: 2026-08-13
 - **개정일**: 2026-09-18
 - **작성자**: 사공민규
-- **버전**: v1.0
+- **버전**: v1.1
 - **관련 문서**: 요구사항 정의서(01), 데이터 모델(03)
 
 ---
@@ -112,7 +112,7 @@ flowchart LR
 | 접근 방식 | SQLAlchemy(async) 경유. 복잡한 집계 쿼리는 HeidiSQL에서 SQL을 먼저 검증한 뒤 옮긴다 |
 | 구조 변경 | Alembic 마이그레이션으로만 변경. DB를 손으로 직접 고치지 않는다 |
 
-### 2.4 Redis (M8 이후)
+### 2.4 Redis (M9 부터)
 
 | 항목 | 내용 |
 |---|---|
@@ -365,7 +365,9 @@ playledger/
 │
 ├── .github/workflows/          # CI (pytest 자동 실행)
 ├── docker-compose.yml          # PostgreSQL, Redis, (배포 시) 전체 서비스
+├── .env.example                # Compose용 DB 계정 키 이름 (값은 루트 .env)
 ├── docs/
+├── .gitattributes              # 줄바꿈 규칙 (LF 고정)
 ├── .gitignore
 ├── LICENSE
 └── README.md
@@ -381,6 +383,7 @@ playledger/
 
 | 항목 | 보관 위치 | Git 추적 |
 |---|---|---|
+| DB 컨테이너 계정 (사용자명 · 비밀번호 · DB명) | 루트 `.env` | X |
 | JWT 서명 키 | `server/.env` | X |
 | DB 접속 정보 | `server/.env` | X |
 | Redis 주소 | `server/.env` | X |
@@ -390,9 +393,18 @@ playledger/
 
 `.env.example`에 키 이름만 적고 값은 비워서 커밋한다.
 
+**루트 `.env`가 따로 있는 이유**
+
+Docker Compose는 `docker-compose.yml`과 같은 폴더의 `.env`를 자동으로 읽어 설정의 빈칸을 채운다.
+`server/.env`를 컨테이너에 통째로 넘기는 방법(`env_file`)도 있지만, 그러면 DB 컨테이너가
+쓰지도 않는 JWT 서명 키 · Steam API 키까지 받게 된다. 그래서 DB 계정만 루트 `.env`로 분리한다.
+
+대신 같은 비밀번호가 루트 `.env`(컨테이너를 만들 때)와 `server/.env`의 `DATABASE_URL`(서버가 접속할 때)
+두 곳에 들어간다. 둘이 어긋나면 서버가 DB에 접속하지 못하므로, **비밀번호를 바꿀 땐 두 파일을 함께 고친다.**
+
 **`web/.env`에는 비밀값을 절대 넣지 않는다.**
 Vite는 `VITE_`로 시작하는 환경변수를 빌드 결과물 JS에 그대로 박아 넣는다.
-즉 브라우저로 내려가서 누구나 볼 수 있다. 비밀값은 항상 `server/.env`에만 둔다.
+즉 브라우저로 내려가서 누구나 볼 수 있다. 비밀값은 `server/.env`와 루트 `.env`에만 둔다.
 
 ---
 
@@ -412,3 +424,4 @@ Vite는 `VITE_`로 시작하는 환경변수를 빌드 결과물 JS에 그대로
 |---|---|---|
 | v0.1 | 2026-08-13 | 최초 작성 |
 | v1.0 | 2026-09-18 | 스택 전환에 따른 전면 개정. 구조도·인증·동기화 흐름을 mermaid로 전환, 기술 선택 근거를 재작성(v0 선택 논리와 대응책 명시), 인증을 JWT + refresh rotation으로 변경, 자동 동기화(워커) 및 Discord 로그인 흐름 추가. 개정 전 문서는 `v0-rn-django` 태그 참고 |
+| v1.1 | 2026-09-18 | Compose용 루트 `.env`를 7장 · 6장 구조도에 추가(DB 컨테이너가 앱 비밀값을 받지 않도록 분리), `.gitattributes`를 6장 구조도에 반영, 2.4절 Redis 도입 시점을 "M8 이후" → "M9부터"로 명확화 |
