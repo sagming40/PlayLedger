@@ -3,9 +3,9 @@
 > 단계별 개발 계획 및 완료 기준 정의
 
 - **작성일**: 2026-08-13
-- **개정일**: 2026-09-18
+- **개정일**: 2026-09-19
 - **작성자**: 사공민규
-- **버전**: v1.0
+- **버전**: v1.1
 - **관련 문서**: 요구사항 정의서(01), 시스템 아키텍처(02), 데이터 모델(03), 화면 설계서(04)
 
 ---
@@ -38,7 +38,7 @@ Vue와 비동기 SQLAlchemy를 처음 다룬다. 두 개를 한 단계에서 같
 
 | ID | 마일스톤 | 버전 | 예상 소요 | 상태 |
 |---|---|:---:|:---:|:---:|
-| M0 | 환경 구성 | v1.0 | 3~5일 | 🔄 진행중 |
+| M0 | 환경 구성 | v1.0 | 3~5일 | ✅ 완료 |
 | M1 | 백엔드 기초 (인증 + CRUD + 테스트) | v1.0 | 1.5~2주 | ⏳ 예정 |
 | M2 | 프론트 연동 | v1.0 | 1주 | ⏳ 예정 |
 | M3 | 상태 관리 + 평점 | v1.0 | 3~5일 | ⏳ 예정 |
@@ -78,29 +78,33 @@ v1.0(M0~M4)은 몰입 구간 기준 약 4~5주, M5 이후는 출근 후 기준�
 - [x] DEVLOG에 스택 전환 결정 기록
 
 *공통*
-- [ ] `.gitignore`를 새 스택 기준으로 재작성 (**프로젝트 생성 전에 먼저**)
-- [ ] `.gitattributes`로 줄바꿈 규칙(LF) 통일
-- [ ] `docker-compose.yml` 작성 — PostgreSQL 컨테이너
-- [ ] HeidiSQL로 PostgreSQL 접속 확인
+- [x] `.gitignore`를 새 스택 기준으로 재작성 (**프로젝트 생성 전에 먼저**)
+- [x] `.gitattributes`로 줄바꿈 규칙(LF) 통일
+- [x] `docker-compose.yml` 작성 — PostgreSQL 컨테이너
+- [x] 루트 `.env` / `.env.example` 분리 (Compose용 DB 계정)
+- [x] HeidiSQL로 PostgreSQL 접속 확인
+- [x] 02 문서 v1.1에 루트 `.env` · `.gitattributes` 반영
 
 *서버*
-- [ ] `server/` 가상환경 생성, FastAPI · Uvicorn 설치
-- [ ] `server/app/main.py` 헬스체크 API (`/api/health`)
-- [ ] `.env` / `.env.example` 분리, 설정 로딩
-- [ ] SQLAlchemy async 엔진으로 DB 연결 확인
-- [ ] Alembic 초기화 (async 템플릿)
-- [ ] `requirements.txt` 작성
+- [x] `server/` 가상환경 생성, FastAPI · Uvicorn 설치
+- [x] `server/app/main.py` 헬스체크 API (`/api/health`)
+- [x] `server/.env` / `.env.example` 분리, 설정 로딩
+- [x] SQLAlchemy async 엔진으로 DB 연결 확인
+- [x] Alembic 초기화 (async 템플릿)
+- [x] `requirements.txt` 작성
 
 *프론트*
-- [ ] `web/` Vite + Vue 3 + TypeScript 프로젝트 생성
-- [ ] Tailwind, shadcn-vue 설치
-- [ ] Vite `/api` 프록시 설정
+- [x] `web/` Vite + Vue 3 + TypeScript 프로젝트 생성
+- [x] Tailwind, shadcn-vue 설치
+- [x] 경로 별칭 `@` → `src` 설정 (vite.config.ts · tsconfig 2종)
+- [x] Vite `/api` 프록시 설정
+- [x] Vite 템플릿 잔재 제거 (`HelloWorld.vue`, `src/assets/`)
 
 **완료 기준**
-- [ ] `docker compose up` 후 HeidiSQL로 PostgreSQL에 접속됨
-- [ ] `http://localhost:8000/docs`에서 Swagger 화면이 열림
-- [ ] Vue 화면에 `/api/health` 응답이 표시됨 (프록시 경유 = 같은 출처 확인)
-- [ ] `git status`에 `.env`, `venv/`, `node_modules/`가 안 잡힘
+- [x] `docker compose up` 후 HeidiSQL로 PostgreSQL에 접속됨
+- [x] `http://localhost:8001/docs`에서 Swagger 화면이 열림
+- [x] Vue 화면에 `/api/health` 응답이 표시됨 (프록시 경유 = 같은 출처 확인)
+- [x] `git status`에 `.env`, `venv/`, `node_modules/`가 안 잡힘
 
 > **v0와 완료 기준이 다른 점:** v0의 M0는 "각 조각이 따로 돌아가는 것"까지였다.
 > 이번에는 화면이 서버를 거쳐 응답을 받는 것까지 확인한다. 프록시 설정이 틀리면
@@ -127,6 +131,7 @@ v1.0(M0~M4)은 몰입 구간 기준 약 4~5주, M5 이후는 출근 후 기준�
 - [ ] 비밀번호 해싱 라이브러리 결정 (01 문서 10장)
 - [ ] 회원가입 (email 소문자 정규화)
 - [ ] 로그인 — access 토큰 + refresh 쿠키 발급
+- [ ] refresh 쿠키 이름에 프로젝트 접두사 부여 (같은 `localhost`를 쓰는 다른 프로젝트와 덮어쓰기 방지)
 - [ ] 토큰 재발급 (rotation)
 - [ ] 로그아웃 (refresh 토큰 폐기 + 쿠키 삭제)
 - [ ] `get_current_user` 의존성
@@ -262,6 +267,7 @@ v1.0(M0~M4)은 몰입 구간 기준 약 4~5주, M5 이후는 출근 후 기준�
 - [ ] 운영용 Compose 구성
 - [ ] Nginx 설정 (`/` 정적 파일, `/api` 프록시)
 - [ ] HTTPS 인증서
+- [ ] Inter 폰트 내장 여부 검토 (현재 구글 서버에서 로드 — 오프라인 · 외부 요청 이슈)
 - [ ] 운영용 `.env`
 - [ ] README 실행 방법 작성
 - [ ] LICENSE 추가
@@ -460,7 +466,7 @@ flowchart LR
 각 마일스톤은 아래를 **모두** 충족해야 완료로 본다.
 
 1. 해당 단계의 완료 기준 체크박스가 전부 채워짐
-2. 코드가 Git에 커밋되어 있음
+2. 코드가 PR로 `main`에 병합되어 있음
 3. DEVLOG에 해당 세션 기록이 남아 있음
 4. 임시 코드 / 주석 처리한 실험 코드가 제거됨
 5. 테스트가 있는 단계는 GitHub Actions가 통과함
@@ -493,3 +499,4 @@ flowchart LR
 | v0.6 | 2026-08-17 | M1 완료 처리 — 인증(권한 클래스)·게임 CRUD 전 항목 체크, 2장 상태표 ✅로 변경. 계획에 없던 admin title_norm 안전장치 작업 추가 기록. F-02(장르 입력)는 M2로 이관하며 사유 명시 |
 | v0.7 | 2026-08-17 | M2 "React Navigation 설치, 하단 탭 + 스택 구조 세팅" 항목 완료 처리. 2장 상태표 M2를 🔄 진행중으로 변경 (M2 착수 반영) |
 | v1.0 | 2026-09-18 | 스택 전환(Vue 3 + FastAPI + PostgreSQL)에 따른 전면 개정. 마일스톤을 M0~M11 · 버전별(v1.0~v2.1)로 재구성, 일정 전제를 취업 후 자기계발 기준으로 변경, 재설계 준비 작업을 M0에 기록, 기술 리스크를 01 문서로 이관하고 일정 리스크만 유지, 완료 정의에 CI 통과 · 버전 태그 추가. v0 진행 결과는 `v0-rn-django` 태그 참고 |
+| v1.1 | 2026-09-19 | M0 완료 처리 — 작업 목록 · 완료 기준 체크박스 전부 체크, 2장 상태표 ✅로 변경. 계획에 없던 작업 4건 추가 기록(루트 `.env` 분리, 02 문서 반영, 경로 별칭 설정, Vite 템플릿 잔재 제거). 완료 기준의 API 포트를 8000 → 8001로 정정(포트 충돌 회피, 사유는 DEVLOG 2026-09-19 결정 기록). 완료 정의 2번을 Git 전략 전환에 맞춰 "PR로 `main`에 병합"으로 변경. M1에 refresh 쿠키 이름 접두사 항목, M5에 폰트 내장 검토 항목 추가 |
