@@ -16,9 +16,10 @@
 PlayLedger는 보유 목록이 아니라 **소비 이력**을 기록합니다.
 언제 얼마에 샀고, 얼마나 했고, 얼마나 방치했는지를 숫자로 환산해서 보여줍니다.
 
-> **현재 상태: 재설계 후 M0(환경 구성) 진행 중**
+> **현재 상태: M0(환경 구성) 완료 · M1(백엔드 기초) 착수 예정**
 >
-> Vue 3 + FastAPI 스택으로 재설계했습니다. 설계 문서 개정을 마쳤고, 코드 작성을 시작하는 단계입니다.
+> Vue 3 + FastAPI 스택으로 재설계했습니다. 화면 → 서버 → DB가 한 줄로 이어지는 것까지 확인했고,
+> 다음 단계에서 인증과 게임 CRUD를 구현합니다.
 > React Native + Django로 진행하던 이전 버전은 [`v0-rn-django`](../../tree/v0-rn-django) 태그에 보존되어 있습니다.
 
 ---
@@ -197,7 +198,8 @@ playledger/
 └── docker-compose.yml
 ```
 
-> 예정 구조입니다. 개발 진행에 따라 변경될 수 있습니다.
+> 계획 구조입니다. `core/`, `alembic/`처럼 이미 만들어진 폴더도 있고,
+> 나머지는 필요한 마일스톤에서 생성합니다.
 
 ---
 
@@ -236,9 +238,41 @@ playledger/
 
 ## 시작하기
 
-> **M5(배포)에서 작성 예정입니다.**
->
-> Docker Compose 하나로 서버 · 화면 · DB를 함께 실행하는 방법이 추가됩니다.
+> 배포 구성(`docker compose up` 하나로 전체 기동)은 M5에서 작성됩니다.
+> 아래는 개발 환경 기준입니다.
+
+**최초 1회 — 클론 직후**
+
+```powershell
+# server/
+python -m venv venv
+.\venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+Copy-Item .env.example .env   # 값 채우기
+
+# web/
+npm install
+
+# 루트
+Copy-Item .env.example .env   # 값 채우기
+```
+
+**실행 — 터미널 3개**
+
+```powershell
+# 1. DB 컨테이너 (루트)
+docker compose up -d
+
+# 2. 서버 (server/)
+.\venv\Scripts\Activate.ps1
+uvicorn app.main:app --reload --port 8001
+
+# 3. 화면 (web/)
+npm run dev
+```
+
+> `Activate.ps1` 실행이 차단되면 `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` 후 다시 시도합니다.
+**사용 중인 포트와 설치 버전은 [DEVLOG 환경 요약](docs/DEVLOG.md#현재-상태)이 기준입니다.**
 
 ---
 
