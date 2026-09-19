@@ -10,7 +10,7 @@
 
 ## 현재 상태
 
-**완료** · M0 (환경 구성) — 화면 → 서버 → DB가 한 줄로 이어지는 것까지 확인. PR 병합 후 M1 착수 예정
+**진행 중** · M1 (백엔드 기초) — 모델 6종 정의 및 첫 마이그레이션 적용까지 완료. 인증 · CRUD · 테스트 남음
 
 **환경 요약**
 | 항목 | 값 |
@@ -19,10 +19,10 @@
 | Node.js | v24.15.0 |
 | FastAPI · Uvicorn | 0.141.1 · 0.53.0 |
 | SQLAlchemy · asyncpg | 2.0.54 · 0.31.0 |
-| Alembic | 1.20.0 (async 템플릿, 마이그레이션 0건) |
+| Alembic | 1.20.0 (async 템플릿, 마이그레이션 1건 적용) |
 | Vue · Vite · TypeScript | 3.5.42 · 8.3.0 · 6.0.2 |
 | Tailwind CSS · shadcn-vue | 4.3.3 · 2.8.2 (컴포넌트 미추가) |
-| PostgreSQL | 18.6 (`postgres:18` 컨테이너, 테이블 0개) |
+| PostgreSQL | 18.6 (`postgres:18` 컨테이너, 테이블 7개 — v1.0 범위 6종 + `alembic_version`) |
 | Docker · Compose | 29.8.0 · v5.5.1 |
 | 포트 | DB `5434` · API `8001` · 프론트 `5173` |
 | 이전 버전 | `v0-rn-django` 태그 (RN 0.87.0 + Django 6.1 + MariaDB 12.2.2) |
@@ -30,7 +30,7 @@
 
 **실행 방법** · 터미널 3개 — 프로젝트 루트에서 `docker compose up -d` / `server`에서 `uvicorn app.main:app --reload --port 8001` / `web`에서 `npm run dev`
 
-**다음에 할 일** · M0 PR 병합 → `m1-backend` 브랜치 생성 → M1 모델 정의부터
+**다음에 할 일** · 비밀번호 해싱 라이브러리 결정(01 문서 10장) → 회원가입 · 로그인 · 토큰 재발급 구현
 
 ---
 
@@ -73,6 +73,59 @@
 ---
  
 <!-- 새 기록은 이 아래에 추가한다 (최신이 위로) -->
+
+## 2026-09-19 — M1 진행 중: 모델 6종 정의 및 첫 마이그레이션 적용
+
+**관련 마일스톤**: M1 (백엔드 기초) → 진행 중
+
+**한 일**
+- `app/models/base.py` — `DeclarativeBase` 상속 `Base` 선언, 제약조건 작명 규칙(`naming_convention`) 정의
+- v1.0 범위 모델 6종 정의 (03 문서 2장 기준)
+  - `user.py` — `users`, `refresh_tokens`
+  - `game.py` — `games`, `genres`, `game_genres`
+  - `entry.py` — `entries`
+- `app/models/__init__.py` — 전체 모델을 한자리에 import (Alembic이 테이블을 인식하는 통로)
+- `alembic/env.py` — `target_metadata`에 `Base.metadata` 연결
+- 첫 마이그레이션 생성(`0a6ba7b72cfb`) → `upgrade head --sql`로 DDL 확인 → 적용
+- HeidiSQL에서 제약 동작 검증 — 위반값을 실제로 INSERT/DELETE해 11건 확인
+  - CHECK 5종(status · source · 구매가 · 플레이타임 · 평점) 차단
+  - NULL은 CHECK를 통과하는 것 확인 (구매가 없는 Steam 게임 대비)
+  - UNIQUE 2종(`(user_id, game_id)` · `email`), `ck_users_password_needs_email` 차단
+  - FK 삭제 규칙 — 참조 중인 게임 삭제 거부(RESTRICT), 사용자 삭제 시 `entries` 연쇄 삭제(CASCADE)
+  - 검증 데이터 전부 삭제해 마이그레이션 직후 상태로 복원
+
+**결정 기록**
+- **`Base`를 `core/db.py`가 아닌 `models/base.py`에 둠**
+  인터넷 예제 다수가 엔진과 `Base`를 한 파일에 두지만, 02 문서 6장에서 `core/`는 "설정 · DB 연결 · 보안", `models/`는 "테이블 정의"로 나눠 두었음. `Base`는 연결이 아니라 테이블 정의의 공통 조상이므로 `models/` 소속. 의존 방향이 `models/` → `core/` 한쪽으로만 흘러 순환 import를 원천 차단하는 효과도 있음
+- **제약조건 작명 규칙(`naming_convention`)을 `Base`에 미리 부여**
+  규칙이 없으면 PostgreSQL이 `entries_check` 같은 이름을 자동 부여해, 나중에 특정 제약만 삭제 · 수정할 때 대상을 지목할 수 없음. 실제로 검증 단계에서 에러 메시지에 `ck_entries_rating_range`처럼 이름이 찍혀 5개 CHECK 중 무엇이 걸렸는지 즉시 판별됨
+- **`game_genres`를 ORM 클래스가 아닌 Core `Table` 객체로 정의**
+  컬럼이 `(game_id, genre_id)` 둘뿐이고 추가할 정보가 없음(03 문서 2.5절). 클래스로 만들면 연결 하나마다 빈 객체를 생성하게 됨. 대신 나중에 연결 자체에 속성이 필요해지면 클래스로 전환하는 마이그레이션이 필요하다는 점을 감수함 — M8 작업 목록에 장르 동기화가 없어 당분간 발생하지 않을 것으로 판단
+- **`entries.source`를 M8이 아닌 지금 생성**
+  Steam 동기화(M8)에서 쓰는 컬럼이지만, NOT NULL 기본값 `MANUAL`이라 지금 넣어도 v1.0 동작에 영향이 없음. 나중에 NOT NULL 컬럼을 추가하려면 기존 행 처리를 고민해야 하므로 처음부터 포함
+
+**막혔던 점 / 트러블슈팅**
+- 증상: `alembic upgrade head`가 성공 로그(`Running upgrade -> 0a6ba7b72cfb`)를 남겼는데 HeidiSQL에 테이블이 보이지 않음. 새로고침을 10회 이상 반복함
+  - 원인: HeidiSQL 세션의 "데이터베이스" 칸이 비어 있어, 같은 컨테이너(5434)의 **기본 DB인 `postgres`** 에 접속돼 있었음. 트리 상단에는 세션 이름인 `playledger`가 표시돼 접속 대상이 맞는 것처럼 보였고, 접속 · 쿼리 실행도 전부 정상이라 알아채기 어려웠음
+  - 해결: 세션 관리자의 데이터베이스 칸에 `playledger`를 명시하고 재접속. `SELECT current_database(), current_user, current_schema()`로 실제 접속 대상을 확인한 뒤 테이블 7개 확인
+  - 교훈: 접속 정보는 호스트 · 포트 · 사용자 · **DB 이름** 네 가지이고, 하나만 어긋나도 엉뚱한 곳에 정상적으로 접속된다. M0의 `paths`/`path` 오타와 같은 유형 — 값을 **안 주면** 에러가 아니라 기본값으로 대체돼 조용히 넘어간다. "분명 넣었는데 없다"가 나오면 트리 새로고침 대신 `SELECT current_database(), current_user, current_schema()` + `SHOW data_directory` 두 줄로 "나는 지금 어디에 있는가"부터 확인할 것
+- 증상: 위 문제의 원인을 포트 불일치(5432 Windows 설치본 vs 5434 컨테이너)로 먼저 의심함
+  - 원인: 포트만 확인하고 결론을 내림. `SHOW data_directory`가 컨테이너 경로를 반환해 가설이 반증됐는데도 재확인 범위를 넓히지 않았음
+  - 해결: `pg_tables` · `pg_class`를 직접 조회해 "테이블이 이 DB에 아예 없다"를 확정한 뒤, `current_database()`로 접속 대상을 특정
+  - 교훈: M0의 "포트 충돌로 오인" 사례와 동일한 실수를 반복했다. 가설을 세우는 것은 괜찮지만, 반증 증거(`SHOW data_directory` 결과)가 나왔을 때 가설을 버리고 확인 범위를 넓혀야 한다
+
+**배운 것**
+- `--sql` 출력 전체가 `BEGIN; ... COMMIT;`으로 감싸여 있음. PostgreSQL은 DDL도 트랜잭션으로 묶이므로 마이그레이션이 중간에 실패하면 앞서 만든 테이블까지 전부 롤백된다(MariaDB는 DDL이 트랜잭션 대상이 아니라 반쯤 생성된 상태가 남음). 적용 로그의 `Will assume transactional DDL`이 이 의미
+- CHECK 제약은 값이 NULL이면 통과한다. SQL에서 NULL과의 비교 결과는 참도 거짓도 아닌 UNKNOWN이고, CHECK는 거짓일 때만 차단하기 때문. `purchase_price >= 0`이 걸려 있어도 구매가 미상(NULL)인 Steam 게임은 정상적으로 등록된다
+- SERIAL이 뽑은 번호는 INSERT가 실패해도 반환되지 않는다. 검증 중 차단된 INSERT 5건 때문에 `entries.id`가 1~5를 건너뛰고 6부터 시작함. id는 순서나 개수가 아니라 식별자일 뿐
+- `DELETE FROM users` 결과의 "영향 받은 행: 1"에 CASCADE로 연쇄 삭제된 `entries` 행은 포함되지 않는다. 편리한 만큼 영향 범위가 응답에 드러나지 않는다는 점을 유의
+
+**다음에 할 일**
+- 비밀번호 해싱 라이브러리 결정 (01 문서 10장) 후 회원가입 API
+- 로그인(access 토큰 + refresh 쿠키) → 토큰 재발급(rotation) → 로그아웃 → `get_current_user` 의존성
+- 초기 장르 데이터 시드는 게임 CRUD 착수 전까지 진행
+
+---
 
 ## 2026-09-19 — M0 완료: FastAPI · Vue 구성 및 화면 → 서버 → DB 연결 확인
 
