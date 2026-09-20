@@ -34,7 +34,7 @@ class UserCreate(BaseModel):
         """앞뒤 공백을 먼저 털어낸다
 
         mode="before"가 핵심 ─ 길이 검사보다 선행된다.
-        선행되지 않으면 이미 공백이 통과된 후 공백 상태가 저장 되어버린 상태에서 
+        선행되지 않으면 이미 공백이 통과된 후 공백 상태가 저장 되어버린 상태에서
         공백 검사가 진행되어 빈 닉네임(예: "  " min_length=2)이 생겨버린다.
         즉, 검사 순서 하나로 구멍이 생기는 셈이다.
         """
@@ -54,3 +54,27 @@ class UserRead(BaseModel):
     email: EmailStr
     nickname: str
     created_at: datetime
+
+
+class LoginRequest(BaseModel):
+    """로그인 요청
+    
+    UserCreate와 다르게 EmailStr가 아닌 그냥 str이다.
+    형식이 틀린 email도 일단 받아서 "로그인 실패"로 처리해야 한다.
+    422로 "이메일 형식이 아닙니다"를 돌려주면,
+    응답 종류가 갈리는 것 자체가 공격자에게 정보가 된다 (UI_DESIGN 3.1절)
+    """
+    
+    email: str
+    password: str
+
+
+class TokenResponse(BaseModel):
+    """로그인 성공 시 응답 본문
+    
+    refresh token은 여기에 존재하지 않는다. cookie로만 나간다.
+    본문에 담으면 JS가 읽을 수 있게 되어 httpOnly의 의미가 사라진다.
+    """
+    
+    access_token: str
+    token_type: str = "bearer"
