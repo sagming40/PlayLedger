@@ -10,7 +10,7 @@
 
 ## 현재 상태
 
-**진행 중** · M1 (백엔드 기초) — 모델 6종 · 첫 마이그레이션 · 회원가입 API 완료. 로그인 · CRUD · 테스트 · 장르 시드 남음
+**진행 중** · M1 (백엔드 기초) — 모델 6종 · 첫 마이그레이션 · 회원가입 · 로그인 API 완료. 토큰 재발급 · 로그아웃 · CRUD · 테스트 · 장르 시드 남음
 
 **환경 요약**
 | 항목 | 값 |
@@ -21,6 +21,7 @@
 | SQLAlchemy · asyncpg | 2.0.54 · 0.31.0 |
 | Alembic | 1.20.0 (async 템플릿, 마이그레이션 1건 적용) |
 | argon2-cffi | 25.1.0 (Argon2id, 비밀번호 해싱) |
+| PyJWT | 2.14.0 (access 토큰 서명, HS256) |
 | Vue · Vite · TypeScript | 3.5.42 · 8.3.0 · 6.0.2 |
 | Tailwind CSS · shadcn-vue | 4.3.3 · 2.8.2 (컴포넌트 미추가) |
 | PostgreSQL | 18.6 (`postgres:18` 컨테이너, 테이블 7개 — v1.0 범위 6종 + `alembic_version`) |
@@ -31,7 +32,7 @@
 
 **실행 방법** · 터미널 3개 — 프로젝트 루트에서 `docker compose up -d` / `server`에서 `uvicorn app.main:app --reload --port 8001` / `web`에서 `npm run dev`
 
-**다음에 할 일** · 로그인(access 토큰 + refresh 쿠키) → 토큰 재발급(rotation) → 로그아웃 → `get_current_user` 의존성
+**다음에 할 일** · 토큰 재발급(rotation) → 로그아웃 → `get_current_user` 의존성
 
 ---
 
@@ -74,6 +75,66 @@
 ---
  
 <!-- 새 기록은 이 아래에 추가한다 (최신이 위로) -->
+
+## 2026-09-20(오후~저녁/집 PC) — M1 진행 중: JWT 설정 및 로그인 API 구현
+
+**관련 마일스톤**: M1 (백엔드 기초) → 진행 중
+
+**한 일**
+- `server/.env`에 `JWT_SECRET_KEY` 추가 (`secrets.token_urlsafe(32)`로 생성), `.env.example`에 키 이름만 반영
+- `app/core/config.py` — JWT 서명 키(필수) · 알고리즘 · access/refresh 수명 설정 추가
+- `app/core/security.py`
+  - `create_access_token` / `decode_access_token` — PyJWT, HS256, `sub`에 사용자 id만
+  - `create_refresh_token` — `secrets.token_urlsafe(32)`
+  - `hash_refresh_token` — SHA-256 (03 문서 2.2절)
+- `app/schemas/user.py` — `LoginRequest` / `TokenResponse` 추가
+- `app/routers/auth.py` — `POST /api/auth/login`
+  - access 토큰은 응답 본문, refresh 토큰은 원문을 쿠키로 · 해시만 DB에
+  - 쿠키 `pl_refresh_token` — `httpOnly` · `Secure` · `SameSite=Strict` · `Path=/api/auth`
+  - 없는 계정에도 더미 해시로 검증을 돌려 응답 시간을 맞춤
+- REPL 검증
+  - 토큰 발급 → 복호화로 id 복원, 서명 훼손(`t + "x"`) · 잘못된 문자열은 `None`
+  - refresh 토큰: 매번 다른 값, 해시는 64자, 같은 입력이면 항상 같은 해시
+- jwt.io에 access 토큰을 붙여넣어 서버 키 없이 payload가 읽히는 것 확인 (`sub`/`iat`/`exp`, 차이 900초)
+- Swagger 검증 — 가입 201 → 로그인 200 → 비밀번호 오류 401 → 없는 계정 401(같은 문구)
+- DevTools Network — 위 두 401의 응답 시간이 **42ms / 42ms**로 동일
+- DevTools Application — 쿠키 속성 확인. 동시에 **v0 Django가 심은 `csrftoken`(만료 2027-08-31)이 아직 살아 있는 것**을 확인
+- HeidiSQL — `refresh_tokens` 1행 생성, 쿠키의 원문과 DB의 해시가 서로 다른 값, `expires_at`이 정확히 14일 뒤, `revoked_at`은 NULL
+
+**결정 기록**
+- **refresh 토큰은 JWT가 아닌 무작위 문자열**
+  JWT의 장점은 "DB를 보지 않고 서명만으로 검증"인데, refresh 토큰은 로그아웃 폐기 · rotation · 탈취 감지(02 문서 4.1절)를 위해 어차피 매번 DB를 조회해야 한다. 그 순간 JWT의 이점이 사라지고 만료 로직 · 서명 키 관리만 늘어난다. 게다가 JWT는 payload를 누구나 읽을 수 있지만(jwt.io에서 확인), 무작위 문자열은 DB 없이는 아무 의미가 없어 더 안전하다
+- **refresh 토큰 해시는 argon2가 아닌 SHA-256**
+  argon2가 느린 것은 사람이 만든 약한 비밀번호를 대입하는 공격을 막기 위해서다. 이 토큰은 서버가 만든 32바이트 무작위값이라 대입이라는 개념이 성립하지 않으므로 느릴 이유가 없다. 또 SHA-256은 salt가 없어 같은 입력이면 항상 같은 해시가 나오고, 덕분에 들어온 토큰을 해싱해 `WHERE token_hash = ...`로 바로 조회할 수 있다. argon2였다면 salt 때문에 전체 행을 훑어야 한다
+- **로그인 응답 시간까지 통일** (09-20 오전 기록의 "로그인 쪽은 막는다" 이행)
+  04 문서 3.1절의 메시지 통일만으로는 부족하다. argon2 검증이 수십 ms라 "계정 있음"과 "없음"의 응답 시간이 갈려, 메시지를 읽지 않고 시간만 재도 계정 존재 여부를 알 수 있다. 계정이 없을 때도 더미 해시로 검증을 한 번 돌려 시간을 맞췄고, 실측 결과 42ms / 42ms로 동일했다
+
+**막혔던 점 / 트러블슈팅**
+- 증상: `decode_access_token`에서 `TypeError: 'dict' object is not callable`. `payload("sub")`를 `payload.get("sub")`로 고쳤는데 **같은 에러가 그대로** 재발
+  - 원인: 두 번째 에러는 이미 import한 옛 코드가 실행된 결과였다. 파이썬은 import 시점에 모듈을 메모리에 올리고 이후 파일을 다시 읽지 않지만, 트레이스백을 출력할 때는 해당 줄을 파일에서 그때 읽어온다. 그래서 **실행되는 코드(옛 버전)와 화면에 표시되는 줄(수정본)이 어긋났다**
+  - 해결: REPL 재시작
+  - 교훈: 파일을 고쳤으면 REPL을 껐다 켠다. 서버는 `--reload`가 대신 해주므로 이 함정은 REPL에서만 나타난다. "고쳤는데 그대로"일 때 코드를 더 의심하기 전에 실행 주체가 새 코드를 읽었는지부터 확인할 것
+- 증상: `auth.py`에 `"(" was not closed` 에러 2건(116 · 117번 줄). 표시된 줄에는 문제가 없어 한참 찾음
+  - 원인: `token_hash=hash_refresh_token(refresh_token)` 끝의 쉼표 누락. **같은 날 오전 `password_hash=...`에서 겪은 것과 동일한 실수**
+  - 해결: 쉼표 추가
+  - 교훈: 인자가 함수 호출 `)`로 끝나면 괄호가 닫힌 것처럼 보여 쉼표를 빠뜨리기 쉽다. 중첩 괄호에서는 바깥쪽까지 줄줄이 "안 닫힘"으로 표시되므로, **가장 안쪽 괄호부터 그 아래 줄을 훑는다**
+- 증상: 커밋을 2개로 나누려 했는데, `git add`로 4개만 지정했음에도 6개 파일이 전부 커밋됨
+  - 원인: 앞서 잘못된 메시지를 되돌리려고 실행한 `git reset --soft HEAD~1`이 **커밋에 있던 파일 6개를 staged 상태로 되돌려 놓았다.** `git add`는 스테이징을 교체하는 것이 아니라 추가하는 것이므로, 이미 올라와 있던 6개가 그대로 남아 있었음
+  - 해결: `git reset`(옵션 없이)으로 스테이징만 전부 해제한 뒤, 커밋 1의 4개만 add → 커밋 → 나머지 2개 add → 커밋
+  - 교훈: **`git commit`은 방금 add한 것이 아니라 "그 시점에 staged인 전부"를 커밋한다.** commit 직전에 `git status`의 `Changes to be committed` 목록을 눈으로 확인할 것. M0의 "원인을 확인하기 전에 `git add .`를 하면 정체 모를 변경이 섞인다"와 같은 유형이다
+
+**배운 것**
+- JWT는 암호화가 아니라 서명이다. jwt.io에 토큰을 넣자 서버 키 없이 payload가 그대로 읽혔다. 내용을 숨기는 것이 아니라 "변조되지 않았음"만 보장하므로 payload에는 사용자 id 외에 아무것도 넣지 않는다. 같은 화면에서 `Valid JWT`(모양이 맞음)와 `Invalid Signature`(도장이 안 맞음)가 함께 표시되는데, 서로 다른 것을 말하는 두 판정이다
+- `jwt.decode`의 `algorithms`가 리스트인 이유 — 허용 목록을 명시하지 않으면 토큰 헤더에 `"alg": "none"`을 적어 보내 검증을 건너뛰는 공격이 가능하다. 토큰이 자기 검증 방식을 스스로 정하게 두면 안 된다
+- M0에서 "지금 조치하지 않음"으로 남겨둔 발견 사항이 실제로 값을 했다. v0 Django의 `csrftoken`이 1년 뒤인 지금도 브라우저에 남아 있어, 쿠키 이름에 `pl_` 접두사를 붙이지 않았다면 다른 프로젝트와 덮어쓸 수 있었다
+- `users.id`가 집 PC에서는 5부터 시작했다(노트북은 1). 9/19 밤 제약 검증 때 이 DB에서 INSERT가 여러 번 차단되며 SERIAL 번호를 소모한 탓이다. 같은 코드라도 DB의 이력에 따라 id가 달라진다
+
+**다음에 할 일**
+- 토큰 재발급(rotation) — 기존 토큰 `revoked_at` 기록 후 새 토큰 발급, 폐기된 토큰 재사용 시 401
+- 로그아웃 (refresh 토큰 폐기 + 쿠키 삭제) → `get_current_user` 의존성
+- 이메일 정규화가 `schemas/user.py`와 `routers/auth.py` 두 곳에 중복돼 있음 — 게임 CRUD의 `normalize_title` 작업과 함께 한 곳으로 통합 (05 문서에 항목 추가)
+
+---
 
 ## 2026-09-20(9/19 저녁 ~ 9/20 오전/노트북) — M1 진행 중: 비밀번호 해싱 결정 및 회원가입 API 구현
 
