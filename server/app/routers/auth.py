@@ -3,8 +3,9 @@
 
 from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, Response, status
-from sqlalchemy import select
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
+from fastapi.responses import JSONResponse
+from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -29,6 +30,45 @@ DUMMY_PASSWORD_HASH = hash_password("dummy-password-for-timing-defense")
 # Browser Cookie는 port를 구분하지 않으므로, 동일한 localhost를 사용하는
 # 다른 project와 서로 덮어쓸 수 있다.
 REFRESH_COOKIE_NAME = "pl_refresh_token"
+
+# Cookie는 (이름 · 도메인 · 경로) 3가지로 식별된다.
+# 삭제할 때도 동일한 경로를 줘야 한다. ─ 상수로 뽑아둠 (추후 logout에서 사용할 예정)
+REFRESH_COOKIE_PATH = "/api/auth"
+
+
+def set_refresh_cookie(response: Response, token: str) -> None:
+    """refresh 토큰을 cookie로 심는다.
+
+    login과 refresh 2곳에서 동일한 속성으로 심어야 하므로 한 군데에 모아둔다.
+    비유: 도장을 두 창구에서 각각 따로 파면, 똑같은 모양으로 파달라고 요청 했더라도 
+    100% 동일할 수 없다. (미세하게라도 서로 달라질 수 밖에 없음)
+    """
+    response.set_cookie(
+        key=REFRESH_COOKIE_NAME,
+        value=token,                # 원문. DB에 저장된 값은 원문의 HASH이다.
+        httponly=True,              # JS가 읽지 못한다 → XSS로 탈취 불가
+        secure=True,                # HTTPS에서만 전송 (localhost는 예외로 허용됨)
+        samesite="strict",          # 다른 사이트에서 시작된 요청에는 붙지 않는다.
+        path=REFRESH_COOKIE_PATH,   # 인증 API에만 붙는다. game 목록 요청엔 붙지 않음
+        max_age=settings.refresh_token_expire_days * 24 * 60 * 60,  # 초 단위
+    )
+
+
+def clear_refresh_cookie(response: Response) -> None:
+    """refresh 쿠키를 지운다.
+
+    경로를 반드시 심을 때와 똑같이 줘야 한다.
+    Browser는 Cookie를 '이름'이 아니라 '이름 + 도메인 + 경로'로 구분하기 때문에,
+    경로가 다르면 '다른 쿠키는 지워야 한다'는 요청이 되어 원본이 그대로 살아남는다.
+    비유: 동일한 이름의 사물함이 층마다 있는데, 층수를 밝히지 않고 "비워달라"고 하는 것
+    """
+    response.delete_cookie(
+        key=REFRESH_COOKIE_NAME,
+        path=REFRESH_COOKIE_PATH,
+        httponly=True,
+        secure=True,
+        samesite="strict",
+    )
 
 
 @router.post(
@@ -122,14 +162,90 @@ async def login(
     )
     await db.commit()
     
-    response.set_cookie(
-        key=REFRESH_COOKIE_NAME,
-        value=refresh_token,        # 원문. DB에 저장된 값은 원문의 HASH이다.
-        httponly=True,              # JS가 읽지 못한다 → XSS로 탈취 불가
-        secure=True,                # HTTPS에서만 전송 (localhost는 예외로 허용됨)
-        samesite="strict",          # 다른 사이트에서 시작된 요청에는 붙지 않는다.
-        path="/api/auth",           # 인증 API에만 붙는다. 게임 목록 요청엔 붙지 않음
-        max_age=settings.refresh_token_expire_days * 24 * 60 * 60,   #초 단위
-    )
+    set_refresh_cookie(response, refresh_token)
     
     return TokenResponse(access_token=access_token)
+
+
+@router.post("/refresh", response_model=TokenResponse)
+async def refresh(
+    request: Request,    # cookie를 읽을 요청 객체
+    response: Response,  # 새 cookie를 심을 응답 객체
+    db: AsyncSession = Depends(get_db),
+) -> TokenResponse | JSONResponse:
+    """refresh 토큰을 새로운 토튼 한 쌍으로 교환한다 (rotation, 문서 02 ─ 4.1절)"""
+
+    raw_token = request.cookies.get(REFRESH_COOKIE_NAME)
+    if raw_token is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="인증 정보가 없습니다",
+        )
+
+    token_hash = hash_refresh_token(raw_token)
+    now = datetime.now(timezone.utc)
+
+    # 찾기 + 유효성 확인 + 폐기를 UPDATE 한 문장으로 처리한다.
+    # 각각 갈라버리면 그 갈라진 틈으로 동일한 토큰이 중복 통과할 수 있다.
+    result = await db.execute(
+        update(RefreshToken)
+        .where(
+            RefreshToken.token_hash == token_hash,
+            RefreshToken.revoked_at.is_(None),       # 아직 폐기되지 않음
+            RefreshToken.expires_at > now,           # 아직 만료되지 않음
+        )
+        .values(revoked_at=now)
+        .returning(RefreshToken.user_id)             # 바꾼 행의 주인을 돌려받는다
+        # session 메모리에 올라온 객체를 DB와 맞추는 option이다.
+        # 이 요청은 방금 시작된 요청이라 session에 맞출 대상이 아무것도 없다.
+        .execution_options(synchronize_session=False)
+    )
+    user_id = result.scalar_one_or_none()   # 1행이면 값, 0행이면 None
+
+    # ──── 실패 경로 ──── 왜 실패했는지 한 번 더 확인한다
+    if user_id is None:
+        used = await db.scalar(
+            select(RefreshToken).where(RefreshToken.token_hash == token_hash)
+        )
+
+        # 존재하지만 이미 폐기된 토큰 = 정상 흐름에선 나올 수 없는 상황
+        # 누군가 옛 토큰을 들고 왔다는 신호다. (문서 03 ─ 2.2절)
+        if used is not None and used.revoked_at is not None:
+            # 이 유저의 살아 있는 토큰을 전부 폐기한다.
+            # 공격자가 이미 받아간 새 토큰 까지 같이 죽이기 위함이다.
+            await db.execute(
+                update(RefreshToken)
+                .where(
+                    RefreshToken.user_id == used.user_id,
+                    RefreshToken.revoked_at.is_(None),
+                )
+                .values(revoked_at=now)
+                .execution_options(synchronize_session=False)
+            )
+
+        await db.commit()   # 폐기 기록을 실제로 남긴다
+
+        # HTTPException으로 raise하면 인자로 받은 response는 버려진다.
+        # (예외 처리기가 응답을 새로 만들기 때문. 비상구로 나가면 짐이 안 실린다)
+        # 그래서 실패 응답을 직접 만들고, 쿠키 삭제를 그 위에 얹어서 return한다.
+        failure = JSONResponse(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            content={"detail": "다시 로그인해 주세요"},
+        )
+        clear_refresh_cookie(failure)
+        return failure        
+
+    # ─── ↓ 옛 토큰이 방금 폐기된 상태. 새 토큰을 내어준다 ───
+
+    new_refresh_token = create_refresh_token()
+    db.add(
+        RefreshToken(
+            user_id=user_id,
+            token_hash=hash_refresh_token(new_refresh_token),
+            expires_at=now + timedelta(days=settings.refresh_token_expire_days),
+        )
+    )
+    await db.commit()
+
+    set_refresh_cookie(response, new_refresh_token)
+    return TokenResponse(access_token=create_access_token(user_id))
