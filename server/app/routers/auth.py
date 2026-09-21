@@ -249,3 +249,36 @@ async def refresh(
 
     set_refresh_cookie(response, new_refresh_token)
     return TokenResponse(access_token=create_access_token(user_id))
+
+
+@router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
+async def logout(
+    request: Request,
+    response: Response,
+    db: AsyncSession = Depends(get_db),
+) -> None:
+    """refresh 토큰을 폐기하고 cookie를 지운다
+
+    get_current_user를 붙이지 않는다.
+    access 토큰이 만료된 사람도 logout할 수 있어야 한다.
+    """
+
+    raw_token = request.cookies.get(REFRESH_COOKIE_NAME)
+
+    # cookie가 없어도 error를 내지 않는다.
+    # 로그아웃의 목적은 '로그아웃이 된 상태'지 '토큰 찾기'가 아니다.
+    # 몇번을 눌러도 결과가 같다.(멱등성) 엘리베이터 버튼을 또 눌러도 아무도 화내는 사람이 없는 것처럼
+    if raw_token is not None:
+        await db.execute(
+            update(RefreshToken)
+            .where(
+                RefreshToken.token_hash == hash_refresh_token(raw_token),
+                RefreshToken.revoked_at.is_(None),   # 이미 폐기된 행의 시각은 보존
+            )
+            .values(revoked_at=datetime.now(timezone.utc))
+            .execution_options(synchronize_session=False)
+        )
+        await db.commit()
+
+    clear_refresh_cookie(response)
+
