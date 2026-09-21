@@ -1,6 +1,6 @@
 # PlayLedger — 데이터 모델 (ERD)
 
-> 작성일: 2026-08-13 / 개정일: 2026-09-18 / 상태: v1.0
+> 작성일: 2026-08-13 / 개정일: 2026-09-21 / 상태: v1.1
 > 관련 문서: 요구사항 정의서(01), 시스템 아키텍처(02)
 
 ---
@@ -43,6 +43,7 @@ erDiagram
   GENRES {
     integer id PK
     varchar name UK
+    varchar steam_genre_id UK
   }
   GAME_GENRES {
     integer game_id PK, FK
@@ -205,7 +206,54 @@ rotation으로 폐기된 토큰이 다시 들어온다면, 누군가 옛 토큰�
 | 컬럼 | 타입 | 제약 | 설명 |
 |---|---|---|---|
 | `id` | integer | PK | |
-| `name` | varchar(50) | UNIQUE, NOT NULL | 장르명 |
+| `name` | varchar(50) | UNIQUE, NOT NULL | 장르명 (Steam 한국어 표기) |
+| `steam_genre_id` | varchar(10) | UNIQUE, NOT NULL | Steam 공식 장르 ID |
+
+**장르 목록 (고정)**
+
+| `steam_genre_id` | `name` |
+|:---:|---|
+| 1 | 액션 |
+| 2 | 전략 |
+| 3 | RPG |
+| 4 | 캐주얼 |
+| 9 | 레이싱 |
+| 18 | 스포츠 |
+| 25 | 어드벤처 |
+| 28 | 시뮬레이션 |
+
+> ID와 표기는 Steam 스토어 API(`appdetails`, `l=koreana`)의 응답으로 확인했다 (2026-09-21).
+
+사용자는 이 목록에서 고르기만 하고 새 장르를 만들 수 없다.
+
+**고정 목록인 이유**
+
+`genres`는 모든 사용자가 공유하는 마스터 데이터다. 사용자가 장르를 직접 입력하게 하면
+`RPG` / `rpg` / `롤플레잉`이 서로 다른 행으로 쌓여, 장르별 통계(F-11)가 조용히 틀린다.
+또 장르가 잘게 쪼개지면 장르마다 게임이 한두 개뿐이라, 게임 하나의 클리어 여부에 따라 완주율이 크게 달라진다.
+칸이 적고 고정돼 있어야 통계가 의미를 갖는다.
+
+**Steam 장르 중 8개만 쓰는 이유**
+
+Steam 스토어 장르 중 **게임의 종류**를 나타내는 것만 골랐다.
+`인디`(23) · `무료 플레이`(37) · `대규모 멀티플레이어`(29)는 각각 제작 규모 · 가격 모델 · 플레이 방식이라
+다른 장르와 전부 겹치고, 해당 장르의 완주율이 무엇을 뜻하는지 불분명해 제외했다.
+오픈월드 · 로그라이크 같은 세부 분류는 Steam에서 장르가 아니라 사용자 태그라 포함하지 않는다.
+
+**`steam_genre_id`를 두는 이유**
+
+M8 Steam 동기화 때 Steam 게임에 장르를 자동으로 연결하는 기준이다.
+장르 이름은 API 요청 언어에 따라 바뀌지만 ID는 바뀌지 않는다.
+문자열인 이유는 Steam API가 `"id": "1"`처럼 문자열로 응답하기 때문이다.
+받은 형태 그대로 저장해 비교할 때 변환하지 않는다. (계산에 쓰는 값이 아니다)
+NOT NULL로 둬서 "장르는 Steam 장르에서만 온다"는 규칙을 DB가 강제한다.
+
+**목록을 마이그레이션으로 넣는 이유**
+
+장르가 없으면 게임 등록 폼(S-03)의 장르 선택 칩이 비어 기능 일부가 쓸모없어지므로, 테이블과 함께 반드시 존재해야 하는 데이터다.
+마이그레이션에 넣으면 `alembic upgrade head` 한 번으로 테이블과 목록이 함께 생겨,
+다른 PC · 테스트 DB · CI에서 별도 단계가 필요 없다. 목록을 바꿀 때는 기존 파일을 고치지 않고 새 마이그레이션을 만든다.
+M4의 테스트용 게임 데이터는 앱 동작에 필수가 아니므로 별도 스크립트로 넣는다.
 
 **`game_genres`** (연결 테이블)
 
@@ -221,7 +269,7 @@ rotation으로 폐기된 토큰이 다시 들어온다면, 누군가 옛 토큰�
 
 `games` 테이블에 `장르1 / 장르2 / 장르3` 컬럼을 두는 방식은
 장르 개수가 고정되고, 장르로 검색할 때 모든 컬럼을 뒤져야 한다.
-문자열로 `"RPG, 오픈월드"`처럼 이어 붙이면 DB가 이를 데이터로 인식하지 못해
+문자열로 `"RPG, 액션"`처럼 이어 붙이면 DB가 이를 데이터로 인식하지 못해
 F-11(장르별 통계)을 구현할 수 없다.
 
 ### 2.6 `entries`
@@ -420,6 +468,7 @@ DO UPDATE SET minutes = play_sessions.minutes + EXCLUDED.minutes;
 | `entries` | `(user_id, game_id)` UNIQUE | 중복 등록 방지 겸 사용자별 조회 |
 | `games` | `title_norm` | 중복 판별 시 매번 조회 |
 | `games` | `steam_appid` UNIQUE | 동기화 시 조회 |
+| `genres` | `steam_genre_id` UNIQUE | 동기화 시 Steam 장르 ID로 조회 |
 | `game_genres` | `genre_id` | 구매 전 경고(3.4절)에서 장르로 게임 찾기 |
 | `refresh_tokens` | `user_id` | 사용자 토큰 전체 폐기 |
 | `play_sessions` | `(entry_id, played_on)` UNIQUE | upsert 충돌 판정 겸 히트맵 조회 |
@@ -452,3 +501,4 @@ MariaDB(InnoDB)는 자동으로 만들어줬지만, PostgreSQL에서는 필요�
 | 2026-08-13 | v0.1 | 최초 작성 |
 | 2026-08-17 | v0.2 | `entries.playtime_hours` 타입을 실제 구현(`models.py`) 기준으로 decimal(7,1) → decimal(6,1) 정정. max_digits=6, decimal_places=1로는 최대 99999.9시간까지 표현 가능해 실사용 범위를 충분히 커버하므로 코드가 아닌 문서를 실물에 맞춤 |
 | 2026-09-18 | v1.0 | 스택 전환(MariaDB → PostgreSQL)에 따른 전면 개정. 파일명 `ERD.md` → `03_erd.md`. `refresh_tokens`·`oauth_accounts`·`wishlist_items`·`play_sessions` 추가, 로그인 ID를 email로 변경, `playtime_hours`(decimal) → `playtime_minutes`(integer), 공통 규칙(2.0)과 외래키 삭제 규칙 신설, 조회 쿼리를 PostgreSQL 문법으로 변경. 개정 전 문서는 `v0-rn-django` 태그 참고 |
+| 2026-09-21 | v1.1 | 2.5절 `genres`에 `steam_genre_id`(UNIQUE, NOT NULL) 추가, 장르 목록(Steam 공식 장르 8개) · 선정 기준 · 시드 방식 명시. 01 문서 10장 "장르 데이터 출처" 결정 반영. 사유는 DEVLOG 2026-09-21 결정 기록 참고 |
