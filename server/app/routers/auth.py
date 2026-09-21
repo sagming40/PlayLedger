@@ -32,7 +32,7 @@ DUMMY_PASSWORD_HASH = hash_password("dummy-password-for-timing-defense")
 REFRESH_COOKIE_NAME = "pl_refresh_token"
 
 # Cookie는 (이름 · 도메인 · 경로) 3가지로 식별된다.
-# 삭제할 때도 동일한 경로를 줘야 한다. ─ 상수로 뽑아둠 (추후 logout에서 사용할 예정)
+# 삭제할 때도 동일한 경로를 줘야 한다. ─ 상수로 뽑아둠
 REFRESH_COOKIE_PATH = "/api/auth"
 
 
@@ -40,7 +40,7 @@ def set_refresh_cookie(response: Response, token: str) -> None:
     """refresh 토큰을 cookie로 심는다.
 
     login과 refresh 2곳에서 동일한 속성으로 심어야 하므로 한 군데에 모아둔다.
-    비유: 도장을 두 창구에서 각각 따로 파면, 똑같은 모양으로 파달라고 요청 했더라도 
+    비유: 도장을 두 창구에서 각각 따로 파면, 똑같은 모양으로 파달라고 요청 했더라도
     100% 동일할 수 없다. (미세하게라도 서로 달라질 수 밖에 없음)
     """
     response.set_cookie(
@@ -120,13 +120,13 @@ async def login(
     db: AsyncSession = Depends(get_db),
 ) -> TokenResponse:
     """Email과 Password를 확인하고 Token 2개를 발급한다."""
-    
+
     # 가입 때와 같은 규칙으로 정규화해야 찾을 수 있다.
     # LoginRequest에는 validator가 없으므로 직접 맞춘다.
     email = payload.email.strip().lower()
-    
+
     user = await db.scalar(select(User).where(User.email == email))
-    
+
     # ── 실패 경로 2가지를 한 덩어리로 처리한다 ──
     # 계정이 없거나 (Discord 전용 계정이라 비밀번호가 없는 경우 포함),
     # 비밀번호 오류거나 외부에서는 구분할 수 없어야 한다.
@@ -139,17 +139,17 @@ async def login(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="이메일 또는 비밀번호가 올바르지 않습니다",
         )
-    
+
     if not verify_password(payload.password, user.password_hash):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="이메일 또는 비밀번호가 올바르지 않습니다",
         )
-    
+
     # ─── ↓ 본인 확인이 끝난 상태 ───
-    
+
     access_token = create_access_token(user.id)
-    
+
     # refresh 토큰은 원문을 사용자에게 발급하고, DB에는 HASH만 남긴다.
     refresh_token = create_refresh_token()
     db.add(
@@ -161,9 +161,9 @@ async def login(
         )
     )
     await db.commit()
-    
+
     set_refresh_cookie(response, refresh_token)
-    
+
     return TokenResponse(access_token=access_token)
 
 
@@ -173,7 +173,7 @@ async def refresh(
     response: Response,  # 새 cookie를 심을 응답 객체
     db: AsyncSession = Depends(get_db),
 ) -> TokenResponse | JSONResponse:
-    """refresh 토큰을 새로운 토튼 한 쌍으로 교환한다 (rotation, 문서 02 ─ 4.1절)"""
+    """refresh 토큰을 새로운 토큰 한 쌍으로 교환한다 (rotation, 문서 02 ─ 4.1절)"""
 
     raw_token = request.cookies.get(REFRESH_COOKIE_NAME)
     if raw_token is None:
@@ -233,7 +233,7 @@ async def refresh(
             content={"detail": "다시 로그인해 주세요"},
         )
         clear_refresh_cookie(failure)
-        return failure        
+        return failure
 
     # ─── ↓ 옛 토큰이 방금 폐기된 상태. 새 토큰을 내어준다 ───
 
