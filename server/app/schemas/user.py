@@ -5,6 +5,8 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
+from app.core.normalize import normalize_email as _normalize_email
+
 
 class UserCreate(BaseModel):
     """회원가입 요청으로 들어오는 것.
@@ -22,11 +24,11 @@ class UserCreate(BaseModel):
     def normalize_email(cls, value: str) -> str:
         """Email을 소문자로 통일한다 (ERD 2.1절)
 
-        title_norm과 완전히 같은 원리 ─ 들어오는 경로가 어디든
+        title_norm과 같은 원리 ─ 들어오는 경로가 어디든
         서버에서 항상 같은 모양으로 변환하여 저장한다.
         화면에서 소문자로 변환해주는 것에 의존하면 안 된다.
         """
-        return value.strip().lower()
+        return _normalize_email(value)
 
     @field_validator("nickname", mode="before")
     @classmethod
@@ -58,23 +60,33 @@ class UserRead(BaseModel):
 
 class LoginRequest(BaseModel):
     """로그인 요청
-    
+
     UserCreate와 다르게 EmailStr가 아닌 그냥 str이다.
     형식이 틀린 email도 일단 받아서 "로그인 실패"로 처리해야 한다.
     422로 "이메일 형식이 아닙니다"를 돌려주면,
     응답 종류가 갈리는 것 자체가 공격자에게 정보가 된다 (UI_DESIGN 3.1절)
     """
-    
+
     email: str
     password: str
+
+    @field_validator("email")
+    @classmethod
+    def normalize_email(cls, value: str) -> str:
+        """가입 때와 동일한 기준표로 맞춘다.
+
+        그래도 형식 검사(EmailStr)는 하지 않는다 ─ 위 DocString 내용 참고
+        형태만 맞춰서 넘기고, 틀린 이메일은 '찾지 못함 → 401'로 끝난다.
+        """
+        return _normalize_email(value)
 
 
 class TokenResponse(BaseModel):
     """로그인 성공 시 응답 본문
-    
+
     refresh token은 여기에 존재하지 않는다. cookie로만 나간다.
     본문에 담으면 JS가 읽을 수 있게 되어 httpOnly의 의미가 사라진다.
     """
-    
+
     access_token: str
     token_type: str = "bearer"

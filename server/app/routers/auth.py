@@ -121,11 +121,8 @@ async def login(
 ) -> TokenResponse:
     """Email과 Password를 확인하고 Token 2개를 발급한다."""
 
-    # 가입 때와 같은 규칙으로 정규화해야 찾을 수 있다.
-    # LoginRequest에는 validator가 없으므로 직접 맞춘다.
-    email = payload.email.strip().lower()
-
-    user = await db.scalar(select(User).where(User.email == email))
+    # schema에서 이미 가입 때와 같은 규칙으로 정규화됨 (register와 동일)
+    user = await db.scalar(select(User).where(User.email == payload.email))
 
     # ── 실패 경로 2가지를 한 덩어리로 처리한다 ──
     # 계정이 없거나 (Discord 전용 계정이라 비밀번호가 없는 경우 포함),

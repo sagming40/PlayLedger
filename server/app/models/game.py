@@ -52,7 +52,7 @@ class Game(Base):
     # 화면에 보여줄 원본 제목
     title: Mapped[str] = mapped_column(String(200))
 
-    # 중복 판별용 정규화 제목. 공백 제거 → 소문자 → 특수문자 제거.
+    # 중복 판별용 정규화 제목. NFKC → casefold → 글자·숫자만 (app/core/normalize.py)
     # 사람이 다루게 하지 않고 항상 서버에서 계산한다
     title_norm: Mapped[str] = mapped_column(String(200), index=True)
 
