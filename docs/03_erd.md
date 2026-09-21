@@ -1,6 +1,6 @@
 # PlayLedger — 데이터 모델 (ERD)
 
-> 작성일: 2026-08-13 / 개정일: 2026-09-21 / 상태: v1.2
+> 작성일: 2026-08-13 / 개정일: 2026-09-21 / 상태: v1.3
 > 관련 문서: 요구사항 정의서(01), 시스템 아키텍처(02)
 
 ---
@@ -174,6 +174,9 @@ rotation으로 폐기된 토큰이 다시 들어온다면, 누군가 옛 토큰�
 | `released_at` | date | NULL | 출시일 |
 | `created_at` | timestamptz | NOT NULL | 등록 시각 |
 
+`UNIQUE (title_norm) WHERE steam_appid IS NULL` (부분 UNIQUE)
+수동 등록 게임끼리는 정규화된 제목이 겹칠 수 없다. 이유는 아래 "수동 등록 게임에만 UNIQUE를 거는 이유" 참고.
+
 **`title`과 `title_norm`을 나누는 이유**
 
 같은 게임이 여러 표기로 입력될 수 있다.
@@ -213,8 +216,18 @@ rotation으로 폐기된 토큰이 다시 들어온다면, 누군가 옛 토큰�
 1. `steam_appid`가 있으면 그것으로 비교 (가장 정확)
 2. 없으면 `title_norm`으로 비교
 3. 둘 다 일치하지 않으면 새 게임으로 등록
+4. 3에서 부분 UNIQUE에 걸리면 (같은 제목이 방금 먼저 등록됨) 그 행을 다시 조회해 재사용
 
 판별은 `services`의 게임 조회 함수 한 곳에서만 한다. (ARCHITECTURE 2.2절)
+
+**수동 등록 게임에만 UNIQUE를 거는 이유**
+
+조회(2)와 등록(3) 사이에 같은 제목의 요청이 끼어들면, 둘 다 "없음"을 보고 각각 등록해 같은 게임이 두 행이 된다.
+`users.email`의 UNIQUE가 회원가입에서 같은 틈을 막는 것과 같은 원리로, DB가 마지막 방어선이 된다.
+이 제약은 2단계가 이미 하는 재사용을 동시 요청에서도 지키게 할 뿐, 새로 합쳐지는 게임은 없다.
+
+Steam 게임은 `steam_appid` UNIQUE로 이미 식별되고, appid가 다른데 정규화 제목이 같은 게임(리메이크 등)이 있을 수 있어 제외한다.
+`(title_norm, steam_appid)` 복합 UNIQUE로는 막을 수 없다. UNIQUE는 NULL끼리를 서로 다른 값으로 보므로, `steam_appid`가 NULL인 수동 게임끼리는 충돌하지 않는다.
 
 ### 2.5 `genres` / `game_genres`
 
@@ -486,6 +499,7 @@ DO UPDATE SET minutes = play_sessions.minutes + EXCLUDED.minutes;
 | `entries` | `(user_id, status)` | 상태별 필터링이 가장 잦은 조회 |
 | `entries` | `(user_id, game_id)` UNIQUE | 중복 등록 방지 겸 사용자별 조회 |
 | `games` | `title_norm` | 중복 판별 시 매번 조회 |
+| `games` | `title_norm` UNIQUE (`steam_appid IS NULL`인 행만) | 수동 등록 게임의 동시 등록 중복 방지 (2.4절) |
 | `games` | `steam_appid` UNIQUE | 동기화 시 조회 |
 | `genres` | `steam_genre_id` UNIQUE | 동기화 시 Steam 장르 ID로 조회 |
 | `game_genres` | `genre_id` | 구매 전 경고(3.4절)에서 장르로 게임 찾기 |
@@ -523,3 +537,4 @@ MariaDB(InnoDB)는 자동으로 만들어줬지만, PostgreSQL에서는 필요�
 | 2026-09-18 | v1.0 | 스택 전환(MariaDB → PostgreSQL)에 따른 전면 개정. 파일명 `ERD.md` → `03_erd.md`. `refresh_tokens`·`oauth_accounts`·`wishlist_items`·`play_sessions` 추가, 로그인 ID를 email로 변경, `playtime_hours`(decimal) → `playtime_minutes`(integer), 공통 규칙(2.0)과 외래키 삭제 규칙 신설, 조회 쿼리를 PostgreSQL 문법으로 변경. 개정 전 문서는 `v0-rn-django` 태그 참고 |
 | 2026-09-21 | v1.1 | 2.5절 `genres`에 `steam_genre_id`(UNIQUE, NOT NULL) 추가, 장르 목록(Steam 공식 장르 8개) · 선정 기준 · 시드 방식 명시. 01 문서 10장 "장르 데이터 출처" 결정 반영. 사유는 DEVLOG 2026-09-21 결정 기록 참고 |
 | 2026-09-21 | v1.2 | 2.4절 정규화 규칙을 구현 가능한 수준으로 구체화 (NFKC → casefold → 글자 · 숫자만 남김 → 빈 값 · 길이 검사), 예시 추가, 정규화가 잡지 못하는 경우와 보완책 명시, 중복 판별 입구를 하나로 명시. 5장에 F-30 추가. 기존 규칙("공백 제거 → 소문자 → 특수문자 제거")은 "특수문자"의 범위가 정해지지 않아 코드로 옮길 수 없었음 |
+| 2026-09-21 | v1.3 | 2.4절 `games`에 부분 UNIQUE `(title_norm) WHERE steam_appid IS NULL` 추가, 중복 판별 4단계(UNIQUE 충돌 시 재조회) 및 근거 명시. 4장 인덱스 표 반영. 조회와 등록 사이의 동시 요청으로 수동 게임이 중복 등록되는 틈을 DB에서 막기 위함 |
