@@ -10,7 +10,7 @@
 
 ## 현재 상태
 
-**진행 중** · M1 (백엔드 기초) — 모델 6종 · 첫 마이그레이션 · 회원가입 · 로그인 완료. 토큰 재발급(rotation)은 구현 후 수정 반영, **재검증 미완료**. 로그아웃 · `get_current_user` · CRUD · 테스트 · 장르 시드 남음
+**진행 중** · M1 (백엔드 기초) — 모델 6종 · 첫 마이그레이션 · 인증 전 항목(회원가입 · 로그인 · 재발급 · 로그아웃 · `get_current_user`) 완료. 장르 시드 · 게임 CRUD · 테스트 · CI · 06 문서 남음
 
 **환경 요약**
 | 항목 | 값 |
@@ -25,6 +25,7 @@
 | Vue · Vite · TypeScript | 3.5.42 · 8.3.0 · 6.0.2 |
 | Tailwind CSS · shadcn-vue | 4.3.3 · 2.8.2 (컴포넌트 미추가) |
 | PostgreSQL | 18.6 (`postgres:18` 컨테이너, 테이블 7개 — v1.0 범위 6종 + `alembic_version`) |
+| HeidiSQL | PostgreSQL 접속 가능한 버전 (학교 PC 12.21. 기기마다 버전이 달라도 무방) |
 | Docker · Compose | 29.8.0 · v5.5.1 |
 | 포트 | DB `5434` · API `8001` · 프론트 `5173` |
 | 이전 버전 | `v0-rn-django` 태그 (RN 0.87.0 + Django 6.1 + MariaDB 12.2.2) |
@@ -32,7 +33,7 @@
 
 **실행 방법** · 터미널 3개 — 프로젝트 루트에서 `docker compose up -d` / `server`에서 `uvicorn app.main:app --reload --port 8001` / `web`에서 `npm run dev`
 
-**다음에 할 일** · 토큰 재발급(rotation) → 로그아웃 → `get_current_user` 의존성
+**다음에 할 일** · 장르 시드 → 제목 정규화(`title_norm`) + 이메일 정규화 통합 → 게임 중복 판별 → 게임 CRUD
 
 ---
 
@@ -73,8 +74,93 @@
 ```
 
 ---
- 
+
 <!-- 새 기록은 이 아래에 추가한다 (최신이 위로) -->
+
+## 2026-09-21(오전~점심/학교 PC) — M1 진행 중: 인증 파트 완료 (재발급 재검증 · 로그아웃 · get_current_user), 게임 CRUD · 테스트 남음
+
+**관련 마일스톤**: M1 (백엔드 기초) → 진행 중
+
+**한 일**
+- 학교 PC에 저장소 클론 후 환경 구성 — venv · `server/.env` · 루트 `.env` 작성, Docker Desktop 실행, `alembic upgrade head`(`0a6ba7b72cfb` 적용)
+- HeidiSQL 12.14 → 12.21 재설치 (PostgreSQL 접속 라이브러리 로드 실패)
+- 토큰 재발급 실패 경로 재검증 (09-20 밤 `wip` 커밋 `605b62a`의 미완료분)
+  - 로그인 2회로 유효 토큰 2개 생성 → refresh 1회 → 폐기된 토큰을 쿠키에 되돌려 심고 refresh
+  - 401 `다시 로그인해 주세요` + **3행 전부 폐기**. 따로 로그인해 떠돌던 1번 행까지 같은 시각으로 폐기됐고, 먼저 rotation된 2번 행은 원래 폐기 시각 유지
+  - 다음 요청이 401 `인증 정보가 없습니다`로 **메시지가 바뀜** → 실패 응답에서 쿠키가 삭제된 것 확인
+- `POST /api/auth/logout` 구현 및 검증
+  - 204, 네트워크 탭 응답 헤더에서 삭제용 `Set-Cookie`(빈 값 · `Max-Age=0` · `Path=/api/auth`) 확인
+  - 해당 토큰 행만 폐기, 쿠키 없는 상태로 한 번 더 호출 → 다시 204
+  - 로그아웃 후 refresh → 401 `인증 정보가 없습니다`
+- `app/deps.py` — `get_current_user` 의존성 (`HTTPBearer(auto_error=False)`, 토큰 검증 후 DB에서 사용자 재확인)
+- `GET /api/auth/me` 추가 *(계획에 없던 작업)* — `get_current_user` 동작 확인 수단이자 M2 계정 정보 화면용
+  - Swagger Authorize 후 200, 응답에 `password_hash` 없음
+  - 토큰 없음 → 401, 서명 끝 한 글자 변조 → 401 (둘 다 `인증이 필요합니다`, `www-authenticate: Bearer` 헤더 포함)
+- 코드 정리 — 줄 끝 · 빈 줄 공백 제거(편집기 Trim Trailing Whitespace 적용), 오타, 사실과 달라진 주석("추후 logout에서 사용할 예정") 삭제
+- 커밋을 정리 / 로그아웃 / `get_current_user` 3개로 분리 (GitHub Desktop 줄 단위 선택)
+
+**결정 기록**
+- **로그아웃은 실패 경로 없이 항상 204 (멱등)**
+  로그아웃의 목적은 "로그아웃된 상태"이지 "토큰 찾기"가 아니다. 쿠키가 없든 이미 폐기된 토큰이든 끝난 뒤의 상태는 같으므로 에러를 낼 이유가 없다. 401을 주면 화면은 "로그아웃 실패"를 어떻게 처리해야 할지 애매해진다
+- **로그아웃에 access 토큰을 요구하지 않음**
+  `get_current_user`를 붙이면 access 토큰이 만료된 사용자는 로그아웃을 못 한다. 필요한 정보(refresh 토큰)는 쿠키에 다 있다
+- **로그아웃은 현재 기기의 토큰만 폐기**
+  로그인은 기존 토큰을 폐기하지 않아 기기마다 토큰이 공존한다. 들고 온 토큰만 폐기하는 것이 일반적인 동작이며, "모든 기기에서 로그아웃"은 별도 기능이라 구현하지 않고 01 문서 4.4절(F-29)로 이관
+- **`OAuth2PasswordBearer`가 아닌 `HTTPBearer`**
+  FastAPI 공식 튜토리얼은 `OAuth2PasswordBearer`를 쓰지만, 이는 로그인이 form-data(`username` + `password`)로 들어온다고 가정한다. 이 프로젝트의 로그인은 JSON 본문이라 구조가 맞지 않는다. argon2 결정 때의 "튜토리얼이 passlib 기준"과 같은 상황 — 문서가 가정하는 구조가 내 구조와 같은지부터 확인한다
+- **`get_current_user`는 `raise`로 실패를 처리**
+  09-20 밤의 쿠키 삭제 버그는 "인자로 받은 응답 객체에 쿠키를 얹었는데 `raise`로 빠져나가서" 생겼다. 여기서는 얹을 쿠키가 없고, 필요한 헤더(`WWW-Authenticate`)는 `HTTPException`에 직접 담았으므로 예외 처리기가 만드는 새 응답에 함께 실린다. `raise`가 문제가 아니라 **무엇을 어느 객체에 담았는지**가 핵심
+- **`wip` 커밋을 `feat`으로 재작성하지 않고 유지** (09-20 밤 결정 변경)
+  이미 push된 커밋이라 메시지만 바꿔도 force push가 필요하다. 여러 기기에서 같은 브랜치를 쓰는 상황에서 이력을 재작성하면, 옛 이력을 가진 기기에서 pull할 때 이력이 갈라진다. 또 커밋 내용은 오늘 재검증을 통과했고, 메시지의 "재검증 미완료"도 그 시점엔 사실이었다. 이력을 고치는 대신 이 기록으로 "검증 완료"를 이어 붙인다
+- **공백 · 오타 정리를 기능 커밋과 분리**
+  편집기가 저장하며 파일 전체의 공백을 지워, 기능과 무관한 변경 13줄이 생겼다. 섞으면 기능 커밋 diff에서 진짜 변경을 찾기 어렵다. 분리한 결과 정리 커밋은 +13/−13(내용 불변), 로그아웃 커밋은 +33/−0(순수 추가)으로 수치만 봐도 성격이 드러난다
+
+**막혔던 점 / 트러블슈팅**
+- 증상: `docker compose up -d`에서 `failed to connect to the docker API at npipe:////./pipe/dockerDesktopLinuxEngine`. 리눅스가 없다는 뜻으로 읽고 `wsl --install`을 실행했더니 "이미 있음"
+  - 원인: 파이프 이름에 `Linux`가 들어 있을 뿐, 메시지 본문은 "경로가 맞는지, 데몬이 실행 중인지 확인하라"였다. 이 파이프는 Docker Desktop이 **켜질 때** 만들어지는데, 설치만 되고 실행이 안 된 상태였음
+  - 해결: Docker Desktop 실행 후 재시도
+  - 교훈: M0의 `Could not import module` 건과 같다. 에러 메시지 속 **단어**가 아니라 **문장**을 읽을 것
+- 증상: `server/.env`의 첫 줄이 `DATABASE_URL=DATABASE_URL=postgresql+asyncpg://...`
+  - 원인: `.env.example`에서 키 이름까지 함께 복사해 붙여넣음. 첫 `=` 뒤 전체가 값이 되어 드라이버를 찾을 수 없는 문자열이 됨
+  - 해결: 중복된 키 이름 삭제. 이후 `alembic upgrade head` 성공으로 접속 정보가 맞음을 확인
+  - 교훈: `.env.example`은 **키 이름이 이미 적혀 있는 틀**이다. 값만 채운다
+- 증상: JWT 서명 키가 화면에 두 번 노출됨 — `.env`를 열어둔 채 찍은 스크린샷, 키 생성 명령의 터미널 출력
+  - 원인: 비밀값을 "커밋"만 조심하면 된다고 생각함. 실제로는 키를 **만드는 순간**과 **붙여넣는 순간** 모두 화면에 뜬다
+  - 해결: 두 번 모두 키를 새로 발급. 두 번째부터는 `python -c "import secrets; print(secrets.token_urlsafe(32))" | Set-Clipboard`로 화면을 거치지 않고 클립보드로 보냄
+  - 교훈: M0의 `print(settings.database_url)` 건의 확장판. 비밀값은 화면에 띄우는 순간 전부가 노출 경로다. `.env`를 열어둔 창은 캡처하지 않는다
+- 증상: HeidiSQL 접속 시 `libpq-17.dll을 불러올 수 없습니다 (오류 126)`. `libpq-15`로 바꿔도 동일
+  - 원인: 오류 126은 "모듈을 찾을 수 없음"인데, 드롭다운에 파일이 보였으므로 DLL 자체가 아니라 **그것이 의존하는 다른 부품**이 없던 것으로 판단
+  - 해결: HeidiSQL 삭제 후 12.21로 재설치
+  - 교훈: 클라이언트 도구가 안 붙어도 DB가 죽은 건 아니다. `alembic upgrade head` 성공이 이미 "컨테이너 · 접속 정보 · 포트 정상"의 증거였고, HeidiSQL 없이도 `docker compose exec db psql`로 확인할 수 있다
+  - 후속 확인: 집 PC · 노트북은 12.21 이전 버전으로도 정상 접속된다. 원인은 버전이 아니라 학교 PC의 설치 상태였던 것으로 추정하며, 재설치로 해결된 것이 이를 뒷받침한다
+- 증상: 로그인 200인데 DevTools 애플리케이션 탭 쿠키 목록이 비어 있음
+  - 원인: 처음엔 쿠키 `Path=/api/auth`와 현재 페이지(`/docs`)가 달라 목록에서 빠진 것으로 판단했으나, **같은 `/docs` 페이지에서 다른 탭을 눌렀다 돌아오자 쿠키가 나타나** 이 가설은 반증됨. 실제로는 애플리케이션 탭 목록이 자동 갱신되지 않은 것
+  - 해결: 네트워크 탭에서 응답의 `Set-Cookie`와 **다음 요청의 `Cookie` 헤더**로 저장 · 재전송을 확인. 요청에 `Cookie`가 실려 있다는 것 자체가 저장됐다는 증거
+  - 교훈: 판단 근거는 항상 네트워크 탭의 실제 헤더. 09-19의 "반증이 나오면 가설을 버린다"를 다시 확인
+
+**배운 것**
+- 쿠키에는 "삭제" 명령이 없다. 빈 값 · 지금 만료 · `Max-Age=0`인 쿠키로 **덮어써서** 지운다. 그래서 삭제할 때도 이름 · 경로가 심을 때와 같아야 한다 (다르면 다른 쿠키를 덮어쓴다)
+- 09-20 밤의 "Swagger로는 쿠키를 검증할 수 없다"를 정정 — 정확히는 **`Set-Cookie`만** 안 보인다. 같은 Swagger 화면에 `www-authenticate`는 표시됐다. `Set-Cookie`는 브라우저가 JS에게 숨기도록 정해진 금지 헤더이고, 나머지 헤더는 그런 제한이 없다
+- 결과로 원인을 판정할 수 있다. 재사용 감지 응답의 `Set-Cookie`는 못 봤지만, 다음 요청 메시지가 `인증 정보가 없습니다`로 바뀐 것은 코드상 쿠키가 안 실렸을 때만 가능하다. 실패 메시지를 두 종류로 나눠둔 결정이 검증 수단이 됐다
+- 로그인은 새 토큰을 추가할 뿐 기존 토큰을 폐기하지 않는다. 테스트 중 로그인을 두 번 하자 유효 토큰이 2개 생겼고, 재사용 감지가 둘 다 폐기하는 것으로 "해당 사용자의 살아 있는 토큰 전부"가 실제로 작동함을 확인
+- access 토큰 노출과 서명 키 노출은 무게가 다르다. 키가 새면 누구나 토큰을 **만들 수 있고**(영구), access 토큰이 새면 그 토큰 **하나를 15분간** 쓸 수 있다. access 토큰 수명을 짧게 둔 이유(02 문서 4.1절)가 이것
+- 주석도 코드와 함께 늙는다. 09-20 밤 커밋의 `(추후 logout에서 사용할 예정)`은 그때는 사실이었고, logout을 만든 순간 거짓말이 됐다. 문서의 "한 곳만 고치면 나머지가 거짓말로 남는다"가 주석에도 적용된다
+
+**발견 사항 (지금 조치하지 않음)** — M5 README 실행 방법 · 클린룸 검증 재료
+- Docker Desktop은 설치가 아니라 **실행 중**이어야 한다
+- HeidiSQL이 libpq 로드 오류(126)를 내면 재설치한다. 특정 버전이 필요한 것은 아니다 (이전 버전도 다른 PC에서 정상)
+- `.env`는 `.env.example`을 복사하되 **값만** 채운다
+- `JWT_SECRET_KEY`는 기기마다 새로 발급한다 (공유하지 않음). 생성 시 `| Set-Clipboard`로 화면 노출을 피한다
+- 클론 직후 DB는 비어 있으므로 `alembic upgrade head` → 가입부터 다시
+
+**다음에 할 일**
+- 장르 시드 (게임 CRUD 착수 전)
+- 제목 정규화 함수(`title_norm`) + 이메일 정규화 통합 — 같은 규칙이 `schemas/user.py`와 `routers/auth.py` 두 곳에 있는 문제
+- 게임 중복 판별(`services`) → 보유 기록 CRUD (`user_id` 필수 시그니처)
+- `06_api_spec.md` — 인증 흐름이 끝났으니 에러 응답 규칙(401 메시지 3종 · 409 · 422)을 정리하기 좋은 시점
+- 다른 기기로 옮길 땐 `git pull`부터. 이력을 재작성하지 않았으므로 노트북 · 집 PC 모두 평소대로 pull하면 됨
+
+---
 
 ## 2026-09-20(밤/노트북) — M1 진행 중: 토큰 재발급(rotation) 및 재사용 감지 구현
 
@@ -530,23 +616,23 @@
 **막혔던 점 / 트러블슈팅**
 - 증상: REST_FRAMEWORK 설정을 넣었는데도 admin 화면이 평소처럼 잘 됨
   - 원인: `DEFAULT_AUTHENTICATION_CLASSES`를 `DEFAULT_AUTHENICATION_CLASSES`로 오타
-    (`rest_framework.authentication`도 `authenication`으로 오타). Django/DRF가 
+    (`rest_framework.authentication`도 `authenication`으로 오타). Django/DRF가
     이런 키 오타를 에러 없이 조용히 무시하고 기본값으로 폴백함
   - 해결: 오타 수정
-  - 교훈: 설정 딕셔너리 키 오타는 서버가 정상 기동돼도 잡히지 않는다. 
-    admin이 잘 되는 건 세션 쿠키 때문이지 내 설정이 적용된 증거가 아님 — 
+  - 교훈: 설정 딕셔너리 키 오타는 서버가 정상 기동돼도 잡히지 않는다.
+    admin이 잘 되는 건 세션 쿠키 때문이지 내 설정이 적용된 증거가 아님 —
     실제 토큰 인증 흐름을 태워봐야 진짜 검증이 됨
-- 증상: PowerShell에서 curl.exe로 로그인 POST 시 "JSON parse error - 
+- 증상: PowerShell에서 curl.exe로 로그인 POST 시 "JSON parse error -
   Expecting property name..." 반복 발생 (작은따옴표로 감싸도 동일)
-  - 원인: curl.exe는 네이티브 실행파일이라 PowerShell이 인자를 넘길 때 
-    Windows 커맨드라인 재조합 규칙을 한 번 더 거침 → JSON 내 큰따옴표가 
+  - 원인: curl.exe는 네이티브 실행파일이라 PowerShell이 인자를 넘길 때
+    Windows 커맨드라인 재조합 규칙을 한 번 더 거침 → JSON 내 큰따옴표가
     깨져서 전달됨
   - 해결: PowerShell 네이티브 명령어(`Invoke-RestMethod` + `ConvertTo-Json`)로 전환
-  - 교훈: Windows PowerShell 환경에서는 curl.exe보다 Invoke-RestMethod가 
+  - 교훈: Windows PowerShell 환경에서는 curl.exe보다 Invoke-RestMethod가
     안정적. 이후 API 테스트는 이 방식을 기본으로 사용
 
 **다음에 할 일**
-- M1 게임 CRUD: Serializer 작성 → 목록 조회(본인 데이터만) → 등록(중복 판별) → 
+- M1 게임 CRUD: Serializer 작성 → 목록 조회(본인 데이터만) → 등록(중복 판별) →
   단건 조회/수정/삭제 → 쿼리셋 필터로 사용자 격리 이중 적용
 - CRUD 완성 후 계정 2개로 교차 확인 (M1 완료 기준 검증)
 
@@ -585,9 +671,9 @@
 ---
 
 ## 2026-08-14 — M0 완료: Django-MariaDB-RN 환경 구성
- 
+
 **관련 마일스톤**: M0 (환경 구성) → 완료
- 
+
 **한 일**
 - Git 저장소 초기화, `.gitignore` 배치 (Django `.env`/`venv`, RN `node_modules`, DB 파일 제외 확인)
 - Python venv 생성, Django + DRF 설치, `server/config` 프로젝트 생성
