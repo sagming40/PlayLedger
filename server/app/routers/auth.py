@@ -14,7 +14,7 @@ from app.core.security import (
     create_access_token, create_refresh_token,
     hash_password, hash_refresh_token, verify_password,
 )
-from app.deps import get_db
+from app.deps import get_current_user, get_db
 from app.models.user import RefreshToken, User
 from app.schemas.user import LoginRequest, TokenResponse, UserCreate, UserRead
 
@@ -282,3 +282,8 @@ async def logout(
 
     clear_refresh_cookie(response)
 
+
+@router.get("/me", response_model=UserRead)
+async def read_me(current_user: User = Depends(get_current_user)) -> User:
+    """지금 로그인한 사용자 정보. 인증 검사는 get_current_user가 전부 맡는다."""
+    return current_user
