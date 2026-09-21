@@ -272,17 +272,25 @@ npm run dev
 ```
 
 > `Activate.ps1` 실행이 차단되면 `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` 후 다시 시도합니다.
+
 **사용 중인 포트와 설치 버전은 [DEVLOG 환경 요약](docs/DEVLOG.md#현재-상태)이 기준입니다.**
 
 ---
 
 ## 개발 환경
 
-| 항목 | 값 |
-|---|---|
-| OS | Windows 11 |
-| 개발 기기 | Ryzen 5 9600X / RTX 5070 / DDR5 32GB |
-| 대상 | 웹 (데스크톱 · 모바일 브라우저) |
+3대의 Windows 11 기기를 오가며 개발합니다.
+어느 기기에서든 같은 절차(클론 → `.env` 작성 → `alembic upgrade head`)로 실행됩니다.
+
+| 기기 | CPU | 메모리 | GPU |
+|---|---|---|---|
+| 데스크톱 A | AMD Ryzen 5 9600X | DDR5 32GB | RTX 5070 |
+| 데스크톱 B | AMD Ryzen 9 5900X | DDR4 64GB | RTX 3080 |
+| 노트북 (Lenovo IdeaPad Flex 5) | Intel Core i7-1255U | LPDDR4x 16GB | Iris Xe (내장) |
+
+- **OS** · Windows 11 (공통)
+- **대상** · 웹 (데스크톱 · 모바일 브라우저)
+- **기기 간 이동** · 코드는 Git으로만 옮깁니다. `.env`와 DB 데이터는 Git으로 옮겨지지 않으므로 기기마다 따로 만듭니다
 
 ---
 
