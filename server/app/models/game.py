@@ -5,7 +5,10 @@
 
 from datetime import date, datetime
 
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, Table, func
+from sqlalchemy import (
+    Column, DateTime, ForeignKey, Index,
+    Integer, String, Table, func, text,
+)
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.base import Base
@@ -46,6 +49,20 @@ class Genre(Base):
 
 class Game(Base):
     __tablename__ = "games"
+
+    # 수동 등록 게임(steam_appid 없음)끼리만 title_norm 중복을 금지한다 (ERD 2.4절)
+    # 비유: 주민번호(steam_appid)가 없는 손님은 이름으로만 구분이 가능하므로 동일한 이름이
+    # 중복으로 적히면 구분할 방법이 없다. 주민번호가 있는 손님은 번호로 구분가능 하므로 이 규칙에서 제외시킨다.
+    # UNIQUE '제약'이 아니라 UNIQUE '인덱스'로 만든다
+    # ─ PostgreSQL 특성 상 제약에는 WHERE 절을 붙일 수 없다.
+    __table_args__ = (
+        Index(
+            "uq_games_title_norm_manual",
+            "title_norm",
+            unique=True,
+            postgresql_where=text("steam_appid IS NULL"),
+        ),
+    )
 
     id: Mapped[int] = mapped_column(primary_key=True)
 
