@@ -9,7 +9,7 @@ from sqlalchemy import (
     Column, DateTime, ForeignKey, Index,
     Integer, String, Table, func, text,
 )
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base
 
@@ -80,4 +80,11 @@ class Game(Base):
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
+    )
+
+    # Python 안내선 ─ game.genres로 연결된 Genre 목록을 꺼낸다 (DB 구조는 그대로)
+    # secondary = 요청 중간에 연결 테이블(game_genres)을 거쳐 찾아가게 하는 것
+    # order_by = 장르 목록 API와 같은 순서(id순)로 나오게 한다
+    genres: Mapped[list["Genre"]] = relationship(
+        secondary=game_genres, order_by="Genre.id"
     )
