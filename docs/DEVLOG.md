@@ -10,22 +10,22 @@
 
 ## 현재 상태
 
-**진행 중** · M1 (백엔드 기초) — 모델 6종 · 첫 마이그레이션 · 인증 전 항목(회원가입 · 로그인 · 재발급 · 로그아웃 · `get_current_user`) 완료. 장르 시드 · 게임 CRUD · 테스트 · CI · 06 문서 남음
+**진행 중** · M1 (백엔드 기초) — 모델 6종 · 마이그레이션 4건 · 인증 전 항목 · 장르 시드 · 정규화 규칙(`core/normalize.py`) · 게임 조회 · 생성 서비스(`find_or_create_game`) 완료. 게임 등록 API(보유 기록 CRUD) · 테스트 · CI · API_SPEC 남음
 
 **환경 요약**
 | 항목 | 값 |
 |---|---|
-| Python | 3.13.5 |
+| Python | 데스크톱 A ─ 3.13.5 · 데스크톱 B/노트북 ─ 3.13.9 (Anaconda 빌드). 3.13 안에서는 차이 없음 |
 | Node.js | v24.15.0 |
 | FastAPI · Uvicorn | 0.141.1 · 0.53.0 |
 | SQLAlchemy · asyncpg | 2.0.54 · 0.31.0 |
-| Alembic | 1.20.0 (async 템플릿, 마이그레이션 1건 적용) |
+| Alembic | 1.20.0 (async 템플릿, 마이그레이션 4건 · head `1e1d15e51ba2`, 파일명 `날짜_시각_설명`) |
 | argon2-cffi | 25.1.0 (Argon2id, 비밀번호 해싱) |
 | PyJWT | 2.14.0 (access 토큰 서명, HS256) |
 | Vue · Vite · TypeScript | 3.5.42 · 8.3.0 · 6.0.2 |
 | Tailwind CSS · shadcn-vue | 4.3.3 · 2.8.2 (컴포넌트 미추가) |
 | PostgreSQL | 18.6 (`postgres:18` 컨테이너, 테이블 7개 — v1.0 범위 6종 + `alembic_version`) |
-| HeidiSQL | PostgreSQL 접속 가능한 버전 (학교 PC 12.21. 기기마다 버전이 달라도 무방) |
+| HeidiSQL | PostgreSQL 접속 가능한 버전 (데스크톱 B 12.21. 기기마다 버전이 달라도 무방) |
 | Docker · Compose | 29.8.0 · v5.5.1 |
 | 포트 | DB `5434` · API `8001` · 프론트 `5173` |
 | 이전 버전 | `v0-rn-django` 태그 (RN 0.87.0 + Django 6.1 + MariaDB 12.2.2) |
@@ -33,7 +33,7 @@
 
 **실행 방법** · 터미널 3개 — 프로젝트 루트에서 `docker compose up -d` / `server`에서 `uvicorn app.main:app --reload --port 8001` / `web`에서 `npm run dev`
 
-**다음에 할 일** · 장르 시드 → 제목 정규화(`title_norm`) + 이메일 정규화 통합 → 게임 중복 판별 → 게임 CRUD
+**다음에 할 일** · 노트북 이력 정리(`fetch` + `reset --hard`) → 게임 등록 API(보유 기록 CRUD) → 테스트(동시 등록 포함) → CI · API_SPEC
 
 ---
 
@@ -42,6 +42,7 @@
 - 세션(하루 작업 단위) 종료 시 또는 마일스톤 완료 시 기록
 - 최신 항목이 위로 오도록 역순 정렬
 - 형식: 날짜 / 관련 마일스톤 / 한 일 / 결정 기록 / 막혔던 점 / 다음에 할 일 (결정 기록은 판단이 있었던 세션만)
+- 기기 표기는 `README` 개발 환경 표를 따른다 (데스크톱 A · 데스크톱 B · 노트북)
 
 **막혔던 점은 해결됐어도 반드시 남긴다.** 같은 실수를 반복하지 않기 위한
 기록이기도 하고, 나중에 이 프로젝트를 설명할 때 "어떤 문제를 어떻게
@@ -77,12 +78,174 @@
 
 <!-- 새 기록은 이 아래에 추가한다 (최신이 위로) -->
 
-## 2026-09-21(오전~점심/학교 PC) — M1 진행 중: 인증 파트 완료 (재발급 재검증 · 로그아웃 · get_current_user), 게임 CRUD · 테스트 남음
+## 2026-09-22(오전/노트북 → 데스크톱 B) — M1 진행 중: 게임 조회 · 생성 서비스 구현, wip 커밋을 force push로 대체
 
 **관련 마일스톤**: M1 (백엔드 기초) → 진행 중
 
 **한 일**
-- 학교 PC에 저장소 클론 후 환경 구성 — venv · `server/.env` · 루트 `.env` 작성, Docker Desktop 실행, `alembic upgrade head`(`0a6ba7b72cfb` 적용)
+- ERD v1.4 — 판별 2단계의 조회 범위를 수동 등록 게임(`steam_appid IS NULL`)으로 명시. **코드보다 먼저** 고침
+- `app/services/__init__.py`, `app/services/game.py` 신설
+  - `_find_game` — 1단계(`steam_appid`) · 2단계(수동 게임 중 `title_norm`) 조회
+  - `find_or_create_game` — 없으면 SAVEPOINT(`begin_nested`) 안에서 INSERT + `flush`, `IntegrityError`면 재조회(4단계), 재조회도 실패하면 원래 에러를 다시 던짐
+  - `title_norm`은 호출한 쪽을 믿지 않고 서비스에서 직접 계산. commit은 하지 않음
+- 노트북에서 절반 작성 → `wip` 커밋(`8d44d7c`) push → 데스크톱 B에서 pull → `git reset HEAD~1` → 나머지 작성
+- asyncio REPL 검증
+  - `"Hollow Knight"` / `"  hollow  KNIGHT "` 두 번 호출 → `1 1 Hollow Knight` (같은 행 재사용, 먼저 적은 제목 유지)
+  - 세션 2개로 `"Celeste"` / `"celeste!"` 동시 호출(`asyncio.gather`) → `[2, 2]`
+  - HeidiSQL에서 2행 확인 후 삭제
+- wip 커밋을 docs(`ae061e7`) · feat(`0d4ed14`) 두 커밋으로 대체해 `git push --force-with-lease`
+
+**결정 기록**
+- **판별 2단계는 수동 등록 게임 중에서만 찾는다**
+  모든 게임 중에서 찾으면 Steam 게임끼리 정규화 제목이 같을 때 여러 행이 나와 어느 것을 쓸지 정할 수 없다. 범위를 부분 UNIQUE와 같게 두면 결과가 많아야 한 행이라 "찾기"와 "막기"가 같은 말을 한다. 수동 게임과 Steam 게임을 잇는 것은 M8 병합 문제로 미룸. v1.0에는 Steam 게임이 없어 동작 차이는 없음
+- **충돌 시 전체 rollback이 아니라 SAVEPOINT**
+  회원가입은 트랜잭션 안에 사용자 INSERT 하나뿐이라 전체 rollback이 괜찮았다. `find_or_create_game`은 게임 등록 API처럼 다른 작업 중간에 불리므로, 전체를 되돌리면 호출한 쪽의 앞선 작업까지 사라진다. SAVEPOINT는 그 지점까지만 되돌린다
+- **서비스는 commit하지 않는다**
+  게임과 보유 기록(entry)은 함께 저장되거나 함께 취소돼야 한다. 계산(commit)은 호출한 쪽이 한 번에 한다
+- **wip 커밋을 force push로 대체** (09-21 오전의 "wip 유지" 결정과 반대)
+  이번 wip에는 ERD와 서비스 코드가 섞여 있어, 그 위에 이어서 커밋하면 "문서와 코드 커밋 분리" 규칙을 지킬 수 없었다. wip를 가진 기기가 노트북 하나로 특정되고 처리 방법(`fetch` + `reset --hard`)도 정해져 있어 이력 재작성을 택함. wip 위에 이어서 커밋하는 방법도 검토했다. 09-21 오전 wip는 내용이 한 성격이고 이미 검증까지 끝나 유지할 이유가 있었다는 점이 이번과 다르다
+
+**막혔던 점 / 트러블슈팅**
+- 증상: asyncio REPL에 `async with ... as db:` 블록을 입력하자 `expected an indented block`, 이어지는 줄은 전부 `unexpected indent`
+  - 원인: `:` 뒤에 `...` 연속 프롬프트가 뜨지 않고 빈 블록으로 처리됨. 여러 줄을 붙여넣을 때 줄바꿈이 끊겨 들어간 것으로 추정
+  - 해결: 블록을 쓰지 않는 형태로 변경 — 세션을 `db = AsyncSessionLocal()`로 열고 `await db.close()`로 직접 닫음, 테스트용 함수는 `;`로 이은 한 줄 def
+  - 교훈: REPL은 한 줄 문장으로 검증한다. 한 줄 def는 REPL 전용이고 코드 파일에는 쓰지 않는다
+- 증상: 데스크톱 B에서 커밋 직전 상태바가 `1↓`, `services/` 파일이 `↓A, U`로 표시
+  - 원인: `git reset HEAD~1`은 **이 PC의 책갈피만** 옮긴다. 이미 push된 wip는 원격에 그대로 남아, 새로 커밋하면 이력이 갈라지고 push가 거절되는 상태였음
+  - 해결: `git show --stat origin/m1-backend`로 wip 내용 확인 → 로컬에서 두 커밋 작성 → `git push --force-with-lease`
+  - 교훈: push한 커밋은 로컬 reset으로 사라지지 않는다. 커밋 전에 상태바 `↓ ↑`와 `git status`의 "behind / diverged"를 먼저 본다. 09-20 데스크톱 A의 "`reset --soft`가 staged 상태를 되돌려 놓음"에 이은 두 번째 reset 사고
+
+**배운 것**
+- `git reset` 세 단계 — `--soft`는 책갈피만, `--mixed`(기본값)는 책갈피 + staged 해제, `--hard`는 파일 내용까지 되돌린다. `--hard`만 되돌릴 수 없다
+- `--force-with-lease`는 "원격이 내가 마지막으로 fetch한 상태일 때만" 덮어쓴다. push 직전에 fetch하면 기준이 갱신돼 보호가 사라진다
+- `SELECT` 조건에서 NULL은 `== None`이 아니라 `.is_(None)`(SQL `IS NULL`)로 비교한다. SQL에서 `= NULL`은 참이 되지 않는다 (09-19의 "NULL과의 비교는 UNKNOWN"과 같은 원리)
+
+**다음에 할 일**
+- 노트북 — `git status`가 깨끗한지 확인 → `git fetch origin` → `git reset --hard origin/m1-backend` (**pull 금지**. 갈라진 이력이 merge되며 wip가 되살아남)
+- 데스크톱 A — `git pull` → `alembic upgrade head` (`1e1d15e51ba2`까지)
+- 게임 등록 API — `GameCreate` schema(`normalize_title`로 422) → router → `find_or_create_game` + entry 생성 → commit. `user_id` 필수 시그니처
+- 테스트 — 동시 등록 시 4단계(재조회)를 반드시 타는 pytest
+- `06_api_spec.md` — 422 응답의 `Value error, ` 접두사 처리 포함
+
+---
+
+## 2026-09-21(저녁~밤/노트북) — M1 진행 중: 수동 등록 게임 제목에 부분 UNIQUE 추가
+
+**관련 마일스톤**: M1 (백엔드 기초) → 진행 중
+
+**한 일**
+- 노트북 동기화 — `git pull` → `docker compose up -d` → `alembic upgrade head` (`43b0fb42aaa8`). 장르 id는 1~8로 들어감 (데스크톱 A는 9~16)
+- ERD v1.3 — `games`에 부분 UNIQUE `(title_norm) WHERE steam_appid IS NULL`, 판별 4단계(충돌 시 재조회), 4장 인덱스 표. **코드보다 먼저** 고침
+- `app/models/game.py` — `Game.__table_args__`에 `Index("uq_games_title_norm_manual", ..., unique=True, postgresql_where=text(...))`
+- 마이그레이션 `1e1d15e51ba2` — `--autogenerate` → `upgrade 43b0fb42aaa8:head --sql`로 `CREATE UNIQUE INDEX ... WHERE steam_appid IS NULL` 확인 → 적용
+- HeidiSQL 검증 4건
+  - 수동 게임 등록 → 통과
+  - 같은 `title_norm`의 수동 게임 → `duplicate key value violates unique constraint "uq_games_title_norm_manual"`
+  - 같은 `title_norm`의 Steam 게임(`367520`) → 통과 (부분 UNIQUE 밖)
+  - 조회 결과 2행 (id 1 · 3) → 삭제
+
+**결정 기록**
+- **`title_norm`에 부분 UNIQUE를 건다** (결정 ④)
+  찾아보고(SELECT) 없으면 만드는(INSERT) 사이에 같은 제목 요청이 끼어들면 두 행이 생긴다. 회원가입의 `email` UNIQUE와 같은 틈이다. `games`는 모든 사용자가 공유하는 테이블이라 한 번 꼬이면 정리가 어렵고, 원칙상 동시 실행 상황을 pytest로 검증해야 하므로 판정 기준(DB 제약)이 필요했다. Steam 게임을 빼는 이유와 복합 UNIQUE로 안 되는 이유는 ERD 2.4절
+- **이 제약은 새로 합치는 게임을 만들지 않는다**
+  UNIQUE가 없어도 판별 2단계가 같은 `title_norm`을 재사용한다. 로직이 이미 하는 일을 동시 요청에서도 DB가 지키게 할 뿐이라, 다른 게임을 합치는 실수(B)는 늘지 않는다
+- **기존 일반 인덱스(`index=True`)는 유지**
+  부분 인덱스는 수동 게임 행만 담는다. Steam 게임까지 포함한 제목 조회에는 일반 인덱스가 필요하다
+
+**막혔던 점 / 트러블슈팅**
+- 증상: `alembic revision --autogenerate`가 `ArgumentError: __table_args__ value must be a tuple, dict, or None`
+  - 원인: `Index(...)` 뒤 쉼표 누락. `(A)`는 괄호 친 A일 뿐이고 `(A,)`여야 튜플이다
+  - 해결: 쉼표 추가
+  - 교훈: 09-20에 두 번 겪은 쉼표 누락과 같은 계열. 트레이스백은 맨 아래 한 줄(무엇이) + **내 파일이 마지막으로 나온 줄**(어디서)만 읽으면 된다
+- 증상: (실행 전 검수에서 발견) `text("steam_appid_ IS NULL")` 컬럼명 오타
+  - 원인: `text()` 안의 문자열은 SQLAlchemy도 Alembic도 검사하지 않는다. autogenerate는 성공하고 `upgrade` 순간에야 DB가 `column does not exist`로 거부한다
+  - 해결: 오타 수정 후 `--sql` 출력에서 최종 SQL을 눈으로 확인
+  - 교훈: 문자열로 넘기는 SQL 조각은 **`--sql` 미리 보기가 유일한 검사 단계**다
+- 증상: 노트북에서 첫 `docker compose up -d`가 `dockerDesktopLinuxEngine` 파이프 에러
+  - 원인: Docker Desktop이 아직 완전히 뜨기 전에 명령을 실행
+  - 해결: 잠시 후 재시도로 정상
+  - 교훈: 09-21 오전 데스크톱 B와 같은 에러. 이번엔 메시지를 바로 알아봄
+
+**배운 것**
+- PostgreSQL은 UNIQUE **제약**에 WHERE를 붙일 수 없어 부분 UNIQUE는 **인덱스**로 만든다. 그래도 위반 메시지는 "unique constraint"로 나오고, 파이썬에서는 같은 `IntegrityError`로 올라온다. `DETAIL`에 부딪힌 값까지 찍힌다
+- autogenerate 결과의 `op.f()`는 "naming convention이 지은 최종 이름이니 다시 규칙을 적용하지 마라"는 표시다. 이름을 직접 지으면 붙지 않는다 (장르 UNIQUE에는 붙고 이번 인덱스에는 안 붙은 이유)
+- 실패한 INSERT도 SERIAL 번호를 쓴다. 검증에서 id가 1 · 3으로 나와, 거부된 두 번째 INSERT가 2를 가져간 것을 확인
+
+**다음에 할 일**
+- `services`의 `find_or_create_game` — ERD 판별 4단계를 코드로. 4단계(충돌 → 재조회)에서 rollback 범위를 정해야 함
+
+---
+
+## 2026-09-21(오후~저녁/데스크톱 A) — M1 진행 중: 장르 결정 · 시드, 정규화 규칙 통합
+
+**관련 마일스톤**: M1 (백엔드 기초) → 진행 중
+
+**한 일**
+- 장르 데이터 출처 결정 (`REQUIREMENTS` 10장 미결정 사항 해소) — `REQUIREMENTS` v1.7, ERD v1.1, UI_DESIGN v1.1(목업 장르 `RPG · 오픈월드` → `RPG`, `로그라이크` → `액션`)
+- `README` 개발 환경을 기기 3대 기준으로 갱신 (데스크톱 A · B, 노트북)
+- `alembic.ini`에 `file_template` 추가 (`날짜_시각_설명`), 기존 마이그레이션 파일을 `git mv`로 이름 변경
+- 마이그레이션 `bfea2aef6bcb` — `genres.steam_genre_id` `varchar(10)` UNIQUE NOT NULL
+- 마이그레이션 `43b0fb42aaa8` — 장르 8개 시드 (`op.bulk_insert`, downgrade는 `steam_genre_id`로 삭제). `downgrade -1` → `upgrade head` 왕복 확인
+- 제목 정규화 규칙 구체화 — ERD v1.2(4단계 · 예시 · 한계), ARCHITECTURE v1.4(규칙은 `core`, 게임 입구는 하나), `REQUIREMENTS` v1.8(F-30 비슷한 게임 후보 · F-31 목록 검색 등록)
+- `app/core/normalize.py` 신설 — `normalize_title`(NFKC → casefold → 글자 · 숫자만 → 빈 값 · 길이 검사), `normalize_email`(strip · lower)
+- `schemas/user.py`가 `core`의 `normalize_email`을 사용, `LoginRequest`에 같은 validator 추가, `routers/auth.py`의 중복 정규화 줄 제거 → 09-20의 "이메일 정규화 두 곳 중복" 해소
+- 검증
+  - REPL — ERD 예시 3건 일치, `!!!` 거부, `"ﷺ" * 13`(195자) 통과 · `"ﷺ" * 14`(210자) 거부
+  - Swagger — 대문자 + 앞뒤 공백 이메일 로그인 200, `abc` 로그인 401(422 아님)
+
+**결정 기록**
+- **장르는 Steam 공식 장르 8개 고정 목록**
+  사용자가 장르를 직접 입력하면 `RPG` / `rpg` / `롤플레잉`이 따로 쌓여 장르별 통계(F-11)가 조용히 틀린다. Steam 장르를 따르면 M8 동기화 때 ID로 자동 연결할 수 있다. `인디` · `무료 플레이` · `대규모 멀티플레이어`는 제작 규모 · 가격 · 플레이 방식이라 다른 장르와 전부 겹쳐 제외. 오픈월드 · AAA를 따로 넣어 9~10개로 가는 안도 검토했으나, Steam에서 이들은 장르가 아니라 태그이고 칸이 늘면 장르당 게임 수가 줄어 완주율이 게임 하나에 크게 흔들려 8개로 확정. 목록 상세는 ERD 2.5절
+- **`steam_genre_id`는 NOT NULL**
+  "장르는 Steam 장르에서만 온다"는 규칙을 코드가 아니라 DB가 강제한다
+- **구조 변경과 장르 데이터를 마이그레이션 2개로 분리**
+  컬럼 추가(구조)와 목록 입력(데이터)은 되돌릴 이유가 다르다. 시드 마이그레이션은 모델 클래스 대신 `sa.table`로 필요한 컬럼만 적어, 나중에 모델이 바뀌어도 옛 마이그레이션이 깨지지 않게 함
+- **마이그레이션 파일명만 바꾸고 revision ID는 유지**
+  revision ID는 각 DB의 `alembic_version`에 저장돼 있어, 바꾸면 PC 3대의 DB를 전부 손으로 고쳐야 한다. 파일명은 Alembic이 읽지 않으므로 자유롭게 바꿀 수 있다
+- **뜻이 같은 표기(`7` / `VII`)는 정규화 규칙으로 잡지 않는다**
+  로마 숫자 변환 규칙을 넣으면 `Mega Man X`가 `Mega Man 10`과 합쳐진다. 중복 행(실수 A)은 나중에 합칠 수 있지만, 다른 게임을 합친 것(실수 B)은 공유 테이블 전체를 오염시킨다. 규칙은 A 쪽으로 기울이고, 뜻 수준은 별칭 · F-30으로 보완
+- **서버 에러 메시지는 평서체, 이모티콘 없음**
+  다른 API 메시지와 말투를 맞춘다. 친근한 문구가 필요하면 화면(M3)에서 정한다
+
+**막혔던 점 / 트러블슈팅**
+- 증상: `git mv`가 `No such file or directory`, 메시지에는 **원본** 경로가 찍힘
+  - 원인: 실제 문제는 **목적지** 경로 오타 (`alemblc`, `2026919`)
+  - 해결: 목적지를 `alembic/versions/20260919_1708_create_v1_0_tables.py`로 수정
+  - 교훈: 에러에 찍힌 경로가 곧 틀린 경로라는 법은 없다. 인자가 둘인 명령은 둘 다 확인한다
+- 증상: HeidiSQL에서 장르 조회 결과가 빈 화면인데 에러도 없음
+  - 원인: `SELECT FROM genres`로 `*`가 빠짐. PostgreSQL은 컬럼이 0개인 SELECT도 문법상 허용해 "0열짜리 행 8개"를 돌려줌
+  - 해결: `SELECT * FROM genres ORDER BY id`
+  - 교훈: 09-19의 `path` 오타와 같은 유형 — 빠뜨린 것이 에러가 아니라 "없는 것"으로 조용히 처리된다
+- 증상: HeidiSQL 테이블 구조 탭의 NULL 체크 표시가 기대와 달라 NOT NULL이 안 걸린 것처럼 보임
+  - 해결: CREATE 코드 탭에서 `NOT NULL`을 직접 확인
+  - 교훈: 도구의 요약 화면보다 DB가 실제로 실행한 DDL이 기준이다
+- 증상: 길이 제한을 초과 하는 경우를 만들어 길이 초과 검증 ─ 정상 통과함 (`12 * "ﷺ"`)
+  - 원인: 코드가 아니라 **검증 예시**가 틀림. 한 글자가 걸러진 뒤 15자라 12개면 180자로 200 이내
+  - 해결: 경계를 계산해 13(195자, 통과) · 14(210자, 거부)로 재검증
+  - 교훈: 경계값 테스트는 경계 양쪽을 계산해서 고른다
+
+**배운 것**
+- SERIAL은 번호를 재사용하지 않는다. `downgrade` → `upgrade`를 한 데스크톱 A는 장르 id가 9~16, 노트북은 1~8이다. **코드에서 장르를 id 숫자로 가리키면 안 되고** `steam_genre_id`나 `name`으로 찾아야 한다
+- NFKC는 글자 수를 늘릴 수 있다 (`ﷺ` 1자 → 18자). 길이 검사를 원본이 아니라 정규화 결과에 해야 하는 이유
+- validator 안의 `ValueError`는 Pydantic이 422로 바꾸면서 메시지 앞에 `Value error, `를 붙인다. 쓴 글자와 나가는 글자가 다르다
+- `normalize.py`는 FastAPI를 모른다. `HTTPException`이 아니라 `ValueError`를 던져야 `core`가 HTTP에 의존하지 않는다
+
+**발견 사항 (지금 조치하지 않음)**
+- 09-19 결정에서 `game_genres`를 Core `Table`로 둔 근거로 "M8 작업 목록에 장르 동기화가 없다"고 적었는데, `steam_genre_id`는 바로 M8 장르 자동 연결을 위한 것이다. 연결 자체에 속성이 생기는 건 아니라 `Table` 유지에는 문제가 없지만, MILESTONES M8에 "Steam 장르 자동 연결 (`steam_genre_id` 기준)" 항목 추가가 필요하다
+
+**다음에 할 일**
+- 결정 ④ — `title_norm` 부분 UNIQUE 여부 (ERD 수정 + 마이그레이션 동반)
+- `services`의 게임 중복 판별
+- 작업 기기를 데스크톱 A → 노트북으로 이동 (`git pull` → `alembic upgrade head`)
+
+---
+
+## 2026-09-21(오전~점심/데스크톱 B) — M1 진행 중: 인증 파트 완료 (재발급 재검증 · 로그아웃 · get_current_user), 게임 CRUD · 테스트 남음
+
+**관련 마일스톤**: M1 (백엔드 기초) → 진행 중
+
+**한 일**
+- 데스크톱 B에 저장소 클론 후 환경 구성 — venv · `server/.env` · 루트 `.env` 작성, Docker Desktop 실행, `alembic upgrade head`(`0a6ba7b72cfb` 적용)
 - HeidiSQL 12.14 → 12.21 재설치 (PostgreSQL 접속 라이브러리 로드 실패)
 - 토큰 재발급 실패 경로 재검증 (09-20 밤 `wip` 커밋 `605b62a`의 미완료분)
   - 로그인 2회로 유효 토큰 2개 생성 → refresh 1회 → 폐기된 토큰을 쿠키에 되돌려 심고 refresh
@@ -105,7 +268,7 @@
 - **로그아웃에 access 토큰을 요구하지 않음**
   `get_current_user`를 붙이면 access 토큰이 만료된 사용자는 로그아웃을 못 한다. 필요한 정보(refresh 토큰)는 쿠키에 다 있다
 - **로그아웃은 현재 기기의 토큰만 폐기**
-  로그인은 기존 토큰을 폐기하지 않아 기기마다 토큰이 공존한다. 들고 온 토큰만 폐기하는 것이 일반적인 동작이며, "모든 기기에서 로그아웃"은 별도 기능이라 구현하지 않고 01 문서 4.4절(F-29)로 이관
+  로그인은 기존 토큰을 폐기하지 않아 기기마다 토큰이 공존한다. 들고 온 토큰만 폐기하는 것이 일반적인 동작이며, "모든 기기에서 로그아웃"은 별도 기능이라 구현하지 않고 `REQUIREMENTS` 4.4절(F-29)로 이관
 - **`OAuth2PasswordBearer`가 아닌 `HTTPBearer`**
   FastAPI 공식 튜토리얼은 `OAuth2PasswordBearer`를 쓰지만, 이는 로그인이 form-data(`username` + `password`)로 들어온다고 가정한다. 이 프로젝트의 로그인은 JSON 본문이라 구조가 맞지 않는다. argon2 결정 때의 "튜토리얼이 passlib 기준"과 같은 상황 — 문서가 가정하는 구조가 내 구조와 같은지부터 확인한다
 - **`get_current_user`는 `raise`로 실패를 처리**
@@ -132,7 +295,7 @@
   - 원인: 오류 126은 "모듈을 찾을 수 없음"인데, 드롭다운에 파일이 보였으므로 DLL 자체가 아니라 **그것이 의존하는 다른 부품**이 없던 것으로 판단
   - 해결: HeidiSQL 삭제 후 12.21로 재설치
   - 교훈: 클라이언트 도구가 안 붙어도 DB가 죽은 건 아니다. `alembic upgrade head` 성공이 이미 "컨테이너 · 접속 정보 · 포트 정상"의 증거였고, HeidiSQL 없이도 `docker compose exec db psql`로 확인할 수 있다
-  - 후속 확인: 집 PC · 노트북은 12.21 이전 버전으로도 정상 접속된다. 원인은 버전이 아니라 학교 PC의 설치 상태였던 것으로 추정하며, 재설치로 해결된 것이 이를 뒷받침한다
+  - 후속 확인: 데스크톱 A · 노트북은 12.21 이전 버전으로도 정상 접속된다. 원인은 버전이 아니라 데스크톱 B의 설치 상태였던 것으로 추정하며, 재설치로 해결된 것이 이를 뒷받침한다
 - 증상: 로그인 200인데 DevTools 애플리케이션 탭 쿠키 목록이 비어 있음
   - 원인: 처음엔 쿠키 `Path=/api/auth`와 현재 페이지(`/docs`)가 달라 목록에서 빠진 것으로 판단했으나, **같은 `/docs` 페이지에서 다른 탭을 눌렀다 돌아오자 쿠키가 나타나** 이 가설은 반증됨. 실제로는 애플리케이션 탭 목록이 자동 갱신되지 않은 것
   - 해결: 네트워크 탭에서 응답의 `Set-Cookie`와 **다음 요청의 `Cookie` 헤더**로 저장 · 재전송을 확인. 요청에 `Cookie`가 실려 있다는 것 자체가 저장됐다는 증거
@@ -143,10 +306,10 @@
 - 09-20 밤의 "Swagger로는 쿠키를 검증할 수 없다"를 정정 — 정확히는 **`Set-Cookie`만** 안 보인다. 같은 Swagger 화면에 `www-authenticate`는 표시됐다. `Set-Cookie`는 브라우저가 JS에게 숨기도록 정해진 금지 헤더이고, 나머지 헤더는 그런 제한이 없다
 - 결과로 원인을 판정할 수 있다. 재사용 감지 응답의 `Set-Cookie`는 못 봤지만, 다음 요청 메시지가 `인증 정보가 없습니다`로 바뀐 것은 코드상 쿠키가 안 실렸을 때만 가능하다. 실패 메시지를 두 종류로 나눠둔 결정이 검증 수단이 됐다
 - 로그인은 새 토큰을 추가할 뿐 기존 토큰을 폐기하지 않는다. 테스트 중 로그인을 두 번 하자 유효 토큰이 2개 생겼고, 재사용 감지가 둘 다 폐기하는 것으로 "해당 사용자의 살아 있는 토큰 전부"가 실제로 작동함을 확인
-- access 토큰 노출과 서명 키 노출은 무게가 다르다. 키가 새면 누구나 토큰을 **만들 수 있고**(영구), access 토큰이 새면 그 토큰 **하나를 15분간** 쓸 수 있다. access 토큰 수명을 짧게 둔 이유(02 문서 4.1절)가 이것
+- access 토큰 노출과 서명 키 노출은 무게가 다르다. 키가 새면 누구나 토큰을 **만들 수 있고**(영구), access 토큰이 새면 그 토큰 **하나를 15분간** 쓸 수 있다. access 토큰 수명을 짧게 둔 이유(ARCHITECTURE 4.1절)가 이것
 - 주석도 코드와 함께 늙는다. 09-20 밤 커밋의 `(추후 logout에서 사용할 예정)`은 그때는 사실이었고, logout을 만든 순간 거짓말이 됐다. 문서의 "한 곳만 고치면 나머지가 거짓말로 남는다"가 주석에도 적용된다
 
-**발견 사항 (지금 조치하지 않음)** — M5 README 실행 방법 · 클린룸 검증 재료
+**발견 사항 (지금 조치하지 않음)** — M5 `README` 실행 방법 · 클린룸 검증 재료
 - Docker Desktop은 설치가 아니라 **실행 중**이어야 한다
 - HeidiSQL이 libpq 로드 오류(126)를 내면 재설치한다. 특정 버전이 필요한 것은 아니다 (이전 버전도 다른 PC에서 정상)
 - `.env`는 `.env.example`을 복사하되 **값만** 채운다
@@ -158,7 +321,7 @@
 - 제목 정규화 함수(`title_norm`) + 이메일 정규화 통합 — 같은 규칙이 `schemas/user.py`와 `routers/auth.py` 두 곳에 있는 문제
 - 게임 중복 판별(`services`) → 보유 기록 CRUD (`user_id` 필수 시그니처)
 - `06_api_spec.md` — 인증 흐름이 끝났으니 에러 응답 규칙(401 메시지 3종 · 409 · 422)을 정리하기 좋은 시점
-- 다른 기기로 옮길 땐 `git pull`부터. 이력을 재작성하지 않았으므로 노트북 · 집 PC 모두 평소대로 pull하면 됨
+- 다른 기기로 옮길 땐 `git pull`부터. 이력을 재작성하지 않았으므로 노트북 · 데스크톱 A 모두 평소대로 pull하면 됨
 
 ---
 
@@ -167,7 +330,7 @@
 **관련 마일스톤**: M1 (백엔드 기초) → 진행 중
 
 **한 일**
-- 02 문서 v1.3 개정 — 4.1절에 재사용 감지 단락 추가. 03 문서 2.2절이 `revoked_at`을 남기는 목적으로 이미 명시하고 있었으나 인증 흐름엔 없었음. **코드보다 먼저** 고침
+- ARCHITECTURE v1.3 개정 — 4.1절에 재사용 감지 단락 추가. ERD 2.2절이 `revoked_at`을 남기는 목적으로 이미 명시하고 있었으나 인증 흐름엔 없었음. **코드보다 먼저** 고침
 - `app/routers/auth.py`
   - `REFRESH_COOKIE_PATH` 상수 추가
   - `set_refresh_cookie` / `clear_refresh_cookie` 헬퍼 분리, `login`도 헬퍼를 쓰도록 변경
@@ -204,16 +367,16 @@
 - 그 로그에 토큰 · 비밀번호가 한 글자도 안 남은 것은 우연이 아니다. 로그인 정보를 쿼리스트링이 아닌 요청 본문으로, refresh 토큰을 쿠키(헤더)로 받은 구조 덕이다. **URL에 넣은 값은 로그에 남는다** — 로그는 백업 · 공유되므로 M0의 `print(settings.database_url)` 건과 같은 계열의 위험이다
 
 **다음에 할 일**
-- 학교 PC에서 저장소 클론부터. `server/.env`는 Git 추적 대상이 아니므로 직접 생성해야 한다 (`.env.example` 참고, `JWT_SECRET_KEY`는 `secrets.token_urlsafe(32)`로 새로 발급). 루트 `.env`도 마찬가지
+- 데스크톱 B에서 저장소 클론부터. `server/.env`는 Git 추적 대상이 아니므로 직접 생성해야 한다 (`.env.example` 참고, `JWT_SECRET_KEY`는 `secrets.token_urlsafe(32)`로 새로 발급). 루트 `.env`도 마찬가지
 - venv 생성 → `pip install -r requirements.txt` → `docker compose up -d` → `alembic upgrade head` → 가입부터 다시
-- 클론 후 막힌 지점을 메모 — M5 README 실행 방법 작성과 클린룸 검증의 실제 재료가 된다
+- 클론 후 막힌 지점을 메모 — M5 `README` 실행 방법 작성과 클린룸 검증의 실제 재료가 된다
 - 재발급 실패 경로 재검증 — 재사용 감지 401 이후 한 번 더 요청했을 때 메시지가 `인증 정보가 없습니다`로 **바뀌는지**가 합격 신호
 - 로그아웃 (refresh 토큰 폐기 + 쿠키 삭제) → `get_current_user` 의존성 → `GET /api/auth/me`
-- 05 문서 rotation 체크박스는 재검증 통과 후에 체크
+- MILESTONES rotation 체크박스는 재검증 통과 후에 체크
 
 ---
 
-## 2026-09-20(오후~저녁/집 PC) — M1 진행 중: JWT 설정 및 로그인 API 구현
+## 2026-09-20(오후~저녁/데스크톱 A) — M1 진행 중: JWT 설정 및 로그인 API 구현
 
 **관련 마일스톤**: M1 (백엔드 기초) → 진행 중
 
@@ -223,7 +386,7 @@
 - `app/core/security.py`
   - `create_access_token` / `decode_access_token` — PyJWT, HS256, `sub`에 사용자 id만
   - `create_refresh_token` — `secrets.token_urlsafe(32)`
-  - `hash_refresh_token` — SHA-256 (03 문서 2.2절)
+  - `hash_refresh_token` — SHA-256 (ERD 2.2절)
 - `app/schemas/user.py` — `LoginRequest` / `TokenResponse` 추가
 - `app/routers/auth.py` — `POST /api/auth/login`
   - access 토큰은 응답 본문, refresh 토큰은 원문을 쿠키로 · 해시만 DB에
@@ -240,11 +403,11 @@
 
 **결정 기록**
 - **refresh 토큰은 JWT가 아닌 무작위 문자열**
-  JWT의 장점은 "DB를 보지 않고 서명만으로 검증"인데, refresh 토큰은 로그아웃 폐기 · rotation · 탈취 감지(02 문서 4.1절)를 위해 어차피 매번 DB를 조회해야 한다. 그 순간 JWT의 이점이 사라지고 만료 로직 · 서명 키 관리만 늘어난다. 게다가 JWT는 payload를 누구나 읽을 수 있지만(jwt.io에서 확인), 무작위 문자열은 DB 없이는 아무 의미가 없어 더 안전하다
+  JWT의 장점은 "DB를 보지 않고 서명만으로 검증"인데, refresh 토큰은 로그아웃 폐기 · rotation · 탈취 감지(ARCHITECTURE 4.1절)를 위해 어차피 매번 DB를 조회해야 한다. 그 순간 JWT의 이점이 사라지고 만료 로직 · 서명 키 관리만 늘어난다. 게다가 JWT는 payload를 누구나 읽을 수 있지만(jwt.io에서 확인), 무작위 문자열은 DB 없이는 아무 의미가 없어 더 안전하다
 - **refresh 토큰 해시는 argon2가 아닌 SHA-256**
   argon2가 느린 것은 사람이 만든 약한 비밀번호를 대입하는 공격을 막기 위해서다. 이 토큰은 서버가 만든 32바이트 무작위값이라 대입이라는 개념이 성립하지 않으므로 느릴 이유가 없다. 또 SHA-256은 salt가 없어 같은 입력이면 항상 같은 해시가 나오고, 덕분에 들어온 토큰을 해싱해 `WHERE token_hash = ...`로 바로 조회할 수 있다. argon2였다면 salt 때문에 전체 행을 훑어야 한다
 - **로그인 응답 시간까지 통일** (09-20 오전 기록의 "로그인 쪽은 막는다" 이행)
-  04 문서 3.1절의 메시지 통일만으로는 부족하다. argon2 검증이 수십 ms라 "계정 있음"과 "없음"의 응답 시간이 갈려, 메시지를 읽지 않고 시간만 재도 계정 존재 여부를 알 수 있다. 계정이 없을 때도 더미 해시로 검증을 한 번 돌려 시간을 맞췄고, 실측 결과 42ms / 42ms로 동일했다
+  UI_DESIGN 3.1절의 메시지 통일만으로는 부족하다. argon2 검증이 수십 ms라 "계정 있음"과 "없음"의 응답 시간이 갈려, 메시지를 읽지 않고 시간만 재도 계정 존재 여부를 알 수 있다. 계정이 없을 때도 더미 해시로 검증을 한 번 돌려 시간을 맞췄고, 실측 결과 42ms / 42ms로 동일했다
 
 **막혔던 점 / 트러블슈팅**
 - 증상: `decode_access_token`에서 `TypeError: 'dict' object is not callable`. `payload("sub")`를 `payload.get("sub")`로 고쳤는데 **같은 에러가 그대로** 재발
@@ -264,12 +427,12 @@
 - JWT는 암호화가 아니라 서명이다. jwt.io에 토큰을 넣자 서버 키 없이 payload가 그대로 읽혔다. 내용을 숨기는 것이 아니라 "변조되지 않았음"만 보장하므로 payload에는 사용자 id 외에 아무것도 넣지 않는다. 같은 화면에서 `Valid JWT`(모양이 맞음)와 `Invalid Signature`(도장이 안 맞음)가 함께 표시되는데, 서로 다른 것을 말하는 두 판정이다
 - `jwt.decode`의 `algorithms`가 리스트인 이유 — 허용 목록을 명시하지 않으면 토큰 헤더에 `"alg": "none"`을 적어 보내 검증을 건너뛰는 공격이 가능하다. 토큰이 자기 검증 방식을 스스로 정하게 두면 안 된다
 - M0에서 "지금 조치하지 않음"으로 남겨둔 발견 사항이 실제로 값을 했다. v0 Django의 `csrftoken`이 1년 뒤인 지금도 브라우저에 남아 있어, 쿠키 이름에 `pl_` 접두사를 붙이지 않았다면 다른 프로젝트와 덮어쓸 수 있었다
-- `users.id`가 집 PC에서는 5부터 시작했다(노트북은 1). 9/19 밤 제약 검증 때 이 DB에서 INSERT가 여러 번 차단되며 SERIAL 번호를 소모한 탓이다. 같은 코드라도 DB의 이력에 따라 id가 달라진다
+- `users.id`가 데스크톱 A에서는 5부터 시작했다(노트북은 1). 9/19 밤 제약 검증 때 이 DB에서 INSERT가 여러 번 차단되며 SERIAL 번호를 소모한 탓이다. 같은 코드라도 DB의 이력에 따라 id가 달라진다
 
 **다음에 할 일**
 - 토큰 재발급(rotation) — 기존 토큰 `revoked_at` 기록 후 새 토큰 발급, 폐기된 토큰 재사용 시 401
 - 로그아웃 (refresh 토큰 폐기 + 쿠키 삭제) → `get_current_user` 의존성
-- 이메일 정규화가 `schemas/user.py`와 `routers/auth.py` 두 곳에 중복돼 있음 — 게임 CRUD의 `normalize_title` 작업과 함께 한 곳으로 통합 (05 문서에 항목 추가)
+- 이메일 정규화가 `schemas/user.py`와 `routers/auth.py` 두 곳에 중복돼 있음 — 게임 CRUD의 `normalize_title` 작업과 함께 한 곳으로 통합 (MILESTONES에 항목 추가)
 
 ---
 
@@ -278,7 +441,7 @@
 **관련 마일스톤**: M1 (백엔드 기초) → 진행 중
 
 **한 일**
-- 비밀번호 해싱 라이브러리 결정 (01 문서 10장 미결정 사항 해소)
+- 비밀번호 해싱 라이브러리 결정 (`REQUIREMENTS` 10장 미결정 사항 해소)
 - `app/core/security.py` — argon2-cffi 기반 `hash_password` / `verify_password`
 - `app/core/db.py` — `async_sessionmaker` 추가 (`expire_on_commit=False`)
 - `app/deps.py` — 요청별 DB 세션 의존성 `get_db` (`yield`로 반납 보장)
@@ -300,7 +463,7 @@
 - **이메일 중복은 400이 아닌 409**
   요청 자체는 형식이 맞으므로 400(잘못된 요청)이 아니라 현재 상태와의 충돌인 409가 의미에 맞다. v0에서 400을 쓴 것은 DRF 기본 동작을 따랐던 것
 - **가입 시 계정 존재 여부 노출(enumeration)을 열어둠**
-  "이미 사용 중인 이메일"을 알려주면 제3자가 특정 이메일의 가입 여부를 확인할 수 있다. 막으려면 가입을 항상 성공으로 응답하고 메일로 안내해야 하는데, 이는 SMTP 구성 · 인증 토큰 테이블 · 화면 추가까지 딸려오는 범위 확대라 v1.0에서 제외한다. 대신 **로그인 쪽은 막는다** (다음 세션 구현 예정) — 04 문서 3.1절의 메시지 통일에 더해, 없는 계정에도 더미 해시로 검증을 한 번 돌려 응답 시간을 맞춘다(argon2가 느려 "계정 있음 ≈ 50ms / 없음 ≈ 2ms"로 갈리는 것을 메시지와 무관하게 구분당할 수 있음). 완전 차단은 01 문서 4.4절 F-27로 이관
+  "이미 사용 중인 이메일"을 알려주면 제3자가 특정 이메일의 가입 여부를 확인할 수 있다. 막으려면 가입을 항상 성공으로 응답하고 메일로 안내해야 하는데, 이는 SMTP 구성 · 인증 토큰 테이블 · 화면 추가까지 딸려오는 범위 확대라 v1.0에서 제외한다. 대신 **로그인 쪽은 막는다** (다음 세션 구현 예정) — UI_DESIGN 3.1절의 메시지 통일에 더해, 없는 계정에도 더미 해시로 검증을 한 번 돌려 응답 시간을 맞춘다(argon2가 느려 "계정 있음 ≈ 50ms / 없음 ≈ 2ms"로 갈리는 것을 메시지와 무관하게 구분당할 수 있음). 완전 차단은 `REQUIREMENTS` 4.4절 F-27로 이관
 
 **막혔던 점 / 트러블슈팅**
 - 증상: `verify_password`에 해시 자리로 한글 문자열을 넣자 `False`가 아니라 `UnicodeEncodeError`가 발생
@@ -316,22 +479,22 @@
 - Pydantic validator의 `mode="before"`는 타입 · 길이 검사보다 먼저 실행된다. 공백만 입력한 닉네임의 422 응답에 `"input": ""`이 찍혀 공백 제거가 길이 검사보다 앞섰음이 확인됐다. 기본값(`after`)이었다면 `"  "`가 `min_length=2`를 통과한 뒤 털려 빈 닉네임이 저장됐을 것이다
 - Pydantic은 첫 오류에서 멈추지 않고 모든 검증 오류를 모아 한 번에 반환한다. `detail` 배열의 `loc`에 필드명이 들어 있어 화면에서 해당 입력칸에 연결할 수 있다
 - SERIAL 번호는 "어디서 막혔는지"에 따라 소모 여부가 갈린다. 1차 조회에서 409로 막힌 요청은 INSERT를 시도하지 않아 번호를 쓰지 않으므로 `users.id`가 1로 시작했다. 지난 세션 `entries`가 6부터 시작한 것은 INSERT를 실제로 날렸다가 CHECK에 걸린 경우였다
-- `created_at`이 `2026-09-19 23:19:00+00`으로 저장됐다. `timestamptz`라 UTC로 보관되며, 한국 시간 표시는 화면에서 변환한다 (03 문서 2.0절)
+- `created_at`이 `2026-09-19 23:19:00+00`으로 저장됐다. `timestamptz`라 UTC로 보관되며, 한국 시간 표시는 화면에서 변환한다 (ERD 2.0절)
 
 **다음에 할 일**
 - 로그인 — access 토큰(응답 본문) + refresh 쿠키(httpOnly, 프로젝트 접두사), 없는 계정에도 더미 해시 검증
 - 토큰 재발급(rotation) → 로그아웃 → `get_current_user` 의존성
-- 작업 PC를 노트북 → 집 PC로 이동 (`git pull` 먼저)
+- 작업 PC를 노트북 → 데스크톱 A로 이동 (`git pull` 먼저)
 
 ---
 
-## 2026-09-19(저녁~밤/집 PC) — M1 진행 중: 모델 6종 정의 및 첫 마이그레이션 적용
+## 2026-09-19(저녁~밤/데스크톱 A) — M1 진행 중: 모델 6종 정의 및 첫 마이그레이션 적용
 
 **관련 마일스톤**: M1 (백엔드 기초) → 진행 중
 
 **한 일**
 - `app/models/base.py` — `DeclarativeBase` 상속 `Base` 선언, 제약조건 작명 규칙(`naming_convention`) 정의
-- v1.0 범위 모델 6종 정의 (03 문서 2장 기준)
+- v1.0 범위 모델 6종 정의 (ERD 2장 기준)
   - `user.py` — `users`, `refresh_tokens`
   - `game.py` — `games`, `genres`, `game_genres`
   - `entry.py` — `entries`
@@ -347,11 +510,11 @@
 
 **결정 기록**
 - **`Base`를 `core/db.py`가 아닌 `models/base.py`에 둠**
-  인터넷 예제 다수가 엔진과 `Base`를 한 파일에 두지만, 02 문서 6장에서 `core/`는 "설정 · DB 연결 · 보안", `models/`는 "테이블 정의"로 나눠 두었음. `Base`는 연결이 아니라 테이블 정의의 공통 조상이므로 `models/` 소속. 의존 방향이 `models/` → `core/` 한쪽으로만 흘러 순환 import를 원천 차단하는 효과도 있음
+  인터넷 예제 다수가 엔진과 `Base`를 한 파일에 두지만, ARCHITECTURE 6장에서 `core/`는 "설정 · DB 연결 · 보안", `models/`는 "테이블 정의"로 나눠 두었음. `Base`는 연결이 아니라 테이블 정의의 공통 조상이므로 `models/` 소속. 의존 방향이 `models/` → `core/` 한쪽으로만 흘러 순환 import를 원천 차단하는 효과도 있음
 - **제약조건 작명 규칙(`naming_convention`)을 `Base`에 미리 부여**
   규칙이 없으면 PostgreSQL이 `entries_check` 같은 이름을 자동 부여해, 나중에 특정 제약만 삭제 · 수정할 때 대상을 지목할 수 없음. 실제로 검증 단계에서 에러 메시지에 `ck_entries_rating_range`처럼 이름이 찍혀 5개 CHECK 중 무엇이 걸렸는지 즉시 판별됨
 - **`game_genres`를 ORM 클래스가 아닌 Core `Table` 객체로 정의**
-  컬럼이 `(game_id, genre_id)` 둘뿐이고 추가할 정보가 없음(03 문서 2.5절). 클래스로 만들면 연결 하나마다 빈 객체를 생성하게 됨. 대신 나중에 연결 자체에 속성이 필요해지면 클래스로 전환하는 마이그레이션이 필요하다는 점을 감수함 — M8 작업 목록에 장르 동기화가 없어 당분간 발생하지 않을 것으로 판단
+  컬럼이 `(game_id, genre_id)` 둘뿐이고 추가할 정보가 없음(ERD 2.5절). 클래스로 만들면 연결 하나마다 빈 객체를 생성하게 됨. 대신 나중에 연결 자체에 속성이 필요해지면 클래스로 전환하는 마이그레이션이 필요하다는 점을 감수함 — M8 작업 목록에 장르 동기화가 없어 당분간 발생하지 않을 것으로 판단
 - **`entries.source`를 M8이 아닌 지금 생성**
   Steam 동기화(M8)에서 쓰는 컬럼이지만, NOT NULL 기본값 `MANUAL`이라 지금 넣어도 v1.0 동작에 영향이 없음. 나중에 NOT NULL 컬럼을 추가하려면 기존 행 처리를 고민해야 하므로 처음부터 포함
 
@@ -372,13 +535,13 @@
 - `DELETE FROM users` 결과의 "영향 받은 행: 1"에 CASCADE로 연쇄 삭제된 `entries` 행은 포함되지 않는다. 편리한 만큼 영향 범위가 응답에 드러나지 않는다는 점을 유의
 
 **다음에 할 일**
-- 비밀번호 해싱 라이브러리 결정 (01 문서 10장) 후 회원가입 API
+- 비밀번호 해싱 라이브러리 결정 (`REQUIREMENTS` 10장) 후 회원가입 API
 - 로그인(access 토큰 + refresh 쿠키) → 토큰 재발급(rotation) → 로그아웃 → `get_current_user` 의존성
 - 초기 장르 데이터 시드는 게임 CRUD 착수 전까지 진행
 
 ---
 
-## 2026-09-19(오전~오후/집 PC) — M0 완료: FastAPI · Vue 구성 및 화면 → 서버 → DB 연결 확인
+## 2026-09-19(오전~오후/데스크톱 A) — M0 완료: FastAPI · Vue 구성 및 화면 → 서버 → DB 연결 확인
 
 **관련 마일스톤**: M0 (환경 구성) → 완료
 
@@ -405,13 +568,13 @@
 
 **결정 기록**
 - **API 서버 포트를 8001로 고정**
-  8000은 다른 개인 프로젝트(콕)의 FastAPI와 겹칠 수 있음. DB 5434와 같은 원리로 프로젝트별 전용 번호를 배정해 두 프로젝트를 동시에 켜도 충돌하지 않게 함. 05 문서 완료 기준의 포트 표기도 함께 수정
+  8000은 다른 개인 프로젝트(콕)의 FastAPI와 겹칠 수 있음. DB 5434와 같은 원리로 프로젝트별 전용 번호를 배정해 두 프로젝트를 동시에 켜도 충돌하지 않게 함. MILESTONES 완료 기준의 포트 표기도 함께 수정
 - **커밋 단위를 파일 단위 → 작업 파트 단위로 조정**
   M0 초반에는 파일 한두 개마다 커밋해 커밋 메시지 작성 시간이 코드 작성 시간을 넘어섰음. 기준을 지침의 *"이것만 따로 되돌리고 싶을 수 있는가?"* 로 되돌려 적용 — venv · FastAPI · 설정 · 엔진 · Alembic은 하나가 빠지면 나머지가 무의미하므로 한 덩어리. M1부터는 "완결된 동작"(회원가입, 로그인) 단위로 함
 - **shadcn-vue는 init만 하고 컴포넌트는 받지 않음**
   shadcn-vue는 라이브러리 설치가 아니라 컴포넌트 소스를 프로젝트에 복사해 넣는 방식이라, 쓰지 않을 컴포넌트를 미리 받으면 그대로 죽은 코드가 됨. 필요한 것만 M2에서 받는다
 - **빈 폴더 · 미사용 규칙을 선제적으로 만들지 않음**
-  02 문서 구조도에 있는 `core/`, `models/`, `schemas/` 등을 미리 만들지 않고 쓸 내용이 생길 때 생성. `.gitignore`에서도 사용하지 않는 규칙(`dist-ssr`, `.DS_Store`, macOS · Visual Studio 관련)을 제외
+  ARCHITECTURE 구조도에 있는 `core/`, `models/`, `schemas/` 등을 미리 만들지 않고 쓸 내용이 생길 때 생성. `.gitignore`에서도 사용하지 않는 규칙(`dist-ssr`, `.DS_Store`, macOS · Visual Studio 관련)을 제외
 
 **막혔던 점 / 트러블슈팅**
 - 증상: `uvicorn app.main:app --reload` 실행 시 `Error loading ASGI app. Could not import module "app.main"`. 포트 충돌로 의심해 `--port 8001`로 바꿨더니 동작해서 포트 문제로 오인
@@ -421,7 +584,7 @@
 - 증상: 설정 로딩 검증 중 `print(settings.database_url)`로 DB 비밀번호가 터미널에 원문 출력됨
   - 원인: 검증 목적에 필요한 것은 "값이 로딩됐는가"인데 값 전체를 출력하도록 명령을 구성함
   - 해결: 볼륨이 비어 있는 시점(테이블 0개)이라 손실 없이 비밀번호 교체 — 루트 `.env`와 `server/.env`를 함께 수정하고 `docker compose down -v` 후 재생성. 이후 검증은 `settings.database_url.split('@')[-1]`로 접속 주소만 출력
-  - 교훈: 비밀값은 확인 과정에서도 원문을 노출하지 않는다. 02 문서 7장에 적어둔 "비밀번호를 바꿀 땐 두 파일을 함께 고친다" 규칙이 실제로 처음 적용된 사례이기도 하다
+  - 교훈: 비밀값은 확인 과정에서도 원문을 노출하지 않는다. ARCHITECTURE 7장에 적어둔 "비밀번호를 바꿀 땐 두 파일을 함께 고친다" 규칙이 실제로 처음 적용된 사례이기도 하다
 - 증상: `tsconfig.json`에 경로 별칭을 넣었는데 별칭이 동작하지 않을 상태였음 (커밋 전 검수에서 발견)
   - 원인: 키 이름을 `paths`가 아닌 `path`로 오타. TypeScript는 이를 에러로 알리지 않고 해당 설정이 없는 것처럼 동작함
   - 해결: 오타 수정
@@ -433,7 +596,7 @@
 
 **발견 사항 (지금 조치하지 않음)**
 - 브라우저 쿠키는 포트를 구분하지 않는다. v0 Django가 `localhost`에 심은 `csrftoken`이 5173 요청에도 딸려오는 것을 Network 탭에서 확인. M2에서 refresh 토큰 쿠키를 도입할 때 같은 `localhost`를 쓰는 다른 프로젝트와 서로 덮어쓸 수 있으므로, 쿠키 이름에 프로젝트 접두사를 붙여 대비할 것
-- shadcn-vue init이 Inter 폰트를 구글 서버에서 받아오는 방식으로 `style.css`에 추가함. M5 배포 시 프로젝트 내장 여부를 검토 (05 M5에 항목 추가)
+- shadcn-vue init이 Inter 폰트를 구글 서버에서 받아오는 방식으로 `style.css`에 추가함. M5 배포 시 프로젝트 내장 여부를 검토 (MILESTONES M5에 항목 추가)
 
 **다음에 할 일**
 - M0 PR 생성 후 `main`에 병합 (M0는 CI 없음), `m1-backend` 브랜치 생성
@@ -441,7 +604,7 @@
 
 ---
 
-## 2026-09-18(저녁~밤/집 PC) — M0 진행 중: 공통 설정 및 PostgreSQL 컨테이너 구성
+## 2026-09-18(저녁~밤/데스크톱 A) — M0 진행 중: 공통 설정 및 PostgreSQL 컨테이너 구성
 
 **관련 마일스톤**: M0 (환경 구성) → 진행 중
 
@@ -452,13 +615,13 @@
 - `docker-compose.yml` 작성 — `postgres:18`, 이름 붙은 볼륨, healthcheck, `127.0.0.1` 바인딩
 - 루트 `.env` / `.env.example` 분리 (Compose용 DB 계정)
 - HeidiSQL로 컨테이너 접속 확인, `SHOW data_directory`로 "컨테이너 DB에 붙었다"까지 검증
-- 02 문서 v1.1 개정 — 루트 `.env` 추가, 구조도에 `.gitattributes` 반영, Redis 도입 시점 표기 수정
+- ARCHITECTURE v1.1 개정 — 루트 `.env` 추가, 구조도에 `.gitattributes` 반영, Redis 도입 시점 표기 수정
 
 **결정 기록**
 - **Compose용 DB 계정을 루트 `.env`로 분리**
-  Docker Compose는 compose 파일과 같은 폴더의 `.env`를 자동으로 읽는다. `server/.env`를 `env_file`로 통째로 넘기면 DB 컨테이너가 쓰지도 않는 JWT 서명 키 · Steam API 키까지 받게 되므로, DB 계정만 루트 `.env`로 분리. 대신 같은 비밀번호가 두 파일에 존재하므로 "바꿀 땐 함께 고친다"를 02 문서 7장에 규칙으로 명시
+  Docker Compose는 compose 파일과 같은 폴더의 `.env`를 자동으로 읽는다. `server/.env`를 `env_file`로 통째로 넘기면 DB 컨테이너가 쓰지도 않는 JWT 서명 키 · Steam API 키까지 받게 되므로, DB 계정만 루트 `.env`로 분리. 대신 같은 비밀번호가 두 파일에 존재하므로 "바꿀 땐 함께 고친다"를 ARCHITECTURE 7장에 규칙으로 명시
 - **호스트 포트를 5434로 고정**
-  5432는 Windows에 설치된 PostgreSQL 18 서비스, 5433은 다른 개인 프로젝트(콕) 컨테이너가 사용 중. 포트를 비켜 앉는 대신 프로젝트별 전용 번호를 배정해, 학교 PC를 포함한 어느 환경에서도 같은 설정이 동작하도록 함
+  5432는 Windows에 설치된 PostgreSQL 18 서비스, 5433은 다른 개인 프로젝트(콕) 컨테이너가 사용 중. 포트를 비켜 앉는 대신 프로젝트별 전용 번호를 배정해, 데스크톱 B를 포함한 어느 환경에서도 같은 설정이 동작하도록 함
 - **`postgres:18` 볼륨 경로를 `/var/lib/postgresql`로 지정**
   인터넷 예제 다수가 쓰는 `/var/lib/postgresql/data`는 17 이하 기준. 18 이미지는 데이터 폴더가 버전별 하위 경로(`/18/docker`)로 바뀌어, 예제대로 두면 데이터가 볼륨 바깥에 저장되고 컨테이너 삭제 시 조용히 사라진다. `SHOW data_directory` 결과가 볼륨 안쪽임을 확인
 
@@ -482,24 +645,24 @@
 
 ---
 
-## 2026-09-18(오후~저녁/집 PC) — M0 재착수: 스택 전환 결정 및 설계 문서 전면 개정
+## 2026-09-18(오후~저녁/데스크톱 A) — M0 재착수: 스택 전환 결정 및 설계 문서 전면 개정
 
 **관련 마일스톤**: M0 (환경 구성) → 진행 중
 
 **한 일**
 - 기존 구현(M1 완료, M2 네비게이션 골격)을 `v0-rn-django` 태그로 보존
 - 구 스택 코드(`app/`, `server/`) 제거 및 빌드 찌꺼기 정리
-- 설계 문서 전면 개정 (01 ~ 05, README)
+- 설계 문서 전면 개정 (01 ~ 05, `README`)
   - `ERD.md` → `03_erd.md`로 파일명 변경 (`git mv`로 이력 유지)
   - 구조도 · 인증 · 동기화 · 화면 흐름을 mermaid로 전환
-  - 01에 유즈케이스, 04에 화면 흐름 · 상태 전환 · 시퀀스 다이어그램 추가
+  - `REQUIREMENTS`에 유즈케이스, `UI_DESIGN`에 화면 흐름 · 상태 전환 · 시퀀스 다이어그램 추가
 - 마일스톤을 M0 ~ M11, 버전별(v1.0 ~ v2.1)로 재구성
 
 **결정 기록**
 - **스택 전환 (RN + Django + MariaDB → Vue 3 + FastAPI + PostgreSQL)**
   취업으로 프로젝트 목적이 포트폴리오 → 자기계발 · 취미로 바뀜. 함께 준비하던 별도 프로젝트(단축 URL 서비스 '콕')는 기술 스택을 먼저 정하고 주제를 끼워 맞춘 탓에 재미가 없어 접고, 그 스택을 문제의식이 분명한 PlayLedger에 적용. 전환 시점의 구현량이 M1 + 네비게이션 골격이라 버리는 비용이 작았음. 기술별 근거는 `02_architecture.md` 3장
 - **모바일 앱 → 반응형 웹**
-  v0의 "PC 앞이 아닐 때" 시나리오를 다시 따져보니, 기록과 분석이 실제로 일어나는 순간은 Steam을 켜둔 PC 앞이 더 많음. 모바일은 반응형으로 대응 (`01` 3.2절에서 "웹 제외"를 반전)
+  v0의 "PC 앞이 아닐 때" 시나리오를 다시 따져보니, 기록과 분석이 실제로 일어나는 순간은 Steam을 켜둔 PC 앞이 더 많음. 모바일은 반응형으로 대응 (`REQUIREMENTS` 3.2절에서 "웹 제외"를 반전)
 - **범위 확대 + 버전별 결승선**
   시간 여유가 생겨 위시리스트 · 구매 전 경고 · Steam 자동 동기화 · 플레이 세션 · 추첨 · Discord 로그인을 범위에 넣음. 대신 마감이 없어진 만큼 "끝이 없어 못 끝내는" 위험을 막으려고 v1.0은 기존 범위(M0 ~ M4) 그대로 두고, 확장은 v1.1 ~ v2.1로 버전을 나눠 결승선을 여러 개 둠
 - **소셜 로그인은 Discord (OAuth 2.0)**
@@ -516,19 +679,19 @@
   - 원인: RN CLI가 만든 하위 `.gitignore`(`app/.gitignore`)도 함께 삭제됨. `.cxx`, `build` 같은 안드로이드 빌드 폴더를 무시하는 규칙이 그 파일에만 있었는데, 규칙이 사라지면서 가려져 있던 파일들이 untracked로 드러남. 루트 `.gitignore`엔 공통 규칙만 있어서 막지 못함
   - 해결: 425개를 커밋하지 않고, VS Code를 종료한 뒤(Java 확장이 Gradle로 파일을 잡고 있음) `app/`, `server/` 폴더를 탐색기에서 통째로 삭제
   - 교훈: `.gitignore`는 폴더마다 따로 있을 수 있고, `git rm`은 그 파일도 디스크에서 지운다. 폴더를 정리할 땐 커밋 직후 `git status`로 갑자기 늘어난 파일이 없는지 확인할 것. 무시되던 파일 목록은 `git status --ignored`로 미리 볼 수 있다
-- 증상: 문서 검수 중 문서끼리 서로 다른 말을 하는 곳이 여러 번 발견됨 (R-02 "자동 폴링 안 함" vs F-19 자동 동기화, 02 문서 안에서 Redis 도입 시점 M8 vs M9, v0부터 있던 F-02 플랫폼 항목 vs ERD)
+- 증상: 문서 검수 중 문서끼리 서로 다른 말을 하는 곳이 여러 번 발견됨 (R-02 "자동 폴링 안 함" vs F-19 자동 동기화, ARCHITECTURE 안에서 Redis 도입 시점 M8 vs M9, v0부터 있던 F-02 플랫폼 항목 vs ERD)
   - 원인: 문서 여러 개를 한 번에 개정하면서, 같은 사실을 다른 문서에서도 말하고 있는지 대조하지 않음
   - 해결: 커밋 전 검수 단계에서 하나씩 정정
   - 교훈: 설정을 바꾸면 그 값을 참조하는 곳을 검색하듯, 문서도 바꾼 내용의 핵심어(예: "자동 동기화", "Redis")로 `docs/` 전체를 검색해 어긋난 곳이 없는지 확인할 것
-- 증상: 02 문서의 Discord 로그인 시퀀스와 비밀번호 해시 비교 위치가 실제로는 틀린 흐름이었음 (mermaid는 문법 오류 없이 그림이 잘 그려짐)
+- 증상: ARCHITECTURE의 Discord 로그인 시퀀스와 비밀번호 해시 비교 위치가 실제로는 틀린 흐름이었음 (mermaid는 문법 오류 없이 그림이 잘 그려짐)
   - 원인: 콜백은 fetch 응답이 아니라 브라우저 페이지 이동이라 access 토큰을 응답 본문으로 받을 수 없음. 해시 비교는 DB가 아니라 서버가 함
   - 해결: 콜백에서는 refresh 쿠키만 심고 프론트가 재발급 API로 access 토큰을 받는 흐름으로 수정
   - 교훈: M1 때 "서버가 에러 없이 뜬다고 코드가 의도대로 동작하는 건 아니다"와 같다. **다이어그램이 그려진다고 흐름이 맞는 건 아니다.** 그림도 코드처럼 흐름을 따라가며 검수해야 한다
-- 증상: 03 문서 변경 이력의 v0.2 줄이 `(기존 내용 유지)`라는 자리표시로 덮여 커밋 직전까지 감
+- 증상: ERD 변경 이력의 v0.2 줄이 `(기존 내용 유지)`라는 자리표시로 덮여 커밋 직전까지 감
   - 원인: 안내받은 블록 안의 자리표시를 그대로 옮겨 적음
   - 해결: 검수 단계에서 발견해 원문 복구
   - 교훈: 문서를 크게 고친 뒤엔 커밋 전에 `git diff`로 **삭제된 줄(`-`)** 을 한 번 훑어볼 것. 의도하지 않은 삭제는 추가된 줄보다 삭제된 줄에서 잘 보인다
-- 증상: 03 문서만 줄바꿈 형식이 CRLF(나머지는 LF)
+- 증상: ERD만 줄바꿈 형식이 CRLF(나머지는 LF)
   - 원인: VS Code에서 새로 만든 파일이 Windows 기본값을 따름
   - 해결: 보류 (Git이 커밋 시 변환). M0에서 `.gitattributes`로 근본 해결 예정
 

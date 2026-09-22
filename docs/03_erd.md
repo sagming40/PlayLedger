@@ -1,6 +1,6 @@
 # PlayLedger — 데이터 모델 (ERD)
 
-> 작성일: 2026-08-13 / 개정일: 2026-09-22 / 상태: v1.4
+> 작성일: 2026-08-13 / 개정일: 2026-09-22 / 상태: v1.5
 > 관련 문서: 요구사항 정의서(01), 시스템 아키텍처(02)
 
 ---
@@ -209,7 +209,7 @@ rotation으로 폐기된 토큰이 다시 들어온다면, 누군가 옛 토큰�
 > 이 규칙이 잡는 것은 **같은 글자를 다르게 쓴 경우**뿐이다.
 > 뜻이 같은 다른 표기(`7` / `VII`, `사이버펑크` / `Cyberpunk`)는 정규화해도 서로 다른 값이 된다.
 > 이를 규칙으로 해결하려 하면 `Mega Man X`가 `Mega Man 10`과 합쳐지는 것처럼 다른 게임을 합치는 실수가 생기므로,
-> 5장의 별칭 테이블과 01 문서 F-23 · F-30으로 보완한다. (PartScope의 `model_aliases`와 같은 문제)
+> 5장의 별칭 테이블과 `REQUIREMENTS` F-23 · F-30으로 보완한다. (PartScope의 `model_aliases`와 같은 문제)
 
 **중복 판별 순서**
 
@@ -218,7 +218,7 @@ rotation으로 폐기된 토큰이 다시 들어온다면, 누군가 옛 토큰�
 3. 둘 다 일치하지 않으면 새 게임으로 등록
 4. 3에서 부분 UNIQUE에 걸리면 (같은 제목이 방금 먼저 등록됨) 그 행을 다시 조회해 재사용
 
-판별은 `services`의 게임 조회 함수 한 곳에서만 한다. (ARCHITECTURE 2.2절)
+판별은 `services`의 게임 조회 함수 한 곳에서만 한다. (`ARCHITECTURE` 2.2절)
 
 **수동 등록 게임에만 UNIQUE를 거는 이유**
 
@@ -446,7 +446,7 @@ WHERE e.user_id = :user_id
 GROUP BY gn.id;
 ```
 
-완주율 = `cleared ÷ started` (01 문서 5.3절 정의대로 분모에서 미시작 제외). 계산은 `services`에서 한다.
+완주율 = `cleared ÷ started` (`REQUIREMENTS` 5.3절 정의대로 분모에서 미시작 제외). 계산은 `services`에서 한다.
 
 ### 3.4 구매 전 경고 (F-18)
 
@@ -532,12 +532,13 @@ MariaDB(InnoDB)는 자동으로 만들어줬지만, PostgreSQL에서는 필요�
 
 ## 변경 이력
 
-| 날짜 | 버전 | 내용 |
+| 버전 | 날짜 | 내용 |
 |---|---|---|
-| 2026-08-13 | v0.1 | 최초 작성 |
-| 2026-08-17 | v0.2 | `entries.playtime_hours` 타입을 실제 구현(`models.py`) 기준으로 decimal(7,1) → decimal(6,1) 정정. max_digits=6, decimal_places=1로는 최대 99999.9시간까지 표현 가능해 실사용 범위를 충분히 커버하므로 코드가 아닌 문서를 실물에 맞춤 |
-| 2026-09-18 | v1.0 | 스택 전환(MariaDB → PostgreSQL)에 따른 전면 개정. 파일명 `ERD.md` → `03_erd.md`. `refresh_tokens`·`oauth_accounts`·`wishlist_items`·`play_sessions` 추가, 로그인 ID를 email로 변경, `playtime_hours`(decimal) → `playtime_minutes`(integer), 공통 규칙(2.0)과 외래키 삭제 규칙 신설, 조회 쿼리를 PostgreSQL 문법으로 변경. 개정 전 문서는 `v0-rn-django` 태그 참고 |
-| 2026-09-21 | v1.1 | 2.5절 `genres`에 `steam_genre_id`(UNIQUE, NOT NULL) 추가, 장르 목록(Steam 공식 장르 8개) · 선정 기준 · 시드 방식 명시. 01 문서 10장 "장르 데이터 출처" 결정 반영. 사유는 DEVLOG 2026-09-21 결정 기록 참고 |
-| 2026-09-21 | v1.2 | 2.4절 정규화 규칙을 구현 가능한 수준으로 구체화 (NFKC → casefold → 글자 · 숫자만 남김 → 빈 값 · 길이 검사), 예시 추가, 정규화가 잡지 못하는 경우와 보완책 명시, 중복 판별 입구를 하나로 명시. 5장에 F-30 추가. 기존 규칙("공백 제거 → 소문자 → 특수문자 제거")은 "특수문자"의 범위가 정해지지 않아 코드로 옮길 수 없었음 |
-| 2026-09-21 | v1.3 | 2.4절 `games`에 부분 UNIQUE `(title_norm) WHERE steam_appid IS NULL` 추가, 중복 판별 4단계(UNIQUE 충돌 시 재조회) 및 근거 명시. 4장 인덱스 표 반영. 조회와 등록 사이의 동시 요청으로 수동 게임이 중복 등록되는 틈을 DB에서 막기 위함 |
-| 2026-09-22 | v1.4 | 2.4절 판별 2단계의 조회 범위를 수동 등록 게임(`steam_appid IS NULL`)으로 명시. 범위를 부분 UNIQUE와 일치시켜 조회 결과가 한 행을 넘지 않게 함. 수동 · Steam 게임 연결은 M8로 미룸 |
+| v0.1 | 2026-08-13 | 최초 작성 |
+| v0.2 | 2026-08-17 | `entries.playtime_hours` 타입을 실제 구현(`models.py`) 기준으로 decimal(7,1) → decimal(6,1) 정정. max_digits=6, decimal_places=1로는 최대 99999.9시간까지 표현 가능해 실사용 범위를 충분히 커버하므로 코드가 아닌 문서를 실물에 맞춤 |
+| v1.0 | 2026-09-18 | 스택 전환(MariaDB → PostgreSQL)에 따른 전면 개정. 파일명 `ERD.md` → `03_erd.md`. `refresh_tokens`·`oauth_accounts`·`wishlist_items`·`play_sessions` 추가, 로그인 ID를 email로 변경, `playtime_hours`(decimal) → `playtime_minutes`(integer), 공통 규칙(2.0)과 외래키 삭제 규칙 신설, 조회 쿼리를 PostgreSQL 문법으로 변경. 개정 전 문서는 `v0-rn-django` 태그 참고 |
+| v1.1 | 2026-09-21 | 2.5절 `genres`에 `steam_genre_id`(UNIQUE, NOT NULL) 추가, 장르 목록(Steam 공식 장르 8개) · 선정 기준 · 시드 방식 명시. `REQUIREMENTS` 10장 "장르 데이터 출처" 결정 반영. 사유는 `DEVLOG` 2026-09-21 결정 기록 참고 |
+| v1.2 | 2026-09-21 | 2.4절 정규화 규칙을 구현 가능한 수준으로 구체화 (NFKC → casefold → 글자 · 숫자만 남김 → 빈 값 · 길이 검사), 예시 추가, 정규화가 잡지 못하는 경우와 보완책 명시, 중복 판별 입구를 하나로 명시. 5장에 F-30 추가. 기존 규칙("공백 제거 → 소문자 → 특수문자 제거")은 "특수문자"의 범위가 정해지지 않아 코드로 옮길 수 없었음 |
+| v1.3 | 2026-09-21 | 2.4절 `games`에 부분 UNIQUE `(title_norm) WHERE steam_appid IS NULL` 추가, 중복 판별 4단계(UNIQUE 충돌 시 재조회) 및 근거 명시. 4장 인덱스 표 반영. 조회와 등록 사이의 동시 요청으로 수동 게임이 중복 등록되는 틈을 DB에서 막기 위함 |
+| v1.4 | 2026-09-22 | 2.4절 판별 2단계의 조회 범위를 수동 등록 게임(`steam_appid IS NULL`)으로 명시. 범위를 부분 UNIQUE와 일치시켜 조회 결과가 한 행을 넘지 않게 함. 수동 · Steam 게임 연결은 M8로 미룸 |
+| v1.5 | 2026-09-22 | 문서 참조 표기를 번호에서 문서 이름 기준으로 통일(예: "01~05 문서" → `REQUIREMENTS` · `ARCHITECTURE` · `ERD` · `UI_DESIGN` · `MILESTONES`. 내용 변경 없음) |
