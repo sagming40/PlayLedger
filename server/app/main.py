@@ -4,12 +4,13 @@
 
 from fastapi import FastAPI
 
-from app.routers import auth
+from app.routers import auth, genres
 
 # 가게 안의 주방 부분. 이 app 객체가 앞으로 모든 요청의 출발점이 된다.
 # title은 Swagger 문서 맨 위에 표시되는 이름이다.
 app = FastAPI(title="PLAYLEDGER API")
 app.include_router(auth.router)
+app.include_router(genres.router)
 
 
 # @app.get(...)은 이 주소로 GET 요청이 오면 바로 아래 함수를 실행하라는 표지판
