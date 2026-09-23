@@ -8,7 +8,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.deps import get_current_user, get_db
 from app.models.entry import Entry
 from app.models.user import User
-from app.schemas.entry import EntryCreate, EntryListResponse, EntryRead, EntryStatus
+from app.schemas.entry import (
+    EntryCreate,
+    EntryListResponse,
+    EntryRead,
+    EntryStatus,
+    EntryUpdate,
+)
 from app.services.entry import MAX_LIMIT, entry_exists, get_entry, list_entries
 from app.services.game import find_or_create_game
 from app.services.genre import attach_genres_if_empty, genre_ids_exist
@@ -124,3 +130,84 @@ async def get_my_entry(
             detail="기록을 찾을 수 없습니다",
         )
     return entry
+
+
+@router.patch("/{entry_id}", response_model=EntryRead)
+async def update_my_entry(
+    entry_id: int,
+    data: EntryUpdate,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> Entry:
+    """내 보유 기록을 수정한다. 보낸 항목만 바꾼다. (S-03 수정 모드)
+
+    PATCH = 일부만 수정. (PUT = "통째로 교체" ─ 보내지 않은 항목도 지워진다)
+    """
+    entry = await get_entry(db, user_id=user.id, entry_id=entry_id)
+    if entry is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="기록을 찾을 수 없습니다",
+        )
+
+    # exclude_unset=True = 요청에 '실제로 적어 보낸' 항목만 꺼낸다
+    # True로 설정하지 않으면 보내지 않은 항목까지 None으로 채워져 멀쩡한 값이 지워진다
+    changes = data.model_dump(exclude_unset=True)
+
+    # 장르는 따로 처리한다 ─ 장르는 entries의 column이 아닌 game에 붙는다
+    # pop = 꺼내면서 목록에서 제외시키기. 남은 변경은 전부 entries의 컬럼이 된다
+    genre_ids = changes.pop("genre_ids", None)
+
+    # NOT NULL 컬럼에 null을 보낸 경우를 막는다
+    # schema의 None은 "보내지 않음"이라는 뜻이라, 여기까지 None으로 들어왔다면
+    # 유저가 명시적으로 null을 적어 보냈다는 뜻 → DB에 넣으면 500이므로 422로 거부
+    for field in ("status", "playtime_minutes"):
+        if field in changes and changes[field] is None:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"{field}은(는) 비울 수 없습니다",
+            )
+
+    # 장르를 보냈으면 연결 규칙을 그대로 적용 (ERD 2.5절)
+    # 0개인 게임에만 채워지고, 이미 존재하는 경우 조용히 무시된다
+    if genre_ids is not None:
+        if not await genre_ids_exist(db, genre_ids):
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="존재하지 않는 장르가 포함되어 있습니다",
+            )
+        await attach_genres_if_empty(db, entry.game_id, genre_ids)
+
+    # setattr(객체, "이름", 값) = "객체.이름 = 값"과 같다
+    # 변경할 항목이 그때그때 다르므로 이름을 String으로 받아 넣는다
+    for field, value in changes.items():
+        setattr(entry, field, value)
+
+    # updated_at은 모델의 onupdate가 갱신한다 ─ 건드리지 않는다
+    await db.commit()
+    return await get_entry(db, user_id=user.id, entry_id=entry_id)
+
+
+# status_code=204 ─ "요청 성공. 반환할 내용 없음." (응답 본문 없음)
+# 삭제된 것을 응답에 담아봐야 이미 사라진 값이라 의미가 없다
+@router.delete("/{entry_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_my_entry(
+    entry_id: int,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> None:
+    """내 보유 기록을 삭제한다 (S-04의 ⋮ 메뉴)
+
+    게임(games)은 지우지 않는다 ─ 다른 유저가 사용하고 있는 공유 데이터이다.
+    비유: 도서관 대출 카드만 버리고 책은 서가에 그대로 둔다
+    """
+    entry = await get_entry(db, user_id=user.id, entry_id=entry_id)
+    if entry is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="기록을 찾을 수 없습니다",
+        )
+
+    await db.delete(entry)
+    await db.commit()
+    # 204는 본문이 없어야 하므로 아무것도 반환하지 않는다

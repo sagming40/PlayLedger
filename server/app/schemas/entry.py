@@ -86,3 +86,26 @@ class EntryListResponse(BaseModel):
 
     items: list[EntryRead]
     total: int
+
+
+class EntryUpdate(BaseModel):
+    """보유 기록 수정 요청 (PATCH)
+
+    모든 항목이 선택이고, 기본값은 전부 None이다
+    "보내지 않음"과 "null로 보냄"은 model_dump(exclude_unset=True)로 구분한다 ─ router 참고
+    비유: 주문서 수정 요청서. 빈칸 → "건드리지 말 것", 취소선 → "삭제"
+    """
+
+    # title은 아예 받지 않는다 ─ extra="forbid"에 걸림 (422, ERD 2.6절)
+    # 제목을 수정하는 것은 이 기록이 가리키는 게임 자체를 갈아 끼워버리는 것이라 허용하지 않는다
+    model_config = ConfigDict(extra="forbid")
+
+    status: EntryStatus | None = None
+    genre_ids: list[Annotated[int, Field(ge=1, le=INT_MAX)]] | None = Field(
+        default=None, max_length=8
+    )
+    purchased_at: date | None = None
+    purchase_price: int | None = Field(default=None, ge=0, le=INT_MAX)
+    playtime_minutes: int | None = Field(default=None, ge=0, le=INT_MAX)
+    rating: int | None = Field(default=None, ge=1, le=5)
+    review: str | None = Field(default=None, max_length=200)
