@@ -75,3 +75,14 @@ class EntryRead(BaseModel):
     source: str
     created_at: datetime
     updated_at: datetime
+
+
+class EntryListResponse(BaseModel):
+    """목록 응답 ─ 이번 페이지의 기록들 + 전체 개수
+
+    비유: 택배 상자에 물건과 함께 "총 42개 중 20개" 쪽지를 넣어 보내는 것
+    개수가 적혀있어야 화면이 "총 42개 · 미시작 18개" 요약 줄을 그릴 수 있다 (UI_DESIGN 3.2절)
+    """
+
+    items: list[EntryRead]
+    total: int

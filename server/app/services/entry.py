@@ -5,12 +5,16 @@
 비유: 은행 금고. 계좌번호(entry_id)만으로는 열리지 않고, 본인 확인(user_id) 함께 있어야 열린다
 """
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.models.entry import Entry
 from app.models.game import Game
+
+# 목록 조회의 최대 개수 ─ 화면이 20개씩 불러온다 (UI_DESIGN 3.2절)
+# 상한을 정해두지 않으면 limit=999999로 요청해 DB를 통으로 긁어갈 수 있다
+MAX_LIMIT = 100
 
 
 # 함수 매개변수의 * = "*" 뒤부터는 반드시 이름을 붙여 넘겨야함
@@ -50,3 +54,42 @@ async def entry_exists(
         select(Entry.id).where(Entry.user_id == user_id, Entry.game_id == game_id)
     )
     return found is not None
+
+
+async def list_entries(
+    db: AsyncSession,
+    *,
+    user_id: int,
+    status: str | None = None,
+    limit: int = 20,
+    offset: int = 0,
+) -> tuple[list[Entry], int]:
+    """내 보유 기록 목록과 전체 개수를 함께 반환한다. (ERD 3.1절)
+
+    비유: 서류함에서 20장을 꺼내면서 "모두 몇 장인지"까지 같이 세어준다.
+    개수를 각각 따로 정하는 이유: 20개만 받으면 화면에서는 "여기까지가 전부인지 더 있는건지"를 알 방법이 없다.
+    """
+    # 공통 조건을 변수로 빼서 목록과 개수가 같은 기준을 사용하게 한다
+    # 한 쪽에만 filter를 빠뜨리면 "3개인데 전체 10개"처럼 어긋난 형태의 응답이 나간다
+    conditions = [Entry.user_id == user_id]
+    if status is not None:
+        conditions.append(Entry.status == status)
+
+    # ① 전체 개수 ─ row를 가져오지 않고 count만 한다
+    total = await db.scalar(
+        select(func.count()).select_from(Entry).where(*conditions)
+    )
+
+    # ② 이번 페이지 ─ 최근 수정순 (UI_DESIGN 3.2절 정렬 default값)
+    # id를 2번째 기준으로 두는 이유: updated_at이 동일 row끼리 순서가 매번 달라질 수 있다
+    # 즉, 1페이지와 2페이지에 동일한 기록이 겹치거나 빠지는 경우가 발생한다
+    stmt = (
+        select(Entry)
+        .where(*conditions)
+        .options(selectinload(Entry.game).selectinload(Game.genres))
+        .order_by(Entry.updated_at.desc(), Entry.id.desc())
+        .limit(limit)
+        .offset(offset)
+    )
+    rows = await db.scalars(stmt)
+    return list(rows.all()), total

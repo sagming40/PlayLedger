@@ -1,15 +1,15 @@
 # app/routers/entries.py
 # 보유 기록 API ─ 등록 · 목록 · 단건 · 수정 · 삭제
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.deps import get_current_user, get_db
 from app.models.entry import Entry
 from app.models.user import User
-from app.schemas.entry import EntryCreate, EntryRead
-from app.services.entry import entry_exists, get_entry
+from app.schemas.entry import EntryCreate, EntryListResponse, EntryRead, EntryStatus
+from app.services.entry import MAX_LIMIT, entry_exists, get_entry, list_entries
 from app.services.game import find_or_create_game
 from app.services.genre import attach_genres_if_empty, genre_ids_exist
 
@@ -82,3 +82,45 @@ async def create_entry(
     # entry.id는 commit(내부적으로 flush) 시에 DB가 채웠고
     # expire_on_commit=False로 설정했기 때문에 그대로 읽힌다
     return await get_entry(db, user_id=user.id, entry_id=entry.id)
+
+
+@router.get("", response_model=EntryListResponse)
+async def list_my_entries(
+    # Query(...) = 주소 뒤 ?status=BACKLOG&limit=20 부분을 받는다
+    # ge/le로 범위를 강제한다 ─ limit=0이나 음수 offset은 상태 코드 422
+    status_filter: EntryStatus | None = Query(default=None, alias="status"),
+    limit: int = Query(default=20, ge=1, le=MAX_LIMIT),
+    offset: int = Query(default=0, ge=0),
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> EntryListResponse:
+    """내 보유 기록 목록. (S-02 라이브러리)
+
+    alias="status"를 사용한 이유: 주소에는 ?status=로 받되,
+    함수 안에서는 fastapi의 status 모듈과 이름이 겹치지 않게 status_filter로 부른다
+    """
+    items, total = await list_entries(
+        db, user_id=user.id, status=status_filter, limit=limit, offset=offset
+    )
+    return EntryListResponse(items=items, total=total)
+
+
+# {entry_id} = 주소의 그 자리 값을 함수 인자로 받는다 (/api/entries/7 → entry_id=7)
+@router.get("/{entry_id}", response_model=EntryRead)
+async def get_my_entry(
+    entry_id: int,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> Entry:
+    """내 보유 기록 하나. (S-04 상세)
+
+    다른 유저의 기록이면 403이 아니라 404
+    ─ 403은 "그 기록이 존재한다"라는 걸 알려주는 셈이다
+    """
+    entry = await get_entry(db, user_id=user.id, entry_id=entry_id)
+    if entry is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="기록을 찾을 수 없습니다",
+        )
+    return entry
