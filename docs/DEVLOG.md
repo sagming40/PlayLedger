@@ -10,7 +10,7 @@
 
 ## 현재 상태
 
-**진행 중** · M1 (백엔드 기초) — 모델 6종 · 마이그레이션 4건 · 인증 전 항목 · 장르 시드 · 정규화 규칙(`core/normalize.py`) · 게임 조회 · 생성 서비스(`find_or_create_game`) 완료. 게임 등록 API(보유 기록 CRUD) · 테스트 · CI · API_SPEC 남음
+**진행 중** · M1 (백엔드 기초) — 모델 6종 · 마이그레이션 4건 · 인증 전 항목 · 장르 시드 · 정규화 규칙(`core/normalize.py`) · 게임 조회 · 생성 서비스(`find_or_create_game`) · 장르 목록 API · 장르 연결 서비스 · 보유 기록 **등록** API 완료. 보유 기록 목록 · 단건 · 수정 · 삭제 · 테스트 · CI · API_SPEC 남음
 
 **환경 요약**
 | 항목 | 값 |
@@ -33,7 +33,7 @@
 
 **실행 방법** · 터미널 3개 — 프로젝트 루트에서 `docker compose up -d` / `server`에서 `uvicorn app.main:app --reload --port 8001` / `web`에서 `npm run dev`
 
-**다음에 할 일** · 노트북 이력 정리(`fetch` + `reset --hard`) → 게임 등록 API(보유 기록 CRUD) → 테스트(동시 등록 포함) → CI · API_SPEC
+**다음에 할 일** · 보유 기록 목록 · 단건 · 수정 · 삭제 (제목 수정 허용 여부 결정 필요) → 테스트(사용자 격리 · 동시 등록 · 장르 연결 동시 실행) → CI · API_SPEC
 
 ---
 
@@ -77,6 +77,150 @@
 ---
 
 <!-- 새 기록은 이 아래에 추가한다 (최신이 위로) -->
+
+## 2026-09-23(오전/노트북) — M1 진행 중: 보유 기록 등록 API 구현, 목록 · 단건 · 수정 · 삭제 남음
+
+**관련 마일스톤**: M1 (백엔드 기초) → 진행 중
+
+**한 일**
+- `app/services/entry.py` 신설
+  - `get_entry` — `(entry_id, user_id)` 두 조건으로 조회, `selectinload`로 게임 · 장르 동반 로딩, `populate_existing=True`
+  - `entry_exists` — 같은 사용자의 같은 게임 등록 여부 (중복 1차 방어)
+  - 두 함수 모두 `*`로 `user_id`를 키워드 전용 인자로 강제
+- `app/routers/entries.py` 신설 — `POST /api/entries`
+  - ① 장르 id 검증(422) → ② `find_or_create_game` → ③ 중복 409 → ④ `attach_genres_if_empty` → ⑤ entry 생성 · commit → ⑥ `get_entry`로 재조회 후 201
+  - `IntegrityError`를 제약 이름(`uq_entries_user_id_game_id`)으로 판별해 409, 그 외는 그대로 전파
+  - `user_id` · `game_id` · `source`는 요청이 아니라 서버가 채움
+- `main.py`에 entries 라우터 등록
+- Swagger 검증 7건 (계정 2개로 교차)
+  - A `Hollow Knight` + 액션 → 201, `source: MANUAL`
+  - A `"  hollow knight  "` → 409 (공백 · 대소문자 정규화 확인)
+  - A 장르 `9999` → 422, A `Celeste` 장르 없음 → 201 `genres: []`
+  - B `Celeste` + RPG → 201, **같은 게임에 장르가 채워짐** (0개였으므로)
+  - B `HOLLOW KNIGHT` + 전략 → 201, `genres: [액션]` **입력 무시**, `title`은 A가 등록한 `Hollow Knight` 유지
+  - A `source: "STEAM"` 전송 → 422 `extra_forbidden`
+
+**결정 기록**
+- **중복 확인(③)을 장르 연결(④)보다 앞에 둠**
+  어차피 409로 거절할 요청이 게임 행을 `FOR UPDATE`로 잠그면, 통과할 다른 요청만 그만큼 기다린다. 거절할 것은 잠그기 전에 거절한다
+- **`IntegrityError`를 전부 409로 바꾸지 않고 제약 이름으로 구분**
+  `IntegrityError`는 UNIQUE뿐 아니라 CHECK · FK 위반에서도 발생한다. 전부 "이미 등록된 게임입니다"로 바꾸면 진짜 버그가 그 메시지 뒤에 숨는다. 09-19에 `naming_convention`을 먼저 정해둔 것이 여기서 쓰였다
+- **`title` 수정 허용 여부는 보류**
+  제목을 바꾼다는 것은 `entries.game_id`를 다른 게임으로 갈아끼우는 것이라, 그 기록에 쌓인 플레이타임 · 평점이 엉뚱한 게임에 붙는다. 수정 API 구현 시 함께 결정한다
+
+**막혔던 점 / 트러블슈팅**
+- 증상: (실행 전 검수에서 발견) `EntryCreate` · `EntryRead`의 필드명이 `purchase_price`가 아닌 `purchased_price`
+  - 원인: 바로 위 `purchased_at`의 `d`가 옮겨붙음. 문법상 유효한 이름이라 에디터도 파이썬도 잡지 않는다
+  - 해결: 두 곳 모두 정정
+  - 교훈: 터지는 곳이 셋으로 갈린다 — 응답 생성 시 500, 프론트가 **올바른** 이름을 보내면 `extra_forbidden` 422, 모델 생성 시 `TypeError`. 특히 두 번째는 서버가 맞는 요청을 거절하므로 프론트 버그로 오인하기 쉽다
+- 증상: (실행 전 검수에서 발견) `get_entry`의 `.option(...)`, `.execute_options(...)`
+  - 원인: 올바른 이름은 `.options()`, `.execution_options()`
+  - 해결: 정정
+  - 교훈: 메서드 이름 오타는 정의 시점이 아니라 **그 함수를 처음 호출할 때** `AttributeError`로 드러난다. 다만 에러 메시지에 틀린 이름이 그대로 찍혀 원인 추적은 쉽다 — 위의 필드명 오타보다 나은 종류
+
+**배운 것**
+- 비동기 SQLAlchemy는 지연 로딩(lazy load)을 못 한다. `entry.game`에 접근하는 순간 몰래 조회하는 동작이 `MissingGreenlet`으로 막히므로, 응답에 쓸 관계는 `selectinload`로 미리 불러와야 한다
+- `selectinload`는 JOIN 한 방이 아니라 쿼리 3번(entries / games / genres)으로 나눠 실행한다. 기록이 20개여도 쿼리 수가 3으로 고정되어 N+1을 피한다
+- `expire_on_commit=False`는 commit 후에도 객체 값을 유지하지만, 그 값은 **옛 값**이다. `insert()`로 DB만 바꾼 `game_genres`는 파이썬 객체가 모르므로 `populate_existing=True`로 최신 값을 다시 읽어야 한다
+- Pydantic은 기본이 느슨한 모드(lax)다. `playtime_minutes`에 문자열 `"99999999999"`를 보내도 정수로 변환한 뒤 범위를 검사한다. 폼 입력이 문자열로 오는 경우를 흡수해준다
+
+**다음에 할 일**
+- 보유 기록 목록 · 단건 · 수정 · 삭제 — 남의 기록 요청은 403이 아니라 404
+- 수정 API 착수 전 `title` 수정 허용 여부 결정
+- pytest 환경 구성 → 사용자 격리 · 중복 판별 · 장르 연결 동시 실행 테스트
+
+---
+
+## 2026-09-22(저녁~밤/데스크톱 A → 노트북) — M1 진행 중: 장르 목록 API, 관계 · 스키마, 장르 연결 서비스
+
+**관련 마일스톤**: M1 (백엔드 기초) → 진행 중
+
+**한 일**
+
+*데스크톱 A (저녁)*
+- `app/schemas/genre.py` — `GenreRead`(`id` · `name`만, `steam_genre_id` 제외)
+- `app/routers/genres.py` — `GET /api/genres`, 라우터 전체에 `dependencies=[Depends(get_current_user)]`
+- Swagger 검증 — 토큰 없이 401, 로그인 후 8개 · ERD 표 순서, 응답에 `steam_genre_id` 없음(`content-length: 222`로 대조)
+- `models/game.py` — `Game.genres` relationship (`secondary=game_genres`, `order_by="Genre.id"`)
+- `models/entry.py` — `Entry.game` relationship, `TYPE_CHECKING`으로 순환 참조 회피
+- `alembic check` → `No new upgrade operations detected.` (relationship은 DB를 바꾸지 않음을 확인)
+- `app/schemas/game.py` — `GameRead`(`id` · `title` · `genres`)
+- `app/schemas/entry.py` — `EntryCreate` / `EntryRead`, `EntryStatus` Literal, `INT_MAX` 상한
+- REPL 검증 5건 — 공백 제거 · 기본값, `"!!!"` 거부, `extra_forbidden`, 정수 상한, `literal_error`
+
+*노트북 (밤)*
+- `app/services/genre.py` — `genre_ids_exist`(없는 장르 id 검사), `attach_genres_if_empty`(0개일 때만 연결)
+- 임시 스크립트로 동시 실행 검증 (확인 후 삭제, 커밋하지 않음)
+  - `FOR UPDATE` 있음 → 후발 요청이 **2.5초 대기 후 무시**, 최종 장르 1개
+  - `FOR UPDATE` 제거 → 후발 요청이 **0.1초에 통과**, 최종 장르 2개로 **합쳐짐**
+
+**결정 기록**
+- **게임의 장르는 0개일 때만 채운다** (ERD v1.6 · UI_DESIGN v1.3, 코드보다 먼저 문서 수정)
+  `games`는 모든 사용자가 공유하는 마스터 데이터다. ①덮어쓰기는 먼저 등록한 사용자의 장르별 통계(F-11)를 본인 모르게 바꾸고, ②합치기는 누구든 장르를 추가만 할 수 있어 잘못된 입력이 모두의 통계에 영구히 남는다. 그렇다고 ③"새 게임일 때만 연결"로 두면, 장르가 선택 항목(S-03)이라 비워둔 채 등록한 게임에 **나중에 장르를 붙일 경로가 없다**. 그래서 "아무도 정하지 않은 빈칸만 채운다"로 확정. 잘못 붙은 장르 수정은 관리자 권한(F-23)으로 미룸. v0 admin 화면에서 `title_norm`이 오염된 사건과 같은 계열 — 공유 데이터를 개별 사용자의 입력이 건드리는 문제
+- **장르 수를 세기 전에 게임 행을 잠근다 (`SELECT ... FOR UPDATE`)**
+  "0개인지 확인 → 채우기" 사이의 틈은 `title_norm` 부분 UNIQUE로 막을 수 없다. "장르가 0개여야 한다"는 행 하나의 규칙이 아니라 **개수** 규칙이라 DB 제약으로 표현되지 않는다. 잠금이 유일한 수단이고, 위 실측이 그 차이를 보여준다
+- **`find_or_create_game`의 반환값을 `(game, created)`로 바꾸지 않음**
+  처음엔 "방금 만든 게임인지"를 알아야 한다고 판단했으나, 새 게임은 장르가 당연히 0개이므로 "0개면 채운다" 한 규칙이 신규 · 기존을 모두 처리한다. 기존 시그니처를 유지하고 함수만 하나 추가
+- **장르 목록 API는 로그인 필요**
+  비밀 정보는 아니지만, 이 API를 쓰는 화면(S-03)은 어차피 로그인 뒤에 있다. "`/api/auth` 외에는 전부 로그인 필요"가 "대부분 필요, 단 장르는 예외"보다 기억하기 쉽고, 예외는 나중에 잊는 사람이 실수하는 자리다
+- **장르 목록 정렬은 `id`순**
+  `steam_genre_id`는 문자열이라 정렬하면 `"18"`이 `"2"`보다 앞에 온다. 09-21에 "id 숫자로 장르를 가리키지 말 것"을 배웠지만 그것은 **특정 장르를 지목**할 때의 이야기이고, 전체를 **한 번에 나열**하는 순서로는 id가 시드 입력 순서를 그대로 보존한다
+- **`EntryCreate`에 `extra="forbid"`**
+  Pydantic 기본값은 정의되지 않은 필드를 조용히 버린다. 그러면 `source: "STEAM"`을 보낸 쪽은 "보냈는데 왜 반영이 안 되지?"를 알 수 없다. 거부하면 그 자리에서 드러난다
+- **평점과 상태의 조합을 서버가 막지 않음**
+  `BACKLOG`에 `rating`이 와도 통과시킨다. UI_DESIGN 4.3절이 "재플레이해도 평점은 지우지 않고 숨긴다"이므로, 서버가 "PLAYING엔 평점 금지"를 걸면 그 규칙과 충돌한다. 보이고 안 보이고는 화면의 몫
+
+**막혔던 점 / 트러블슈팅**
+- 증상: `alembic current`가 `.\alembic\ : 용어가 cmdlet, 함수... 로 인식되지 않습니다`
+  - 원인: 탭 자동완성이 같은 이름의 **폴더**(`alembic/`)를 잡아 `.\alembic\`로 바뀜. 실행하려던 것은 venv에 설치된 **명령어** `alembic`
+  - 해결: 경로 없이 `alembic current`
+  - 교훈: 폴더명과 명령어 이름이 같으면 자동완성이 폴더를 우선한다
+- 증상: `git add renormalize .`가 `pathspec 'renormalize' did not match any files`
+  - 원인: `--`가 빠져 옵션이 아닌 **파일 이름**으로 해석됨
+  - 해결: `git add --renormalize .`
+  - 교훈: 새로 만든 파일은 `.gitattributes` 규칙이 `git add` 때 적용되므로 `--renormalize`가 필요 없다. 이 옵션은 **이미 커밋된** 파일을 규칙에 맞춰 다시 정리할 때 쓴다
+
+**배운 것**
+- relationship은 DB 구조를 바꾸지 않는다. 테이블 · 컬럼은 그대로이고 파이썬 쪽에 "따라가는 길"만 생긴다. `alembic check`가 이를 증명하는 수단이 된다
+- PostgreSQL 기본 격리 수준(READ COMMITTED)에서는 **SQL 문장 단위로** 그 시점에 commit된 최신 데이터를 본다. 잠금을 기다린 뒤 실행되는 COUNT는 새 문장이므로, 먼저 commit한 쪽의 결과가 보인다
+- `game_genres`는 ORM 클래스가 아니라 `Table` 객체라 컬럼을 `.c.game_id`로 꺼낸다
+- 비동기에서는 `game.genres.append()`를 쓸 수 없다. 목록을 먼저 불러와야 하는데 지연 로딩이 막혀 있어, 연결 테이블에 `insert()`로 직접 넣는다
+
+**다음에 할 일**
+- 보유 기록 등록 API — 장르 검증 → 게임 조회 · 생성 → 중복 409 → 장르 연결 → commit → 재조회
+- 작업 기기를 노트북에서 이어감 (`git pull` → `alembic current` 확인)
+
+---
+
+## 2026-09-22(오후/데스크톱 B) — M1 진행 중: 문서 참조 표기 통일 및 장르 연결 규칙 설계
+
+**관련 마일스톤**: M1 (백엔드 기초) → 진행 중
+
+**한 일**
+- 전 문서의 상호 참조 표기를 번호에서 이름 기준으로 통일 (`01~05 문서` → `REQUIREMENTS` · `ARCHITECTURE` · `ERD` · `UI_DESIGN` · `MILESTONES`)
+- 게임 CRUD 착수 전 설계 점검에서 "공유 데이터인 `games`의 장르를 누가 정하는가"가 미정임을 발견
+- ERD v1.6 — 2.5절에 **장르 연결 규칙** 신설 (상황별 동작 표, 행 잠금, F-23으로 이관할 범위)
+- UI_DESIGN v1.3 — 3.3절 규격 표에 "장르 (수정 모드)" 행 추가
+
+**결정 기록**
+- **설계 구멍은 코드를 짜기 전에 문서로 먼저 메운다**
+  `find_or_create_game`까지 만들어 놓고 등록 API로 넘어가려는 시점에, 기존 게임에 장르 입력이 들어오면 어떻게 되는지가 어느 문서에도 없었다. 구현하면서 정했다면 그 판단이 코드에만 남고 근거는 사라졌을 것이다. 결정 내용은 다음 세션 기록(09-22 저녁~밤) 참고
+
+**막혔던 점 / 트러블슈팅**
+- 증상: (문서 검수에서 발견) UI_DESIGN 3.3절에 행을 **추가**하려다 기존 `수정 모드` 행을 덮어씀
+  - 원인: 새 행의 라벨을 `장르 (수정 모드)`로 잡으면서 기존 행의 내용까지 그 뒤에 이어 붙임. 결과적으로 "수정 화면은 등록 화면을 재사용한다"는 규격이 장르 항목의 일부처럼 읽히게 됨
+  - 해결: 두 행으로 분리
+  - 교훈: 09-18의 "`git diff`로 삭제된 줄(`-`)을 훑는다"가 잡으라고 있는 유형. 표에 행을 추가할 때는 기존 행 수가 늘었는지 확인한다
+- 증상: (문서 검수에서 발견) UI_DESIGN 변경 이력에 "동시 요청 대비 게임 행 잠금"이 들어감
+  - 원인: ERD 변경 이력을 복사해 옴. 그 문서에서 실제로 바뀐 것보다 많은 내용을 주장하게 됨
+  - 해결: 해당 문서에서 바뀐 것만 남기고 상세는 ERD 참조로
+  - 교훈: 변경 이력은 그 문서에서 바뀐 것만 적는다. 같은 결정이라도 문서마다 바뀐 부분이 다르다
+
+**다음에 할 일**
+- 장르 목록 조회 API → 관계 · 스키마 정의 → 장르 연결 서비스 → 등록 API
+- Project Knowledge에 옛 `docs/05_milestones.md`(체크박스가 전부 빈 버전)가 남아 있어 재업로드 시 정리 필요
+
+---
 
 ## 2026-09-22(오전/노트북 → 데스크톱 B) — M1 진행 중: 게임 조회 · 생성 서비스 구현, wip 커밋을 force push로 대체
 
