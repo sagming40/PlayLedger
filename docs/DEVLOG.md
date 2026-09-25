@@ -10,7 +10,7 @@
 
 ## 현재 상태
 
-**진행 중** · M1 (백엔드 기초) — 모델 6종 · 마이그레이션 4건 · 인증 전 항목 · 장르 시드 · 정규화 규칙(`core/normalize.py`) · 게임 조회 · 생성 서비스(`find_or_create_game`) · 장르 목록 API · 장르 연결 서비스 · **보유 기록 CRUD 전체** 완료. 테스트 · CI · API_SPEC 남음
+**진행 중** · M1 (백엔드 기초) — 모델 6종 · 마이그레이션 4건 · 인증 전 항목 · 장르 시드 · 정규화 규칙(`core/normalize.py`) · 게임 조회 · 생성 서비스(`find_or_create_game`) · 장르 목록 API · 장르 연결 서비스 · 보유 기록 CRUD 전체 · **pytest 환경(테스트 전용 DB)** 완료. 실제 테스트 · CI · API_SPEC 남음
 
 **환경 요약**
 | 항목 | 값 |
@@ -22,18 +22,19 @@
 | Alembic | 1.20.0 (async 템플릿, 마이그레이션 4건 · head `1e1d15e51ba2`, 파일명 `날짜_시각_설명`) |
 | argon2-cffi | 25.1.0 (Argon2id, 비밀번호 해싱) |
 | PyJWT | 2.14.0 (access 토큰 서명, HS256) |
+| pytest · pytest-asyncio · httpx | 9.1.1 · 1.4.0 · 0.28.1 (실행은 `server/`에서 `pytest`) |
 | Vue · Vite · TypeScript | 3.5.42 · 8.3.0 · 6.0.2 |
 | Tailwind CSS · shadcn-vue | 4.3.3 · 2.8.2 (컴포넌트 미추가) |
-| PostgreSQL | 18.6 (`postgres:18` 컨테이너, 테이블 7개 — v1.0 범위 6종 + `alembic_version`) |
+| PostgreSQL | 18.6 (`postgres:18` 컨테이너, DB 2개 — `playledger` 테이블 7개 · `playledger_test`. 테스트 DB는 기기마다 `CREATE DATABASE` 필요) |
 | HeidiSQL | PostgreSQL 접속 가능한 버전 (데스크톱 B 12.21. 기기마다 버전이 달라도 무방) |
 | Docker · Compose | 29.8.0 · v5.5.1 |
 | 포트 | DB `5434` · API `8001` · 프론트 `5173` |
 | 이전 버전 | `v0-rn-django` 태그 (RN 0.87.0 + Django 6.1 + MariaDB 12.2.2) |
 | 대상 | 웹 (데스크톱 · 모바일 브라우저) |
 
-**실행 방법** · 터미널 3개 — 프로젝트 루트에서 `docker compose up -d` / `server`에서 `uvicorn app.main:app --reload --port 8001` / `web`에서 `npm run dev`
+**실행 방법** · 터미널 3개 — 프로젝트 루트에서 `docker compose up -d` / `server`에서 `uvicorn app.main:app --reload --port 8001` / `web`에서 `npm run dev` / 테스트는 `server`에서 `docker compose up -d` 후 `pytest`
 
-**다음에 할 일** · pytest 환경 구성(테스트 전용 DB) → 사용자 격리 · 중복 판별 · 장르 연결 동시 실행 · 토큰 테스트 → GitHub Actions → `06_api_spec.md` → M1 완료 처리 및 PR
+**다음에 할 일** · 사용자 격리 → 중복 판별 · 장르 연결 동시 실행 · 토큰 테스트 → GitHub Actions → `06_api_spec.md` → M1 완료 처리 및 PR
 
 ---
 
@@ -77,6 +78,95 @@
 ---
 
 <!-- 새 기록은 이 아래에 추가한다 (최신이 위로) -->
+
+## 2026-09-25(9/23 저녁 ~ 9/25 저녁/데스크톱 A) — M1 진행 중: pytest 환경 구성 완료, 실제 테스트 · CI · API_SPEC 남음
+
+**관련 마일스톤**: M1 (백엔드 기초) → 진행 중
+
+> 실작업은 9/23 · 9/24 저녁에 했고, 최종 검수와 커밋만 9/25에 했다. 기록은 작업일 기준으로 남긴다
+
+**한 일**
+
+*9/23 (저녁) — 환경 구성*
+- `pytest` · `pytest-asyncio` · `httpx` 설치, `requirements.txt` 갱신
+- 컨테이너 안에 테스트 전용 DB `playledger_test` 생성
+- `app/core/config.py` — `test_database_url` 추가 (기본값 빈 문자열)
+- `alembic/env.py` — `sqlalchemy.url`이 **비어 있을 때만** `.env` 값으로 채우도록 변경
+- `server/pytest.ini` 신설 — `pythonpath` · `testpaths` · `asyncio_mode=auto` · 루프 스코프 session 고정
+- `server/tests/conftest.py` 신설 — fixture 5개
+  - `test_db_url` — DB 이름이 `_test`로 끝나지 않으면 `pytest.exit` (개발 DB 오폭 차단기)
+  - `migrate` — session · autouse · **동기 함수**. `command.upgrade(cfg, "head")`
+  - `engine` — session 스코프, 인자에 `migrate`를 적어 순서를 명시
+  - `clean_tables` — 매 테스트 **시작 전** `TRUNCATE ... RESTART IDENTITY CASCADE` (`genres` 제외)
+  - `client` — `get_db`를 덮어쓴 `AsyncClient`, `base_url="https://test"`
+- `server/tests/test_smoke.py` 신설
+
+*9/24 (저녁) — 실행 및 수정*
+- 실행 전 검수에서 4건 수정 (아래 트러블슈팅)
+- 컨테이너를 안 띄운 채 `pytest -v` → 4건 전부 `ERROR`
+- 컨테이너 기동 후 `1 failed, 3 passed` → 이메일 도메인 수정 후 **`4 passed` (4.26초)**
+- 스모크 테스트를 3건 → 4건으로 늘림 (`test_leaves_a_user_behind` 추가)
+
+*9/25 (저녁) — 최종 검수 및 커밋*
+- `dependency_overrides.clear()` → `pop(get_db, None)`, `test_health`에 실패 메시지 추가, 주석 정정
+- `chore(M1): pytest 환경 구성 (테스트 전용 DB)` 1개로 커밋 (7파일, +174 −3)
+
+**결정 기록**
+- **테스트 DB를 같은 컨테이너 안의 별도 DB(`playledger_test`)로 둔다**
+  컨테이너를 하나 더 띄우면 포트를 또 배정해야 하고 `docker compose up` 절차가 늘어난다. PostgreSQL은 서버 하나 안에 DB를 여러 개 둘 수 있으므로 접속 주소 끝의 DB 이름만 달라진다. 대신 **DB는 Git으로 따라오지 않으므로 기기마다 `CREATE DATABASE`를 한 번씩** 해야 한다 (09-23에 배운 것의 연장)
+- **테스트 DB 스키마를 `create_all`이 아니라 `alembic upgrade head`로 만든다**
+  ①장르 8개 시드는 마이그레이션 `43b0fb42aaa8`에만 있고 모델 정의에는 없다. `create_all`로 만들면 `genres`가 빈 채로 시작해 장르 연결 테스트를 돌릴 수 없다. ②마이그레이션을 테스트에서 실행하지 않으면 "모델은 고쳤는데 마이그레이션 파일을 안 만든" 상태를 CI가 잡지 못한다. 09-21의 `text("steam_appid_ IS NULL")` 오타가 `upgrade` 순간에야 드러난 것과 같은 이유 — 마이그레이션은 실행해야 검증되는 코드다. 4개 도는 데 1초도 안 걸려 비용도 없다
+- **테스트 간 격리를 트랜잭션 롤백이 아니라 TRUNCATE로 한다**
+  검색하면 "각 테스트를 트랜잭션으로 감싸고 끝나면 롤백" 패턴이 가장 많이 나오고 더 빠르다. 그런데 남은 테스트 목록에 **장르 연결 동시 실행 테스트**가 있다. 09-22 밤에 확인한 그 동작은 먼저 들어온 쪽이 **진짜로 commit해야** 나중 쪽이 결과를 본다(READ COMMITTED). 전부를 롤백될 트랜잭션에 가두면 commit이 가짜가 되어 그 테스트가 검증 대상 자체를 무력화한다. 09-23의 "Swagger 예시 본문을 그대로 보내 PATCH 검증이 무효였던" 건과 같은 계열이라, 느려도 정직한 쪽을 택했다
+- **`migrate` fixture를 async가 아닌 동기 함수로 둔다**
+  alembic async 템플릿의 `run_migrations_online()`은 내부에서 `asyncio.run()`으로 자기 이벤트 루프를 연다. 이미 돌고 있는 루프 안에서 부르면 터지므로, 루프 밖인 동기 fixture에서 실행해야 한다
+- **`alembic/env.py`는 "비어 있을 때만 채운다"로 바꾼다**
+  기존에는 항상 `.env` 값으로 덮어써서, 테스트에서 테스트 DB 주소를 넣어도 개발 DB로 마이그레이션이 갔다. **게임 장르를 0개일 때만 채우는 규칙(ERD 2.5절)과 정확히 같은 패턴** — 빈칸만 채우고 남이 정해둔 값은 건드리지 않는다. 평소 `alembic` 명령은 `alembic.ini`의 `sqlalchemy.url`이 비어 있으므로 동작이 그대로다
+- **테스트 DB 이름이 `_test`로 끝나지 않으면 시작조차 하지 않는다**
+  `clean_tables`는 테이블을 통째로 비운다. `TEST_DATABASE_URL`을 실수로 개발 DB로 적으면 손으로 만든 검증 데이터가 전부 날아간다. 되돌릴 수 없는 동작이므로 차단기를 사고 전에 달았다. `pytest.exit` 메시지에는 전체 URL이 아니라 **DB 이름만** 찍는다 (URL에 비밀번호가 들어 있음)
+- **스모크 테스트에 "흔적을 남기는 테스트"를 추가**
+  처음 3건으로는 `clean_tables`가 검증되지 않았다. 아무도 데이터를 안 남기므로 `users`가 0인 것이 "비워졌다"가 아니라 "원래 0"이었다. 회원가입 1건을 일부러 남기는 테스트를 앞에 두어야 다음 테스트의 0이 증거가 된다. 09-21의 "길이 초과 예시가 사실 초과가 아니었던" 건과 같은 계열
+- **7개 파일을 커밋 하나로 묶는다**
+  `conftest.py`만 되돌리면 `pytest.ini`가 가리킬 대상이 없고, `env.py` 수정만 되돌리면 마이그레이션이 개발 DB로 가서 테스트가 전부 깨진다. 지침의 *"이것만 따로 되돌리고 싶을 수 있는가?"* 에 답이 "아니오"다. M0에서 venv · FastAPI · 설정 · 엔진 · Alembic을 한 덩어리로 묶은 것과 같은 판단. type을 `feat`이 아니라 `chore`로 둔 이유는 앱 기능이 하나도 늘지 않았기 때문이고, `test(M1):`은 실제 검증 테스트를 넣는 다음 세션의 자리다
+
+**막혔던 점 / 트러블슈팅**
+- 증상: (실행 전 검수에서 발견) `override_get_db`가 `yield session`이 아니라 `yield`
+  - 원인: `async with TestSession() as session:`으로 이름은 받아놓고 넘기지 않음. 문법상 완전히 유효해 파이썬도 에디터도 잡지 않는다
+  - 해결: `yield session`
+  - 교훈: 그대로 뒀다면 `Depends(get_db)`가 `None`을 주입해 **라우터에서** `AttributeError` 500이 났을 것이다. 틀린 곳(conftest)과 터지는 곳(라우터)이 갈려서, 트레이스백만 보면 "어제까지 멀쩡하던 라우터가 왜?"로 읽힌다. 09-23의 `purchased_price` 오타와 같은 계열
+- 증상: `test_leaves_a_user_behind`가 `FAILED` — `assert 422 == 201`
+  - 원인: 이메일을 `dirty@test.local`로 적었는데, `EmailStr`이 쓰는 `email-validator`가 **RFC 6761의 특수 용도 도메인**(`local` · `test` · `localhost` · `invalid` 등)을 기본적으로 거절한다. 형식은 완벽한 이메일인데 의미 때문에 막힌 것
+  - 해결: IANA가 문서 · 테스트용으로 예약한 `example.com`으로 교체 → 통과
+  - 교훈: 09-20의 "`verify_password`에 한글을 넣었더니 `False`가 아니라 `UnicodeEncodeError`"와 같은 계열 — 라이브러리가 모양이 아니라 **의미**까지 보는 경우. 눈으로는 절대 못 찾는다
+- 증상: 컨테이너를 안 띄운 채 실행해 4건 전부 `ERROR`, 맨 아래 `ConnectionRefusedError: [WinError 1225]`
+  - 원인: `docker compose up -d`를 먼저 하지 않음. 5434에서 아무도 듣고 있지 않아 즉시 거부됨
+  - 해결: 컨테이너 기동 후 재실행
+  - 교훈: **`FAILED`와 `ERROR`는 가리키는 방향이 반대다.** FAILED는 테스트 본문이 실행돼 `assert`가 틀린 것(= 코드 문제), ERROR는 본문에 들어가지도 못하고 fixture에서 터진 것(= 환경 문제). 표시 한 단어로 수색 범위가 반으로 줄어든다. 4건이 **나란히** 죽은 것도 "공유하는 fixture가 범인"이라는 신호였다. 1225만으로는 "Docker가 꺼짐"과 "컨테이너만 안 뜸"을 구분할 수 없고, 전자는 `docker compose` 명령 자체가 `dockerDesktopLinuxEngine` 에러를 낸다(09-21에 두 번 겪음)
+- 증상: (검수에서 발견) `test_starts_empty`가 통과해도 아무것도 증명하지 못하는 상태였음
+  - 원인: 앞 테스트들이 `users`에 아무것도 남기지 않아, 0인 것이 TRUNCATE의 결과가 아니라 원래 상태였다. `clean_tables`를 통째로 주석 처리해도 똑같이 통과한다
+  - 해결: 회원가입 1건을 남기는 테스트를 바로 앞에 배치 (pytest는 파일에 적힌 순서대로 실행한다)
+  - 교훈: **초록불이 곧 증거는 아니다.** 그 테스트가 무엇을 깨뜨려야 실패하는지 말할 수 없으면, 지키는 것이 없는 테스트다. 실제로 이메일 422로 회원가입이 막혔던 순간에도 `test_starts_empty`는 PASSED였고, 그건 "3 passed"가 아니라 "2 passed + 1 unknown"으로 읽어야 했다
+
+**배운 것**
+- `assert` 뒤에 쉼표로 값을 붙이면 **실패했을 때만** 출력된다. 422 응답의 `detail`에는 `loc`(어느 필드) · `type`(무슨 규칙) · `input`(무슨 값)이 전부 들어 있는데, `assert res.status_code == 201`만 쓰면 그 정보가 통째로 버려진다. 09-20 밤의 "uvicorn 로그에 상태 코드만 남아 나 자신도 원인을 모른다"와 같은 문제를 테스트에서는 `, res.json()` 한 조각으로 막을 수 있다
+- PowerShell의 `>`는 bash의 리디렉션이 아니라 `Out-File`의 축약형이다. Windows PowerShell 5.1에서는 결과가 **UTF-16 + BOM**으로 저장돼, 그 `requirements.txt`로 `pip install -r`을 돌리면 다른 PC에서 `Invalid requirement: '\ufffd\ufffdf'`가 난다. 09-18의 `.env` 줄바꿈(`\r`) 문제와 같은 계열 — 내용은 맞는데 보이지 않는 바이트 때문에 기계가 거부한다. `python -m pip freeze | Out-File -Encoding ascii`로 인코딩을 못 박았다. `.gitattributes`는 줄바꿈만 고쳐주고 **인코딩은 만드는 순간의 명령어가 유일한 방어선**이다
+- `python -m pip`은 "지금 켜진 그 파이썬의 pip"을 보장한다. `pip`은 PATH 순서가 정한다
+- httpx `ASGITransport`는 서버를 띄우지 않고 앱 객체에 요청을 직접 넣는다. 포트도 네트워크도 쓰지 않아 `uvicorn` 없이 테스트가 돈다. 다만 `base_url`을 `http://`로 두면 **refresh 쿠키의 `Secure` 때문에 쿠키가 실리지 않으므로** `https://test`로 둬야 한다 (rotation 테스트에서 드러날 함정을 미리 막음)
+- 실행 로그의 `rootdir` · `configfile` · `asyncio: mode=Mode.AUTO ... loop_scope=session` 줄은 설정이 먹었다는 영수증이다. 경고 없이 찍히면 버전 호환을 따로 확인할 필요가 없다
+- `pip freeze`는 직접 설치한 것뿐 아니라 끌려온 의존성(`anyio` · `pluggy` · `h11` 등)까지 전부 뱉는다. "내가 뭘 원했는지"는 안 남지만, 버전을 통째로 못 박아 다른 PC에서 재현하는 것이 목적이므로 지금 규모에선 이게 맞다
+
+**발견 사항 (지금 조치하지 않음)**
+- `TABLES_TO_CLEAR`가 문자열이라, M7 `wishlist_items` · M10 `play_sessions`를 추가할 때 **여기에 안 적으면 에러 없이 조용히 안 비워진다.** 09-19의 "설정 키 오타는 '틀렸다'가 아니라 '없다'로 처리된다"와 같은 유형. 테이블을 늘릴 때 이 상수를 함께 고칠 것
+- `config.py`의 `env_file=".env"`가 상대 경로라 **`pytest`는 반드시 `server/`에서 실행해야 한다.** 다른 위치에서 돌리면 `.env`를 못 찾아 `database_url` 필수값이 비고, conftest의 import 줄에서 터진다. GitHub Actions에 `working-directory: server`를 빠뜨리면 정확히 이 에러가 난다
+- M5 `README` 실행 방법 재료 — `pytest` 전에 `docker compose up -d`가 먼저다 / `playledger_test` DB는 기기마다 직접 만든다 (`.env.example`에 안내 추가함)
+
+**다음에 할 일**
+- 사용자 격리 테스트 — M1 완료 기준 첫 줄("A 계정의 기록이 B 계정에 안 보임")
+- 게임 중복 판별(동시 등록 포함) · 장르 연결 동시 실행 · 토큰 만료 · rotation 테스트
+- GitHub Actions — `working-directory: server`, PostgreSQL 서비스 컨테이너 + `TEST_DATABASE_URL`
+- `06_api_spec.md` → M1 완료 처리 후 PR
+
+---
 
 ## 2026-09-23(점심~오후/데스크톱 A) — M1 진행 중: 보유 기록 CRUD 완성, 테스트 · CI · API_SPEC 남음
 
