@@ -14,9 +14,11 @@ from app.models import Base  # noqa: F401 (model 등록을 위해 반드시 impo
 # access to the values within the .ini file in use.
 config = context.config
 
-# 접속 주소는 alembic.ini가 아니라 .env에서 읽어 주입한다.
-# ini 파일은 Git에 추적되므로 비밀번호를 노출시키면 안된다.
-config.set_main_option("sqlalchemy.url", settings.database_url)
+# 접속 주소는 alembic.ini에 적지 않는다 ─ ini는 Git에 추적되므로 비밀번호가 노출된다.
+# 그래서 비어 있으면 .env 값으로 채우고, 외부에서 주소를 넣어준 경우(= 테스트)엔 그 값을 존중한다.
+# "게임 장르가 0개일 때만 채운다"와 똑같은 패턴이다 ─ 빈칸만 채우고, 남이 정해둔 값은 건드리지 않는다.
+if not config.get_main_option("sqlalchemy.url", None):
+    config.set_main_option("sqlalchemy.url", settings.database_url)
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
