@@ -96,3 +96,35 @@ async def client(engine):
         yield ac
 
     app.dependency_overrides.pop(get_db, None)
+
+
+@pytest.fixture
+def auth_headers(client):
+    """계정을 하나 만들고 로그인까지 끝낸 후, 요청에 붙일 '출입증'을 돌려주는 공장
+
+    한 테스트에서 A·B 두 계정이 필요하므로 고정값이 아닌
+    '부르면 계정을 하나 만들어 주는 함수'를 반환한다.
+    """
+
+    async def _make(email: str, nickname: str = "tester") -> dict[str, str]:
+        password = "testpass123"
+
+        # ① 가입 ─ 실패하면 res.json()의 어느 fields가 왜 틀렸는지가 다 들어있다
+        res = await client.post(
+            "/api/auth/register",
+            json={"email": email, "password": password, "nickname": nickname},
+        )
+        assert res.status_code == 201, res.json()
+
+        # ② 로그인 ─ access 토큰은 응답 본문, refresh는 cookie로 온다
+        res = await client.post(
+            "/api/auth/login",
+            json={"email": email, "password": password},
+        )
+        assert res.status_code == 200, res.json()
+
+        # ③ 출입증 형태로 가공해서 넘긴다 ─ test는 headers=에 그대로 꽂으면 끝
+        token = res.json()["access_token"]
+        return {"Authorization": f"Bearer {token}"}
+
+    return _make
