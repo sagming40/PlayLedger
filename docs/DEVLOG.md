@@ -10,7 +10,7 @@
 
 ## 현재 상태
 
-**진행 중** · M1 (백엔드 기초) — 모델 6종 · 마이그레이션 4건 · 인증 전 항목 · 장르 시드 · 정규화 규칙(`core/normalize.py`) · 게임 조회 · 생성 서비스(`find_or_create_game`) · 장르 목록 API · 장르 연결 서비스 · 보유 기록 CRUD 전체 · **pytest 환경(테스트 전용 DB)** 완료. 실제 테스트 · CI · API_SPEC 남음
+**진행 중** · M1 (백엔드 기초) — 모델 6종 · 마이그레이션 4건 · 인증 전 항목 · 장르 시드 · 정규화 규칙(`core/normalize.py`) · 게임 조회 · 생성 서비스(`find_or_create_game`) · 장르 목록 API · 장르 연결 서비스 · 보유 기록 CRUD 전체 · **pytest 환경(테스트 전용 DB)** · **사용자 격리 테스트 7건** 완료 (스모크 4건 포함 11 passed). 동시 실행 · 토큰 테스트 · CI · API_SPEC 남음
 
 **환경 요약**
 | 항목 | 값 |
@@ -34,7 +34,7 @@
 
 **실행 방법** · 터미널 3개 — 프로젝트 루트에서 `docker compose up -d` / `server`에서 `uvicorn app.main:app --reload --port 8001` / `web`에서 `npm run dev` / 테스트는 `server`에서 `docker compose up -d` 후 `pytest`
 
-**다음에 할 일** · 사용자 격리 → 중복 판별 · 장르 연결 동시 실행 · 토큰 테스트 → GitHub Actions → `06_api_spec.md` → M1 완료 처리 및 PR
+**다음에 할 일** · 장르 연결 동시 실행 · 중복 판별 · 토큰 테스트 → GitHub Actions → `06_api_spec.md` → M1 완료 처리 및 PR
 
 ---
 
@@ -78,6 +78,73 @@
 ---
 
 <!-- 새 기록은 이 아래에 추가한다 (최신이 위로) -->
+
+## 2026-09-25(밤/데스크톱 A) — M1 진행 중: 사용자 격리 테스트 7건 통과, 완료 기준 첫 줄 충족
+
+**관련 마일스톤**: M1 (백엔드 기초) → 진행 중
+
+> 실작업은 9/25 밤이고, 문서 정리는 추석 연휴로 9/27에 했다. **기록은 작업일 기준**
+
+**한 일**
+- `tests/conftest.py` — `auth_headers` fixture 추가. 값이 아니라 **함수를 돌려주는 fixture**로, 부를 때마다 계정을 하나 만들고 로그인까지 끝내 `Authorization` 헤더를 반환
+- `tests/test_entry_isolation.py` 신설 — 7건
+  - `test_entries_require_login` — 토큰 없이 목록 요청 시 401 (격리의 전제 조건)
+  - `test_list_shows_only_own_entries` — A · B가 각각 기록을 남긴 뒤, 개수뿐 아니라 **제목 목록까지** 대조
+  - `test_other_users_entry_is_not_readable` — 남의 기록 id 직접 조회 404
+  - `test_other_users_entry_looks_exactly_like_a_missing_one` — 남의 것 404와 없는 것 404의 **응답 본문이 동일**한지
+  - `test_other_users_entry_is_not_editable` — PATCH 404 + 주인 쪽에서 **원본 불변** 확인
+  - `test_other_users_entry_is_not_deletable` — DELETE 404 + 주인 쪽에서 **생존** 확인
+  - `test_same_game_can_be_registered_by_both_users` — 같은 게임을 두 사용자가 각각 등록 가능, 게임 행은 공유되고 제목은 A가 적은 그대로
+- 스모크 4건 + 격리 7건 = **11 passed (5.26초)**
+- 뮤테이션 테스트로 테스트 자체를 검증 (아래 트러블슈팅 · 배운 것)
+- `test(M1): 사용자 격리 테스트 추가` 커밋
+
+**결정 기록**
+- **`auth_headers`를 "함수를 돌려주는 fixture"로 만든다**
+  격리 테스트는 계정이 **반드시 둘** 필요하다. 값 하나를 돌려주는 평범한 fixture로는 A와 B를 동시에 만들 수 없다. fixture 자체는 동기 함수이고 안쪽 `_make`만 async인데, "공장을 짓는 일"은 동기이고 "공장을 돌리는 일"이 비동기이기 때문이다
+- **404 검증에 "원본 불변"을 함께 확인한다**
+  상태 코드만 보면 라우터가 404를 던지기 **전에** UPDATE · DELETE를 날려놓은 경우를 잡지 못한다. 겉으로 드러난 응답만으로는 속을 수 있으므로, 주인 계정으로 다시 조회해 값이 그대로인지까지 본다
+- **"남의 것 404"와 "없는 것 404"의 응답 본문이 같은지를 테스트로 옮긴다**
+  403이 아니라 404를 주는 이유(`MILESTONES` M1 인용구)는 "존재 여부를 알려주지 않기 위해서"다. 그렇다면 상태 코드가 같은 것만으로는 부족하고 본문까지 같아야 논리가 지켜진다. 09-23에 `content-length: 46`으로 손 대조한 것을 코드로 옮긴 것
+- **두 사용자가 같은 게임을 등록할 수 있는지를 테스트한다**
+  중복 방지는 "한 사용자 안에서"의 규칙이다. UNIQUE가 `(user_id, game_id)`가 아니라 `game_id` 하나로 걸려 있었다면 두 번째 사용자가 409를 받는데, 이건 격리가 **과하게** 걸린 버그다. 격리 테스트가 "못 보게 막혔는가"만 보면 이 방향의 실수를 놓친다
+- **`A_EMAIL` · `B_EMAIL`을 모듈 상수로 둔다**
+  `clean_tables`가 매 테스트 전에 비우므로 같은 주소를 재사용해도 충돌하지 않는다. 중복 판별 테스트 파일이 생기면 `conftest.py`로 올릴지 다시 판단한다
+
+**막혔던 점 / 트러블슈팅**
+- 증상: 뮤테이션 1차 시도 — `list_entries`의 `conditions = [Entry.user_id == user_id]` 줄을 주석 처리했더니 빨간불은 났으나 `NameError: name 'conditions' is not defined`
+  - 원인: 변수 정의를 지우자 그 변수를 쓰는 `.where(*conditions)` 두 줄이 갈 곳을 잃어 **함수가 500으로 폭발**했다. 격리가 풀린 게 아니라 코드가 아예 안 돈 것
+  - 해결: 주석을 되돌리고 `conditions = []` 한 줄을 **덧붙여** 조건만 비움. `where()`는 정상 동작하되 모든 사용자의 기록이 나오는 상태를 재현
+  - 교훈: **뮤테이션은 코드를 부수는 게 아니라 기능만 바꾸는 것이다.** 금고 열쇠가 작동하는지 보려다 문짝을 떼어버리면 아무것도 확인되지 않는다. `NameError`로 빨개진 테스트는 "격리를 지킨다"가 아니라 "함수가 실행은 된다는 걸 요구한다"만 말한다. 09-25의 "초록불이 곧 증거는 아니다"의 뒷면 — **빨간불도 왜 빨간지 확인해야 한다**
+- 증상: `git commit -m "제목" -m` → `error: switch 'm' requires a value`
+  - 원인: `-m`을 두 번 쓰면 첫 번째가 Summary, 두 번째가 Description이 되는데 값을 안 적고 끝냄
+  - 해결: PowerShell에서 여러 줄 Description은 따옴표 안 줄바꿈(`>>` 연속 프롬프트)을 타야 해 사고가 나기 쉬웠다. `-m` 없이 `git commit`만 쳐서 편집기로 작성
+  - 교훈: 붙여넣을 때 큰따옴표까지 딸려 들어가 커밋 제목이 `"test(M1): ..."`이 될 뻔했다. 편집기에서는 따옴표가 필요 없다
+- 증상: `git push`가 `! [rejected] ... (non-fast-forward)`, 직전 `git status`는 `Your branch is up to date`
+  - 원인: 커밋 메시지를 고치려고 `git reset --soft HEAD~1`을 **두 번** 눌렀다. `HEAD~1`은 "한 칸 뒤"라 누를 때마다 기준이 옮겨가, 오늘 커밋뿐 아니라 **직전 세션의 문서 커밋(`193c512`)까지** 풀렸다. 그 상태로 `git add .` → 커밋하니 `2 files changed`였던 것이 `5 files changed, 267 insertions(+), 11 deletions(-)`로 불어남 — 테스트 커밋이 DEVLOG · 05_milestones · README 변경분을 통째로 흡수한 것
+  - 해결: `git reset --soft HEAD~1`(한 번만) → `git reset`(스테이징 해제) → `git stash` → `git merge --ff-only origin/m1-backend`(문서 커밋 되찾기) → `git stash pop` → 두 파일만 골라 `git add` → 커밋. 결과적으로 문서 `+103 −11` · 테스트 `+164 −0`으로 원래대로 갈라짐
+  - 교훈: **`git status`의 "up to date"는 마지막 fetch 시점 기준이라 로컬 reset을 반영하지 못한다.** 이 사고를 알려준 유일한 경보가 push 거부였다. 09-20 · 09-22에 이은 **세 번째 reset 사고**이고, 이번 변수는 "몇 칸을 되돌렸는가"다. 커밋 메시지만 고칠 거면 `git commit --amend`를 쓴다 — HEAD를 옮기지 않고 맨 위 커밋의 메시지만 바꾸므로 아래 커밋을 건드릴 위험이 없다
+
+**배운 것**
+- **뮤테이션 테스트** — 지키려는 코드를 일부러 망가뜨려 테스트가 빨개지는지 보는 것. 초록불만으로는 그 테스트가 실제로 무언가를 지키는지 알 수 없다. `conditions = []`로 필터를 비우자 A 계정 응답에 B의 `Celeste`가 섞여 나왔고, `assert body["total"] == 1, body`의 `, body` 덕분에 **제목까지 찍혀** 눈으로 확인됐다. 개수만 봤으면 "2가 나왔네"에서 끝났을 것
+- 뮤테이션 하나가 정확히 해당 테스트만 빨갛게 만들었다. `get_entry`를 타는 404 테스트 4건은 그대로 PASSED였고, 이는 **테스트끼리 엉켜 있지 않다**는 신호다
+- 09-23에 "목록과 개수가 같은 기준을 쓰게 하려고" `conditions`를 변수로 뺀 설계가 여기서 **검증 도구로 재활용**됐다. 한 줄만 건드려도 두 쿼리에 동시에 반영된다. 조건을 두 군데에 따로 적었다면 `total: 2`인데 `items`는 1개인 이상한 상태가 나왔을 것
+- 트레이스백에 `user_id = 1`이 찍혔다. `clean_tables`의 `RESTART IDENTITY` 덕에 A는 매번 1번이다. id가 실행마다 달라졌다면 로그만 보고 A인지 B인지 구분할 수 없었다
+- fixture 안의 `assert`는 fixture 단계가 아니라 **테스트 본문에서 그 함수를 호출할 때** 실행된다. 그래서 `auth_headers`의 가입 실패는 `ERROR`가 아니라 `FAILED`로 뜬다 — 09-25에 정리한 FAILED/ERROR 판별법의 예외가 되는 유일한 자리
+
+**발견 사항 (지금 조치하지 않음)**
+- `test_same_game_can_be_registered_by_both_users`는 "격리"와 "제목 정규화로 같은 게임을 찾는 것" 두 가지를 동시에 재고 있다. 나중에 빨개지면 어느 쪽이 깨진 건지 바로 알 수 없다. 중복 판별 테스트 파일을 만들 때 이관 여부를 판단할 것
+- 동시 실행 테스트(장르 연결 · 중복 등록)는 `client` fixture 하나를 A · B가 공유하는 지금 구조로는 어려울 수 있다. 로그인할 때마다 refresh 쿠키가 덮어써지고, `asyncio.gather`로 동시 요청을 보내려면 세션이 갈라져야 한다. 착수 시 클라이언트를 계정별로 만드는 방안부터 검토
+- Project Knowledge에 같은 문서가 두 벌씩 올라가 있다 (GitHub Sync 소스가 `main` · `m1-backend` 둘 + 수동 업로드). 내용은 같지만 검색 결과가 중복되므로 재업로드 시 한 벌로 정리할 것
+
+**다음에 할 일**
+- 장르 연결 동시 실행 테스트 (09-22에 임시 스크립트로 확인한 동작을 코드로 이관)
+- 게임 중복 판별 테스트 (표기만 다른 제목 · 동시 등록 시 4단계 재조회)
+- 토큰 만료 · rotation 테스트
+- GitHub Actions — `working-directory: server`, PostgreSQL 서비스 컨테이너 + `TEST_DATABASE_URL`
+- `06_api_spec.md` → M1 완료 처리 후 PR
+
+---
 
 ## 2026-09-25(9/23 저녁 ~ 9/25 저녁/데스크톱 A) — M1 진행 중: pytest 환경 구성 완료, 실제 테스트 · CI · API_SPEC 남음
 
