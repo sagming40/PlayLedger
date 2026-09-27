@@ -128,3 +128,14 @@ def auth_headers(client):
         return {"Authorization": f"Bearer {token}"}
 
     return _make
+
+
+@pytest_asyncio.fixture
+async def session_factory(engine):
+    """TEST가 직접 DB SESSION을 여는 통로
+
+    client fixture는 '요청이 오면 FastAPI가 자동으로 SESSION을 생성하는' 구조이다
+    즉, TEST가 SESSION을 손에 쥘 수 없다. 동시 실행을 TEST하려면 두 SESSTION의 순서를
+    TEST가 직접 지휘해야 하므로 통로를 따로 구분짓는다
+    """
+    return async_sessionmaker(engine, expire_on_commit=False)
