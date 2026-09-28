@@ -10,7 +10,7 @@
 
 ## 현재 상태
 
-**완료** · M1 (백엔드 기초) — 모델 6종 · 마이그레이션 4건 · 인증 전 항목 · 장르 시드 · 정규화 규칙(`core/normalize.py`) · 게임 조회 · 생성 서비스(`find_or_create_game`) · 장르 목록 API · 장르 연결 서비스 · 보유 기록 CRUD 전체 · pytest 환경 · 테스트 19건 · **GitHub Actions** · **API_SPEC** 완료. PR 병합 대기
+**완료** · M1 (백엔드 기초) — 모델 6종 · 마이그레이션 4건 · 인증 전 항목 · 장르 시드 · 정규화 규칙(`core/normalize.py`) · 게임 조회 · 생성 서비스(`find_or_create_game`) · 장르 목록 API · 장르 연결 서비스 · 보유 기록 CRUD 전체 · pytest 환경 · 테스트 19건 · **GitHub Actions** · **API_SPEC** 완료. **PR #2 병합 완료** (2026-09-28)
 
 **환경 요약**
 | 항목 | 값 |
@@ -35,7 +35,7 @@
 
 **실행 방법** · 터미널 3개 — 프로젝트 루트에서 `docker compose up -d` / `server`에서 `uvicorn app.main:app --reload --port 8001` / `web`에서 `npm run dev` / 테스트는 `server`에서 `docker compose up -d` 후 `pytest`
 
-**다음에 할 일** · M1 PR 병합 → `m2-frontend` 브랜치 생성 → M2 착수
+**다음에 할 일** · M2 착수 — 메인 레이아웃 · 라우터 · API 호출 모듈 · auth 스토어
 
 ---
 
