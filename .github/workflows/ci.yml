@@ -1,0 +1,75 @@
+# .github/workflows/ci.yml
+# SERVER AUTO TEST ─ push할 때마다 GitHub가 빌려주는 CLEAN한 UBUNTU에서 pytest를 돌린다
+
+name: server-ci
+
+# 예정 작업 지시 ─ 자동문 센서를 어디에 달지
+on:
+  push:
+    branches: [main, "m*"]                   # m1-backend, m2-frontend, ... ─ 앞으로 생성될 BRANCH 전부
+  pull_request:
+    branches: [main]                         # main으로 merge될 PR은 무조건 검사
+
+permissions:
+  contents: read                             # 이 workflow는 코드를 "읽기만" 한다 (최소 권한)
+
+jobs:
+  test:
+    runs-on: ubuntu-latest                   # GitHub를 통해 사용할 수 있는 1회용 computer
+    timeout-minutes: 10                      # 잠금 대기 TEST가 풀리지 않는다면 여기서 끊는다
+
+    # run으로 시작하는 모든 명령을 server/ 안에서 실행한다
+    # 이 설정이 없다면 pytest가 root에서 돌아 server/pytest.ini를 못 찾는다
+    # ─ pythonpath 설정이 사라져 conftest의 from app... import부터 터진다
+    # (.env는 CI에 아예 없다. 그 값들은 아래 env: 블록이 대신 넘긴다)
+    defaults:
+      run:
+        working-directory: server
+
+    # docker compose up -d의 CI 버전 ─ job이 시작되기 전에 GitHub가 먼저 띄워준다
+    services:
+      db:
+        image: postgres:18                   # local container와 동일한 major 버전으로 맞춘다
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: playledger_test       # ⭐ _test로 끝나야 conftest의 차단기를 통과한다
+        ports:
+          - 5432:5432                        # local은 5434지만 아예 분리된 다른 공간이므로 충돌 걱정이 없다
+        # DB가 "떴다"와 "받을 준비가 되었다"는 엄연히 다른 의미이다 ─ 준비가 될때까지 대기시킨다
+        # docker-compose.yml에 적어둔 healthcheck(pg_isready)와 똑같은 역할
+        options: >-
+          --health-cmd "pg_isready -U ci -d playledger_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    # .env가 없는 공간이므로 .env에 적혀있는 값을 직접 넣어준다
+    # config.py의 Settings는 .env 파일이든 환경변수든 똑같이 읽는다 (대소문자 구분 X)
+    env:
+      # 필수값이기 때문에 값이 없으면 SERVER가 아예 뜨지 않지만, TEST는 get_db를 갈아끼우므로 실제로 접속을 하진 않는다
+      # 일부러 존재하지 않는 DB를 가리킨다 ─ 혹시 override가 새는 경우가 생길수 있으므로 조용히 넘어가지 않고 터지게 만든다
+      DATABASE_URL: postgresql+asyncpg://ci:ci@localhost:5432/playledger
+      TEST_DATABASE_URL: postgresql+asyncpg://ci:ci@localhost:5432/playledger_test
+      # 32 bytes 이상 ─ HS256의 크기는 SHA-256 출력(32B)크기 만큼은 되어야 한다 (RFC 7518 §3.2)
+      # 실제 키가 아니다. CI와 함께 사라지는 DUMMY이지만 길이 규격은 지킨다
+      JWT_SECRET_KEY: ci-only-throwaway-key-do-not-use-anywhere-else
+
+    steps:
+      # ① 저장소 내려받기 (남의 주방에 내 레시피 들고 들어가기)
+      - uses: actions/checkout@v6
+
+      # ② Python 설치 + pip caches (매번 asyncpg를 build하면 느리다)
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: server/requirements.txt   # 이 PATH만 ROOT 기준이다
+
+      # ③ 의존성 설치 ─ CI는 1회용 컴퓨터라 venv를 따로 생성하지 않는다 (격리할 이웃이 없음)
+      - name: 의존성 설치
+        run: pip install -r requirements.txt
+
+      # ④ 본론. conftest의 migrate fixture가 alembic upgrade head까지 자동으로 해준다
+      - name: 테스트 실행
+        run: pytest -v

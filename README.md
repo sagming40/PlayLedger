@@ -16,10 +16,11 @@
 PlayLedger는 보유 목록이 아니라 **소비 이력**을 기록합니다.
 언제 얼마에 샀고, 얼마나 했고, 얼마나 방치했는지를 숫자로 환산해서 보여줍니다.
 
-> **현재 상태: M0(환경 구성) 완료 · M1(백엔드 기초) 착수 예정**
+> **현재 상태: M1(백엔드 기초) 완료 · M2(프론트 연동) 착수 예정**
 >
-> Vue 3 + FastAPI 스택으로 재설계했습니다. 화면 → 서버 → DB가 한 줄로 이어지는 것까지 확인했고,
-> 다음 단계에서 인증과 게임 CRUD를 구현합니다.
+> Vue 3 + FastAPI 스택으로 재설계했습니다. 인증(가입 · 로그인 · 토큰 재발급 · 로그아웃)과
+> 보유 기록 CRUD를 API로 구현했고, 핵심 규칙 19건을 자동 테스트로 보호하며 push마다 CI가 검증합니다.
+> 다음은 화면(Vue)을 붙이는 단계입니다.
 > React Native + Django로 진행하던 이전 버전은 [`v0-rn-django`](../../tree/v0-rn-django) 태그에 보존되어 있습니다.
 
 ---
@@ -229,7 +230,7 @@ playledger/
 | [데이터 모델](docs/03_erd.md) | 테이블 9종, 관계 설계, 조회 쿼리 |
 | [화면 설계서](docs/04_ui_design.md) | 화면 8종, 네비게이션, 상태 전환 |
 | [개발 일정](docs/05_milestones.md) | 마일스톤, 완료 기준, 일정 리스크 |
-| API 명세서 | 인증 흐름과 에러 규칙 *(작성 예정)* |
+| [API 명세서](docs/06_api_spec.md) | 인증 계약과 에러 응답 규칙 |
 | [DEVLOG](docs/DEVLOG.md) | 세션별 작업 기록, 트러블슈팅 |
 
 > 엔드포인트 목록은 FastAPI가 자동으로 만들어주는 Swagger 화면(`/docs`)으로 대신합니다.
@@ -271,18 +272,39 @@ uvicorn app.main:app --reload --port 8001
 npm run dev
 ```
 
+**테스트 — `server/`**
+
+```powershell
+# 최초 1회만 — 테스트 전용 DB 생성 (기기마다 필요)
+docker compose exec db psql -U <루트 .env의 사용자명> -d playledger -c "CREATE DATABASE playledger_test;"
+
+# 실행 (DB 컨테이너가 떠 있어야 함)
+pytest -v
+```
+
+> `server/.env`에 `TEST_DATABASE_URL`이 필요합니다. `DATABASE_URL`과 같되 DB 이름만 `playledger_test`입니다.
+
 > `Activate.ps1` 실행이 차단되면 `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` 후 다시 시도합니다.
+
 **사용 중인 포트와 설치 버전은 [DEVLOG 환경 요약](docs/DEVLOG.md#현재-상태)이 기준입니다.**
 
 ---
 
 ## 개발 환경
 
-| 항목 | 값 |
-|---|---|
-| OS | Windows 11 |
-| 개발 기기 | Ryzen 5 9600X / RTX 5070 / DDR5 32GB |
-| 대상 | 웹 (데스크톱 · 모바일 브라우저) |
+3대의 Windows 11 기기를 오가며 개발합니다.
+어느 기기에서든 같은 절차(클론 → `.env` 작성 → `alembic upgrade head`)로 실행됩니다.
+테스트를 돌리려면 테스트 전용 DB 생성이 한 번 더 필요합니다 (위 "시작하기" 참고).
+
+| 기기 | CPU | 메모리 | GPU |
+|---|---|---|---|
+| 데스크톱 A | AMD Ryzen 5 9600X | DDR5 32GB | RTX 5070 |
+| 데스크톱 B | AMD Ryzen 9 5900X | DDR4 64GB | RTX 3080 |
+| 노트북 (Lenovo IdeaPad Flex 5) | Intel Core i7-1255U | LPDDR4x 16GB | Iris Xe (내장) |
+
+- **OS** · Windows 11 (공통)
+- **대상** · 웹 (데스크톱 · 모바일 브라우저)
+- **기기 간 이동** · 코드는 Git으로만 옮깁니다. `.env`와 DB 데이터는 Git으로 옮겨지지 않으므로 기기마다 따로 만듭니다
 
 ---
 
