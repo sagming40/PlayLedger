@@ -1,7 +1,7 @@
 # .github/workflows/ci.yml
-# SERVER AUTO TEST ─ push할 때마다 GitHub가 빌려주는 CLEAN한 UBUNTU에서 pytest를 돌린다
+# SERVER · FRONT AUTO TEST ─ push할 때마다 GitHub가 빌려주는 CLEAN한 UBUNTU에서 돌린다
 
-name: server-ci
+name: ci
 
 # 예정 작업 지시 ─ 자동문 센서를 어디에 달지
 on:
@@ -73,3 +73,21 @@ jobs:
       # ④ 본론. conftest의 migrate fixture가 alembic upgrade head까지 자동으로 해준다
       - name: 테스트 실행
         run: pytest -v
+
+  web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+      - run: npx vue-tsc -b --noEmit
+      - run: npm test
+      - run: npm run build
