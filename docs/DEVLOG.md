@@ -12,26 +12,35 @@
 
 **완료** · M1 (백엔드 기초) — 모델 6종 · 마이그레이션 4건 · 인증 전 항목 · 장르 시드 · 정규화 규칙(`core/normalize.py`) · 게임 조회 · 생성 서비스(`find_or_create_game`) · 장르 목록 API · 장르 연결 서비스 · 보유 기록 CRUD 전체 · pytest 환경 · 테스트 19건 · **GitHub Actions** · **API_SPEC** 완료. **PR #2 병합 완료** (2026-09-28)
 
-**진행 중** · M2 (프론트 연동) — **1단계(껍데기) 완료**. Vite 잔재 정리 · 라우터(중첩 · 지연 로딩) · 메인 레이아웃(48rem) · API 호출 모듈 1차 · Vitest 10건 · CI 프론트 job. 2단계(인증) · 3단계(데이터) 남음
+**진행 중** · M2 (프론트 연동) — **1단계(껍데기) 완료**. Vite 잔재 정리 · 라우터(중첩 · 지연 로딩) · 메인 레이아웃(48rem) · API 호출 모듈 1차 · Vitest 10건 · CI 프론트 job. **2단계(인증) 1/5** — auth 스토어(Pinia) 완료. S-01 · API 모듈 2차 · 복원 + 가드 · S-06 남음. 3단계(데이터) 미착수
 
 **환경 요약**
 | 항목 | 값 |
 |---|---|
 | Python | 데스크톱 A ─ 3.13.5 · 데스크톱 B/노트북 ─ 3.13.9 (Anaconda 빌드). 3.13 안에서는 차이 없음 |
 | Node.js | v24.15.0 |
-| FastAPI · Uvicorn | 0.141.1 · 0.53.0 |
-| SQLAlchemy · asyncpg | 2.0.54 · 0.31.0 |
+| FastAPI | 0.141.1 |
+| Uvicorn | 0.53.0 |
+| SQLAlchemy | 2.0.54 |
+| asyncpg | 0.31.0 |
 | Alembic | 1.20.0 (async 템플릿, 마이그레이션 4건 · head `1e1d15e51ba2`, 파일명 `날짜_시각_설명`) |
 | argon2-cffi | 25.1.0 (Argon2id, 비밀번호 해싱) |
 | PyJWT | 2.14.0 (access 토큰 서명, HS256) |
-| pytest · pytest-asyncio · httpx | 9.1.1 · 1.4.0 · 0.28.1 (실행은 `server/`에서 `pytest`) |
-| Vue · Vite · TypeScript | 3.5.42 · 8.3.0 · 6.0.2 |
-| Vue Router · Pinia | 5.3.1 |
+| pytest | 9.1.1 |
+| pytest-asyncio | 1.4.0 |
+| httpx | 0.28.1 (실행은 `server/`에서 `pytest`) |
+| Vue | 3.5.42 |
+| Vite | 8.3.0 |
+| TypeScript | 6.0.2 |
+| Vue Router | 5.3.1 |
+| Pinia | 4.0.3 (setup store 문법) |
 | Vitest | 5.0.2 (실행은 `web/`에서 `npm test`, 테스트 10건) |
-| Tailwind CSS · shadcn-vue | 4.3.3 · 2.8.2 (컴포넌트 미추가) |
+| Tailwind CSS | 4.3.3 |
+| shadcn-vue | 2.8.2 (컴포넌트 미추가) |
 | PostgreSQL | 18.6 (`postgres:18` 컨테이너, DB 2개 — `playledger` 테이블 7개 · `playledger_test`. 테스트 DB는 기기마다 `CREATE DATABASE` 필요) |
 | HeidiSQL | PostgreSQL 접속 가능한 버전 (데스크톱 B 12.21. 기기마다 버전이 달라도 무방) |
-| Docker · Compose | 29.8.0 · v5.5.1 |
+| Docker | 29.8.0 |
+| Compose | v5.5.1 |
 | GitHub Actions | `ubuntu-latest` · job 2개 — `test`(Python 3.13 · `postgres:18` · `server/`) · `web`(Node 24 · `web/`, `npm ci` → `vue-tsc -b --noEmit` → `npm test` → `npm run build`) |
 | 포트 | DB `5434` · API `8001` · 프론트 `5173` |
 | 이전 버전 | `v0-rn-django` 태그 (RN 0.87.0 + Django 6.1 + MariaDB 12.2.2) |
@@ -39,7 +48,7 @@
 
 **실행 방법** · 터미널 3개 — 프로젝트 루트에서 `docker compose up -d` / `server`에서 `uvicorn app.main:app --reload --port 8001` / `web`에서 `npm run dev` / 테스트는 `server`에서 `docker compose up -d` 후 `pytest`
 
-**다음에 할 일** · M2 2단계(인증) — auth 스토어 → S-01 → API 모듈 2차 → 라우터 가드 → S-06
+**다음에 할 일** · M2 2단계(인증) — `ARCHITECTURE` 6장 `web/` 구조 수정 → shadcn-vue 컴포넌트 도입 → S-01 → API 모듈 2차 → 복원 + 가드 → S-06
 
 ---
 
@@ -83,6 +92,59 @@
 ---
 
 <!-- 새 기록은 이 아래에 추가한다 (최신이 위로) -->
+
+## 2026-09-29(오후/데스크톱 B) — M2 진행 중: 2단계(인증) 착수, auth 스토어 완료
+
+**관련 마일스톤**: M2 (프론트 연동) → 진행 중
+
+**한 일**
+- 데스크톱 B 동기화 검수 — 브랜치 `m2-frontend` · `alembic current`(`1e1d15e51ba2`, head) · `pytest`(19 passed, **3.30초**) · `npm ci`(116 packages, 0 vulnerabilities) · `npm test`(10 passed) · `vue-tsc -b --noEmit` 통과 · `npm run dev`(Vite 8.3.0, 410ms). `/library` 렌더 · 하단 탭 전환 확인, 네트워크 17건 중 `/api/health` 0건 유지
+- Pinia 4.0.3 설치, `main.ts`에 `createPinia()` 등록 — `use(router)`보다 **먼저** 부름. 라우터 가드가 스토어를 읽는 시점에 Pinia가 앱에 붙어 있어야 함
+- `src/api/auth.ts` 신설 — `login` · `register` · `logout` · `me` 4개 함수, `TokenResponse` · `User` 인터페이스. 실제 호출은 전부 `client.ts`의 `request`에 위임
+- `src/stores/auth.ts` 신설 — setup store 문법. 상태는 `user` · `isReady` 둘, 파생값 `isAuthenticated`, 동작 `login` · `register` · `logout`
+- Swagger로 실제 응답 대조 — `GET /api/auth/me`를 `Execute`해 `nickname` 필드 발견(아래 트러블슈팅), `POST /api/auth/register` 요청 본문이 `email` · `password` · `nickname` 3개임을 확인
+- 검증용 계정 1개 추가 생성 (`users` 2행). 완료 기준의 "A로 로그아웃 → B로 로그인" 검증에 재사용
+- 커밋 1개 — `feat(M2): auth 스토어`
+
+**결정 기록**
+- **access 토큰의 주인은 `client.ts`의 모듈 변수이고, 스토어는 토큰을 복사해 갖지 않는다**
+  세 가지 이유가 겹친다. ①스토어가 주인이면 `client.ts`가 스토어를 import해야 하는데 스토어는 이미 `client.ts`를 import하고 있어 순환이 생긴다 — 09-28에 "닭과 달걀"로 적은 그 문제이고, `normalize.py`가 `HTTPException`이 아니라 `ValueError`를 던지게 한 것과 같은 원리다. 아래쪽 모듈이 위쪽을 알면 안 된다. ②access 토큰은 15분마다 사라지지만 그때도 로그인 상태는 유지되므로 **토큰 유무와 로그인 여부는 애초에 다른 값**이다. 그래서 `isAuthenticated`를 `user !== null`로 둔다. ③Pinia state는 반응형이라 컴포넌트가 토큰을 렌더링하거나 devtools에 노출될 경로가 열린다. 모듈 변수는 그 경로 자체가 없다
+- **스토어는 에러 메시지를 보관하지 않고 `ApiError`를 그대로 흘려보낸다**
+  같은 401이라도 로그인 화면에서는 폼 아래 문구로, 다른 화면에서는 로그인 페이지로 밀어내는 것이 맞다. 스토어가 `errorMessage`를 들고 있으면 화면을 옮겨도 이전 에러가 남는다. 사실만 전하고 표시 방법은 화면이 정한다
+- **`isReady`를 지금 만들어 둔다 (아직 아무도 켜지 않음)**
+  "나중에 쓸 것 같아서"가 아니라, `isAuthenticated`만으로는 가드를 짤 수 없기 때문이다. 새로고침 직후 `user`는 무조건 `null`인데 그것이 "비로그인"인지 "아직 안 물어봄"인지 구분되지 않는다. 완료 기준 1번의 "응답이 오기 전에 `/login`으로 이동하지 않음"이 정확히 이 구분을 요구한다. 4번 항목(복원)에서 켠다
+- **2단계 순서를 계획대로 유지한다** (auth 스토어 → S-01 → API 2차 → 복원 + 가드 → S-06)
+  복원과 401 재발급은 같은 refresh 호출을 쓴다. 복원을 API 2차보다 먼저 짜면 "동시 재발급 1회 보장" 장치를 거치지 않는 호출이 하나 생겨, 시작 직후 refresh가 여러 건 나가고 rotation 때문에 **재사용 감지가 정상 사용자를 로그아웃시킨다**. 완료 기준 1번이 깨지는 경로가 바로 이것
+
+**막혔던 점 / 트러블슈팅**
+- 증상: `api/auth.ts`의 `User` 인터페이스에 `nickname`이 빠진 채로 작성됨. `vue-tsc`도 `npm test`도 통과
+  - 원인: 실제 응답을 보지 않고 필드를 추정해 적었다. 세 개(`id` · `email` · `created_at`)는 맞았고 하나가 모자랐다
+  - 해결: Swagger에서 `GET /api/auth/me`를 `Execute`해 실제 본문 확인 후 한 줄 추가. 이어서 `register`의 요청 본문에도 `nickname`이 필요함을 확인해 인자를 3개로 수정
+  - 교훈: **틀린 필드는 타입 검사가 잡지만 모자란 필드는 잡지 못한다.** 서버가 더 보낸 값은 조용히 버려지므로, S-06에서 `user.nickname`을 쓰려는 순간에야 터졌을 것이다. 09-28의 `created_at` `Z` 표기 · 422 `ctx` 키와 같은 계열이고, 이번엔 "달랐다"가 아니라 "없었다"라 더 늦게 드러날 뻔했다
+- 증상: 동기화 검수 전에 세운 예측 두 개가 **둘 다 빗나감** — ①데스크톱 B가 `0a6ba7b72cfb`에 머물러 있을 것 ②`playledger_test` DB가 없을 것
+  - 원인: DEVLOG 9/29 오전 기록에 "CI 빨간불 검증"만 적혀 있어 그것이 이 기기에서 한 작업의 전부라고 읽었다. 실제로는 그 작업을 하려고 환경을 이미 맞춰뒀던 것
+  - 해결: `alembic current` · `pytest` 한 번씩 실행해 실제 상태 확인
+  - 교훈: **DEVLOG는 "일어난 일"이 아니라 "기록한 일"이다.** 환경 상태를 문서에서 추론하면 기록되지 않은 작업만큼 어긋난다. 09-19의 "나는 지금 어디에 있는가부터 확인한다"와 같은 자리 — 추론 대신 명령 한 줄
+
+**배운 것**
+- Pinia에는 문법이 둘이다. 객체(`state`/`getters`/`actions`)를 넘기는 방식과 함수를 넘기는 setup store 방식. 후자는 `<script setup>`과 똑같이 `ref` · `computed`만 쓰면 되므로 규칙이 하나 덜 늘어난다
+- `try`/`finally`는 성공하든 예외로 빠져나가든 `finally`를 반드시 실행한다. `logout`이 서버 호출 실패에도 로컬 상태를 비우는 근거이고, API_SPEC 3.4절의 멱등성을 클라이언트 쪽에서 지키는 장치다
+- `npm ls`의 `deduped`는 "실제 설치본은 하나이고 위의 것을 공유한다"는 표시다. `vue-router` 아래 `pinia@4.0.3 deduped`가 달린 것은 중복 설치가 아니라 peer 의존 표시
+- pytest가 이 기기에서 **3.30초**, 데스크톱 A는 9/27 기준 8.88초였다. 09-27에 "동시 요청에 2초가 붙는다"고 기록한 DB 연결 개통 비용이 기기마다 크게 다르다는 뜻이고, 동시성 테스트를 시간이 아닌 개수로 판정하기로 한 결정이 옳았음을 다시 보여준다
+- `npm run dev` 상태의 네트워크 탭에 보이는 `?token=...` websocket은 Vite HMR 연결용이며 인증 토큰이 아니다. 완료 기준의 "`dist/`에서 토큰 문자열 검색" 검증 때 혼동하지 않도록 기록해 둔다
+
+**발견 사항 (지금 조치하지 않음)**
+- **`src/lib/`이 이미 존재한다.** shadcn-vue init 때 `utils.ts`가 생성돼 `ARCHITECTURE` 6장 `web/` 구조와 지금 이미 어긋나 있다. 추가할 것은 `lib/` 한 줄이 아니라 `components/ui/`까지 두 줄이다 (`components.json`의 `ui` 별칭). shadcn 컴포넌트를 받기 **전에** 문서를 먼저 고친다
+- **S-01 가입 폼에 닉네임 입력칸이 필요하다.** `UI_DESIGN`의 S-01 와이어프레임에 그 칸이 있는지 확인하고, 없으면 문서가 구현보다 뒤처진 것이므로 함께 수정
+- 브라우저 개발자 도구에서 하단 탭 전환이 **632px**에서 일어났다. `48rem`이 이 값이 되려면 루트 글꼴이 약 13.2px이어야 하는데 근거를 확인하지 못했다(데스크톱 A는 864px = 18px 기준). 전환 자체는 정상 동작하므로 완료 기준에는 지장이 없다. 기기 간 차이의 원인은 별도로 확인할 것
+- 환경 요약 표의 `Vue Router · Pinia | 5.3.1`은 Pinia가 설치되지 않은 상태에서 두 항목을 한 줄로 묶어 **사실과 달랐다**. 이번에 두 줄로 분리. 표를 만들 때 "아직 없는 것"을 미리 적으면 이런 거짓말이 생긴다
+
+**다음에 할 일**
+- `ARCHITECTURE` 6장 `web/src` 구조에 `lib/` · `components/ui/` 추가 (shadcn 컴포넌트 받기 전)
+- shadcn-vue 컴포넌트 도입 → S-01 로그인 · 가입(닉네임 칸 포함) → API 모듈 2차 → 복원 + 가드 → S-06
+- 작업 기기를 데스크톱 B → 데스크톱 A로 이동 (`git pull` 먼저)
+
+---
 
 ## 2026-09-29(9/28 오전~저녁/데스크톱 A → 9/29 오전/데스크톱 B) — M2 진행 중: 1단계(껍데기) 완료, 인증 · 데이터 단계 남음
 
