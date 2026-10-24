@@ -12,7 +12,7 @@ class GenreRead(BaseModel):
     """
 
     # from_attributes ─ 객체의 속성(genre.id, genre.name)에서 값을 읽는다 (Dict ❌)
-    # 이렇게 하지 않으면, SQLAlchemy 객체를 받았을 때 Pydanticdl 값을 꺼내지 못한다
+    # 이렇게 하지 않으면, SQLAlchemy 객체를 받았을 때 Pydantic이 값을 꺼내지 못한다
     model_config = ConfigDict(from_attributes=True)
 
     id: int     # 등록 시에 이 값을 보내 장르를 고른다

@@ -31,7 +31,7 @@ async def genre_ids_exist(db: AsyncSession, genre_ids: list[int]) -> bool:
 
 
 async def attach_genres_if_empty(
-        db: AsyncSession, game_id: int, genre_ids: list[int]
+    db: AsyncSession, game_id: int, genre_ids: list[int]
 ) -> None:
     """게임에 연결된 장르가 0개일 경우에만 입력한 장르를 연결한다
 
