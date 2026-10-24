@@ -5,6 +5,8 @@ ERD 2.5절: Game의 Genre는 0개일 때만 채운다.
 그 틈을 Game 행 잠금(FOR UPDATE)으로 막는다. 이 TEST가 그 잠금을 지킨다.
 """
 
+import asyncio
+
 from sqlalchemy import func, select
 
 from app.models.game import Game, game_genres
@@ -12,7 +14,7 @@ from app.services.genre import attach_genres_if_empty
 
 
 async def count_genres(session, game_id: int) -> int:
-    "Game에 붙은 Genre 수를 count 한다 (검증용)"
+    """Game에 붙은 Genre 수를 count 한다 (검증용)"""
     return await session.scalar(
         select(func.count())
         .select_from(game_genres)
@@ -47,7 +49,6 @@ async def test_second_request_is_ignored_when_first_fills_genres(session_factory
         # ── B가 Genre 2번을 붙이려 한다
         # A가 Game 행을 잠그고 있으므로 여기서 대기한다.
         # 별도 task로 띄워야 이 줄에서 test가 멈추지 않는다
-        import asyncio
         b_task = asyncio.create_task(attach_genres_if_empty(b, game_id, [2]))
 
         # B가 대기 상태로 들어갈 시간을 준다

@@ -11,7 +11,7 @@ from app.schemas.genre import GenreRead
 
 # dependencies를 라우터에 걸면, 이 라우터의 모든 endpoint가 Login 검사를 거친다
 # 비유: 방마다 자물쇠를 다는 대신 층 입구에 출입 게이트를 하나 세우는 것
-# 유저 정보(누구인지)는 필요 없고, 로그인 여부만 확인하면 되기 때문데 해당 방식이 효율적이다
+# 유저 정보(누구인지)는 필요 없고, 로그인 여부만 확인하면 되기 때문에 해당 방식이 효율적이다
 router = APIRouter(
     prefix="/api/genres",
     tags=["genres"],

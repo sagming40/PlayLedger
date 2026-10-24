@@ -78,7 +78,7 @@ def clear_refresh_cookie(response: Response) -> None:
 )
 async def register(
     payload: UserCreate,                   # 심사에 통과한 요청들만 여기에 들어올 수 있다
-    db: AsyncSession = Depends(get_db)     # 도서관 사서에게 책 한 권 빌리기
+    db: AsyncSession = Depends(get_db),    # 도서관 사서에게 책 한 권 빌리기
 ) -> User:
     """새 계정을 만든다"""
 
@@ -116,7 +116,8 @@ async def register(
 
 @router.post("/login", response_model=TokenResponse)
 async def login(
-    payload: LoginRequest, response: Response,  # cookie를 심을 응답 객체
+    payload: LoginRequest,
+    response: Response,   # cookie를 심을 응답 객체
     db: AsyncSession = Depends(get_db),
 ) -> TokenResponse:
     """Email과 Password를 확인하고 Token 2개를 발급한다."""

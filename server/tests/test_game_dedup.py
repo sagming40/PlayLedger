@@ -42,7 +42,7 @@ async def test_different_notation_reuses_the_same_game(session_factory):
 async def test_concurrency_create_falls_back_to_refresh(session_factory):
     """동시에 동일 Game을 생성하려 하면, 늦은 쪽이 4단계 재조회로 먼저 생성된 ROW를 받는다.
 
-    4단계 평소 절대 실행되지 않는 경로다. 손으로는 밟을 수 없으므로 여기서만 검증할 수 있다.
+    4단계는 평소 절대 실행되지 않는 경로다. 손으로는 밟을 수 없으므로 여기서만 검증할 수 있다.
     """
     a = session_factory()
     b = session_factory()
@@ -67,7 +67,7 @@ async def test_concurrency_create_falls_back_to_refresh(session_factory):
         game_b = await b_task
         await b.commit()
 
-        # ── A,B가 동일한 ROW을 가리켜야 한다
+        # ── A,B가 동일한 ROW를 가리켜야 한다
         assert game_a.id == game_b.id, (game_a.id, game_b.id)
 
         async with session_factory() as check:

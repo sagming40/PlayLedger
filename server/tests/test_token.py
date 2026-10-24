@@ -79,7 +79,7 @@ async def test_reusing_a_revoked_token_is_detected(client, auth_headers):
     # Attacker가 old_token을 들고 온 상황을 재현
     # PATH까지 같이 SEED해야 한다. SERVER의 DELETE 지시(path=/api/auth)가
     # PATH 없는 COOKIE는 지우지 못하기 때문 ─ COOKIE는 NAME+DOMAIN+PATH로 식별된다
-    client.cookies.set(REFRESH_COOKIE_NAME, stolen, domain="test.local", path="/api/auth")
+    client.cookies.set(REFRESH_COOKIE_NAME, stolen, domain=COOKIE_DOMAIN, path=COOKIE_PATH)
     res = await client.post("/api/auth/refresh")
     assert res.status_code == 401, res.json()
     assert res.json()["detail"] == "다시 로그인해 주세요", res.json()
@@ -104,12 +104,12 @@ async def test_detection_revokes_every_living_token(client, auth_headers):
 
     client.cookies.clear()
     # old_token으로 재사용 감지를 일으킨다
-    client.cookies.set(REFRESH_COOKIE_NAME, stolen, domain="test.local", path="/api/auth")
+    client.cookies.set(REFRESH_COOKIE_NAME, stolen, domain=COOKIE_DOMAIN, path=COOKIE_PATH)
     await client.post("/api/auth/refresh")
 
     client.cookies.clear()
     # 방금까지 멀쩡하던 token도 이제 사용하지 못한다
-    client.cookies.set(REFRESH_COOKIE_NAME, living, domain="test.local", path="/api/auth")
+    client.cookies.set(REFRESH_COOKIE_NAME, living, domain=COOKIE_DOMAIN, path=COOKIE_PATH)
     res = await client.post("/api/auth/refresh")
     assert res.status_code == 401, res.json()
 

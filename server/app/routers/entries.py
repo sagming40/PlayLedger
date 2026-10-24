@@ -26,6 +26,30 @@ router = APIRouter(prefix="/api/entries", tags=["entries"])
 ENTRY_UNIQUE = "uq_entries_user_id_game_id"
 
 
+async def _get_my_entry_or_404(db: AsyncSession, *, user_id: int, entry_id: int) -> Entry:
+    """내 보유 기록을 꺼낸다. 없거나 다른 유저의 것이면 404
+
+    단건 · 수정 · 삭제 3곳이 같은 상태 코드 · 같은 문구를 써야 한다
+    한 곳만 문구가 바뀌면 '없는 것'과 '남의 것'의 응답이 갈려 존재 여부가 새어 나간다
+    """
+    entry = await get_entry(db, user_id=user_id, entry_id=entry_id)
+    if entry is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="기록을 찾을 수 없습니다",
+        )
+    return entry
+
+
+async def _ensure_genres_exist(db: AsyncSession, genre_ids: list[int]) -> None:
+    """없는 장르 id가 섞여 있으면 422로 거절한다 (등록 · 수정 공통)"""
+    if not await genre_ids_exist(db, genre_ids):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="존재하지 않는 장르가 포함되어 있습니다",
+        )
+
+
 # 장르 목록과 달리 라우터 전체에 거는 대신 매개변수로 받는다
 # Why? "로그인했는가"뿐만 아니라 "누구인가(user.id)"도 필요하기 때문
 # status_code=201 = "새로 만들어졌다" (상태 코드 200 응답은 "성공"이라는 뜻이다)
@@ -41,11 +65,7 @@ async def create_entry(
     그 책에 내 이름이 적힌 대출 기록(보유 기록)을 적는다
     """
     # ① 없는 장르 id가 섞여 있으면 거절 ─ 게임 상태와 상관없이 항상 검사
-    if not await genre_ids_exist(db, data.genre_ids):
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="존재하지 않는 장르가 포함되어 있습니다",
-        )
+    await _ensure_genres_exist(db, data.genre_ids)
 
     # ② 게임 찾기/만들기 ─ 판별은 서비스 한 곳에서만 (ERD 2.4절)
     game = await find_or_create_game(db, data.title)
@@ -123,13 +143,7 @@ async def get_my_entry(
     다른 유저의 기록이면 403이 아니라 404
     ─ 403은 "그 기록이 존재한다"라는 걸 알려주는 셈이다
     """
-    entry = await get_entry(db, user_id=user.id, entry_id=entry_id)
-    if entry is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="기록을 찾을 수 없습니다",
-        )
-    return entry
+    return await _get_my_entry_or_404(db, user_id=user.id, entry_id=entry_id)
 
 
 @router.patch("/{entry_id}", response_model=EntryRead)
@@ -143,12 +157,7 @@ async def update_my_entry(
 
     PATCH = 일부만 수정. (PUT = "통째로 교체" ─ 보내지 않은 항목도 지워진다)
     """
-    entry = await get_entry(db, user_id=user.id, entry_id=entry_id)
-    if entry is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="기록을 찾을 수 없습니다",
-        )
+    entry = await _get_my_entry_or_404(db, user_id=user.id, entry_id=entry_id)
 
     # exclude_unset=True = 요청에 '실제로 적어 보낸' 항목만 꺼낸다
     # True로 설정하지 않으면 보내지 않은 항목까지 None으로 채워져 멀쩡한 값이 지워진다
@@ -171,11 +180,7 @@ async def update_my_entry(
     # 장르를 보냈으면 연결 규칙을 그대로 적용 (ERD 2.5절)
     # 0개인 게임에만 채워지고, 이미 존재하는 경우 조용히 무시된다
     if genre_ids is not None:
-        if not await genre_ids_exist(db, genre_ids):
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail="존재하지 않는 장르가 포함되어 있습니다",
-            )
+        await _ensure_genres_exist(db, genre_ids)
         await attach_genres_if_empty(db, entry.game_id, genre_ids)
 
     # setattr(객체, "이름", 값) = "객체.이름 = 값"과 같다
@@ -201,12 +206,7 @@ async def delete_my_entry(
     게임(games)은 지우지 않는다 ─ 다른 유저가 사용하고 있는 공유 데이터이다.
     비유: 도서관 대출 카드만 버리고 책은 서가에 그대로 둔다
     """
-    entry = await get_entry(db, user_id=user.id, entry_id=entry_id)
-    if entry is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="기록을 찾을 수 없습니다",
-        )
+    entry = await _get_my_entry_or_404(db, user_id=user.id, entry_id=entry_id)
 
     await db.delete(entry)
     await db.commit()
