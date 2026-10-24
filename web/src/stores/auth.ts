@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { setAccessToken } from '@/api/client'
+import { setAccessToken, setAuthFailureHandler } from '@/api/client'
 import * as authApi from '@/api/auth'
 import type { User } from '@/api/auth'
 
@@ -18,6 +18,13 @@ export const useAuthStore = defineStore('auth', () => {
   // 로그인 여부는 TOKEN이 아니라 user로 판단한다
   // access TOKEN은 15분마다 사라지지만 그때도 로그인 상태는 유지된다
   const isAuthenticated = computed(() => user.value !== null)
+
+  // 재발급까지 실패하면 client.ts가 이 함수를 부른다 (API_SPEC 3.2절)
+  // TOKEN은 client.ts가 이미 비웠다. 여기서는 화이트보드만 지운다
+  // 로그인 화면으로 보내는 일은 라우터 가드가 user를 보고 한다 (복원 + 가드 단계)
+  setAuthFailureHandler(() => {
+    user.value = null
+  })
 
   // ─── 동작 ───────────────────────────────────────────────
   async function login(email: string, password: string) {
