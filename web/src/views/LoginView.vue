@@ -34,7 +34,7 @@ const submitting = ref(false)   // 서버 응답을 기다리는 중인지
 
 // ─── 계산되는 값 ───────────────────────────────────────
 // computed = "재료가 바뀌면 자동으로 다시 계산되는 값"
-// 비유: 장바구니 합계. 물건을 널고 뺄 때마다 내가 더하지 않아도 알아서 바뀐다
+// 비유: 장바구니 합계. 물건을 넣고 뺄 때마다 내가 더하지 않아도 알아서 바뀐다
 
 const isRegister = computed(() => mode.value === 'register')
 
@@ -58,7 +58,7 @@ function switchMode() {
 }
 
 async function onSubmit() {
-  if (!canSubmit.value) return   // 버튼이 비활성이어고 엔터로 들어올 수 있어서 한 번 더 막는다
+  if (!canSubmit.value) return   // 버튼이 비활성이어도 엔터로 들어올 수 있어서 한 번 더 막는다
 
   submitting.value = true
   errorMessage.value = ''

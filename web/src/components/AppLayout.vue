@@ -15,10 +15,11 @@ const menu = [
 </script>
 
 <template>
-  <!-- md: = 768px 이상. Tailwind의 default가 기준선이다 -->
+  <!-- md: = 48rem 이상. Tailwind의 default가 기준선이다
+       rem이라 루트 글꼴 크기에 따라 실제 px이 달라진다 (기본 16px이면 768px) -->
   <div class="min-h-screen bg-background text-foreground md:flex">
 
-    <!-- 사이드바 ─ hidden(기본 숨김) + md:flex(768px부터 보임) -->
+    <!-- 사이드바 ─ hidden(기본 숨김) + md:flex(48rem부터 보임) -->
     <aside class="hidden md:flex md:w-56 md:shrink-0 md:flex-col md:border-r md:border-border">
       <div class="px-5 py-4 text-lg font-bold tracking-tight">PLAYLEDGER</div>
       <nav class="flex flex-col gap-1 px-3">
@@ -47,7 +48,7 @@ const menu = [
       </main>
     </div>
 
-    <!-- 하단 탭 ─ md:hidden(768px부터 숨김) 화면 아래에 고정 -->
+    <!-- 하단 탭 ─ md:hidden(48rem부터 숨김) 화면 아래에 고정 -->
     <nav
       class="fixed inset-x-0 bottom-0 flex border-t border-border bg-background md:hidden"
     >
