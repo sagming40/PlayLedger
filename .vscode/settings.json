@@ -1,0 +1,7 @@
+{
+  // docs/mockups의 .dc.html은 디자인 캔버스 원본이다. style 속성 안의 {{t.bg}} 같은 자리를
+  // 일반 HTML로 읽으면 CSS 문법 오류로 잘못 잡히므로, {{ }}를 아는 handlebars로 읽게 한다
+  "files.associations": {
+    "**/docs/mockups/*.dc.html": "handlebars"
+  }
+}

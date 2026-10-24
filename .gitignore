@@ -43,3 +43,5 @@ desktop.ini
 # VS Code 개인 설정(테마·창 배치 등)은 제외하되, 확장 추천 목록은 공유한다
 **/.vscode/*
 !**/.vscode/extensions.json
+# 루트 settings.json은 공유한다 ─ 목업(.dc.html)을 기기 3대에서 똑같이 읽게 하는 프로젝트 설정만 둔다
+!/.vscode/settings.json
