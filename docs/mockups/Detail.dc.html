@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>S-04 게임 상세</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=Noto+Sans+KR:wght@400;500;700;800&amp;display=swap">
+<style>
+body{margin:0}
+a{color:inherit;text-decoration:none}a:hover{opacity:.9}
+</style>
+</helmet>
+<div style="min-height: 1000px; display: flex; flex-wrap: wrap; background: {{t.bg}}; color: {{t.text}}; font-family: 'Inter','Noto Sans KR',sans-serif">
+<aside style="flex: 1 1 220px; box-sizing: border-box; padding: 28px 16px; border-right: 1px solid {{t.border}}; display: flex; flex-direction: column; gap: 28px">
+<div style="display: flex; align-items: center; gap: 10px; padding: 0 10px">
+<span style="width: 10px; height: 10px; border-radius: 3px; background: {{t.accent}}; display: inline-block"></span>
+<span style="font-size: 17px; font-weight: 800; letter-spacing: 0.04em">PLAYLEDGER</span>
+</div>
+<nav aria-label="주 메뉴" style="display: flex; flex-direction: column; gap: 4px">
+<a href="Library.dc.html" aria-current="page" style="display: flex; align-items: center; gap: 10px; height: 44px; padding: 0 12px; border-radius: 8px; font-size: 15px; font-weight: 600; background: {{t.accentTint}}; color: {{t.accentText}}">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="3" width="7" height="7" rx="1.5"></rect><rect x="3" y="14" width="7" height="7" rx="1.5"></rect><rect x="14" y="14" width="7" height="7" rx="1.5"></rect></svg>
+라이브러리</a>
+<a href="Stats.dc.html" style="display: flex; align-items: center; gap: 10px; height: 44px; padding: 0 12px; border-radius: 8px; font-size: 15px; color: {{t.muted}}">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10"></path><path d="M10 20V4"></path><path d="M16 20v-7"></path><path d="M22 20H2"></path></svg>
+통계</a>
+<a href="#" style="display: flex; align-items: center; gap: 10px; height: 44px; padding: 0 12px; border-radius: 8px; font-size: 15px; color: {{t.muted}}">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h10"></path><path d="M18 6h2"></path><circle cx="16" cy="6" r="2"></circle><path d="M4 12h4"></path><path d="M12 12h8"></path><circle cx="10" cy="12" r="2"></circle><path d="M4 18h12"></path><circle cx="18" cy="18" r="2"></circle></svg>
+설정</a>
+</nav>
+</aside>
+<main style="flex: 999 1 560px; min-width: 0; position: relative; overflow: hidden; box-sizing: border-box; padding: 24px 40px 56px; display: flex; flex-direction: column; gap: 28px">
+<div aria-hidden="true" style="position: absolute; top: 0; left: 0; right: 0; height: 520px; background: #3D2A10; display: flex; align-items: center; justify-content: flex-end; padding-right: 64px; box-sizing: border-box; overflow: hidden">
+<span style="font-size: 140px; font-weight: 800; letter-spacing: -0.04em; color: rgba(255,255,255,0.07); white-space: nowrap">CYBERPUNK</span>
+</div>
+<div aria-hidden="true" style="position: absolute; top: 0; left: 0; right: 0; height: 522px; background: {{t.backdropFade}}"></div>
+<div style="position: relative; display: flex; align-items: center; justify-content: space-between; gap: 12px">
+<a href="Library.dc.html" style="display: inline-flex; align-items: center; gap: 6px; height: 44px; font-size: 14px; color: {{t.muted}}">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"></path></svg>
+라이브러리</a>
+<div style="display: flex; gap: 8px">
+<button type="button" style="height: 40px; padding: 0 16px; border-radius: 8px; border: 1px solid {{t.border}}; background: {{t.surface}}; color: {{t.text}}; font: 500 14px 'Inter','Noto Sans KR',sans-serif">수정</button>
+<button type="button" aria-label="더보기" style="width: 40px; height: 40px; border-radius: 8px; border: 1px solid {{t.border}}; background: {{t.surface}}; color: {{t.text}}; display: inline-flex; align-items: center; justify-content: center">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="1.8"></circle><circle cx="12" cy="12" r="1.8"></circle><circle cx="12" cy="19" r="1.8"></circle></svg>
+</button>
+</div>
+</div>
+<section style="position: relative; display: flex; flex-wrap: wrap; gap: 32px; align-items: flex-end; padding-top: 120px">
+<div style="flex: 1 1 420px; max-width: 560px; aspect-ratio: 460 / 215; border-radius: 14px; background: #3D2A10; display: flex; align-items: flex-end; padding: 20px 22px; box-sizing: border-box">
+<span style="font-size: 30px; font-weight: 800; color: #FFFFFF; letter-spacing: -0.02em">사이버펑크 2077</span>
+</div>
+<div style="flex: 1 1 300px; min-width: 0; display: flex; flex-direction: column; gap: 16px">
+<div style="display: flex; gap: 8px">
+<span style="height: 26px; padding: 0 10px; border-radius: 6px; display: inline-flex; align-items: center; font-size: 12px; font-weight: 600; background: {{t.surface2}}; color: {{t.muted}}">RPG</span>
+<span style="height: 26px; padding: 0 10px; border-radius: 6px; display: inline-flex; align-items: center; font-size: 12px; font-weight: 600; background: {{t.surface2}}; color: {{t.muted}}">액션</span>
+</div>
+<h1 style="margin: 0; font-size: 40px; font-weight: 800; letter-spacing: -0.03em; line-height: 1.1">사이버펑크 2077</h1>
+<label style="display: flex; align-items: center; gap: 12px; font-size: 13px; color: {{t.muted}}">상태
+<span style="position: relative; display: inline-flex; align-items: center">
+<span style="position: absolute; left: 14px; width: 8px; height: 8px; border-radius: 50%; background: {{dot}}"></span>
+<select style="height: 44px; padding: 0 36px 0 30px; border-radius: 10px; border: 1px solid {{t.border}}; background: {{t.surface}}; color: {{t.text}}; font: 600 15px 'Inter','Noto Sans KR',sans-serif">
+<option>미시작</option>
+<option>플레이중</option>
+<option selected="selected">클리어</option>
+<option>보류</option>
+<option>포기</option>
+</select>
+</span>
+</label>
+<span style="font-size: 13px; color: {{t.muted}}">출처 · 직접 입력</span>
+</div>
+</section>
+<div style="position: relative; display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; max-width: 1180px">
+<section style="padding: 24px; border-radius: 14px; background: {{t.surface}}; border: 1px solid {{t.border}}; display: flex; flex-direction: column; gap: 18px">
+<h2 style="margin: 0; font-size: 15px; font-weight: 700; color: {{t.muted}}">기록</h2>
+<dl style="margin: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px">
+<div><dt style="font-size: 12px; color: {{t.muted}}">구매일</dt><dd style="margin: 4px 0 0; font-size: 18px; font-weight: 700">2026-01-15</dd></div>
+<div><dt style="font-size: 12px; color: {{t.muted}}">구매가</dt><dd style="margin: 4px 0 0; font-size: 18px; font-weight: 700">66,000원</dd></div>
+<div><dt style="font-size: 12px; color: {{t.muted}}">플레이타임</dt><dd style="margin: 4px 0 0; font-size: 18px; font-weight: 700">62.4시간</dd></div>
+</dl>
+<div style="padding: 18px 20px; border-radius: 12px; background: {{t.accentTint}}; border: 1px solid {{t.accentLine}}; display: flex; align-items: baseline; justify-content: space-between; gap: 12px">
+<span style="font-size: 14px; color: {{t.muted}}">시간당 비용</span>
+<span style="font-size: 30px; font-weight: 800; letter-spacing: -0.02em; color: {{t.accentText}}">1,058<span style="font-size: 15px; font-weight: 600; margin-left: 4px">원/h</span></span>
+</div>
+</section>
+<section style="padding: 24px; border-radius: 14px; background: {{t.surface}}; border: 1px solid {{t.border}}; display: flex; flex-direction: column; gap: 18px">
+<h2 style="margin: 0; font-size: 15px; font-weight: 700; color: {{t.muted}}">평가</h2>
+<div style="display: flex; align-items: center; gap: 4px" role="img" aria-label="평점 5점 중 4점">
+<sc-for list="{{stars}}" as="s" hint-placeholder-count="5">
+<svg width="26" height="26" viewBox="0 0 24 24" fill="{{s.fill}}" stroke="{{s.stroke}}" stroke-width="1.5" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.2l2.7 5.6 6.1.8-4.5 4.2 1.1 6.1L12 17l-5.4 2.9 1.1-6.1-4.5-4.2 6.1-.8z"></path></svg>
+</sc-for>
+</div>
+<blockquote style="margin: 0; padding: 4px 0 4px 16px; border-left: 2px solid {{t.border}}; font-size: 18px; line-height: 1.5">"엔딩 보고 한참 멍했음"</blockquote>
+</section>
+</div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":true,"section":"테마"},"palette":{"editor":"enum","options":["A 심야 극장","B 핑크 시네마","C 장부 앰버","D 바이올렛"],"default":"A 심야 극장","section":"테마"},"statusScheme":{"editor":"enum","options":["현행안","교체안"],"default":"현행안","section":"테마"},"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const mode = (this.props.dark ?? true) ? 'dark' : 'light';
+    const THEMES = {
+      dark: { bg: '#0E0E11', surface: '#17171C', surface2: '#22222A', border: '#2C2C35', text: '#F2F2F5', muted: '#A1A1AC' },
+      light: { bg: '#F6F6F8', surface: '#FFFFFF', surface2: '#EEEEF2', border: '#E2E2E8', text: '#17171B', muted: '#5C5C68' }
+    };
+    const PALETTES = {
+      A: { accent: '#D12E34', onAccent: '#FFFFFF', textOn: { dark: '#FF7276', light: '#B4232A' } },
+      B: { accent: '#D9245F', onAccent: '#FFFFFF', textOn: { dark: '#FF7AA2', light: '#B8174F' } },
+      C: { accent: '#F5A524', onAccent: '#17171B', textOn: { dark: '#F5B84A', light: '#8A5300' } },
+      D: { accent: '#7C3AED', onAccent: '#FFFFFF', textOn: { dark: '#B39DFA', light: '#5B2FD1' } }
+    };
+    const CLEARED = { 현행안: ['#22C55E', '#16A34A'], 교체안: ['#3B82F6', '#2563EB'] };
+    const tint = (hex, a) => {
+      const n = parseInt(hex.slice(1), 16);
+      return 'rgba(' + (n >> 16) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + a + ')';
+    };
+    const p = PALETTES[String(this.props.palette ?? 'A').charAt(0)] || PALETTES.A;
+    const cl = CLEARED[this.props.statusScheme ?? '현행안'] || CLEARED['현행안'];
+    const t = {
+      ...THEMES[mode],
+      accent: p.accent,
+      onAccent: p.onAccent,
+      accentText: p.textOn[mode],
+      accentTint: tint(p.accent, mode === 'dark' ? 0.14 : 0.08),
+      accentLine: tint(p.accent, mode === 'dark' ? 0.55 : 0.4)
+    };
+    const bg = THEMES[mode].bg;
+    t.backdropFade = 'linear-gradient(180deg, ' + tint(bg, mode === 'dark' ? 0.25 : 0.55) + ' 0%, ' + tint(bg, 0.75) + ' 55%, ' + bg + ' 100%)';
+    const stars = [1, 2, 3, 4, 5].map((n) => ({
+      fill: n <= 4 ? t.accentText : 'none',
+      stroke: n <= 4 ? t.accentText : t.muted
+    }));
+    return { t, stars, dot: cl[mode === 'dark' ? 0 : 1] };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>S-04 게임 상세 모바일</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=Noto+Sans+KR:wght@400;500;700;800&amp;display=swap">
+<style>
+body{margin:0}
+a{color:inherit;text-decoration:none}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: {{t.bg}}; color: {{t.text}}; font-family: 'Inter','Noto Sans KR',sans-serif">
+<div aria-hidden="true" style="position: absolute; top: 0; left: 0; right: 0; height: 250px; background: #3D2A10; overflow: hidden; display: flex; align-items: center">
+<span style="font-size: 76px; font-weight: 800; letter-spacing: -0.04em; color: rgba(255,255,255,0.08); white-space: nowrap; margin-left: -10px">CYBERPUNK</span>
+</div>
+<div aria-hidden="true" style="position: absolute; top: 0; left: 0; right: 0; height: 252px; background: {{t.fade}}"></div>
+<div style="position: relative; height: 56px; padding: 0 8px; display: flex; align-items: center; justify-content: space-between">
+<a href="LibraryMobile.dc.html" aria-label="라이브러리로 돌아가기" style="width: 44px; height: 44px; display: inline-flex; align-items: center; justify-content: center; color: #FFFFFF">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"></path></svg>
+</a>
+<div style="display: flex">
+<button type="button" style="height: 44px; padding: 0 12px; border: none; background: transparent; color: #FFFFFF; font: 600 15px 'Inter','Noto Sans KR',sans-serif">수정</button>
+<button type="button" aria-label="더보기" style="width: 44px; height: 44px; border: none; background: transparent; color: #FFFFFF; display: inline-flex; align-items: center; justify-content: center">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="1.8"></circle><circle cx="12" cy="12" r="1.8"></circle><circle cx="12" cy="19" r="1.8"></circle></svg>
+</button>
+</div>
+</div>
+<div style="position: relative; padding: 96px 20px 0; display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; gap: 6px">
+<span style="height: 24px; padding: 0 9px; border-radius: 6px; display: inline-flex; align-items: center; font-size: 12px; font-weight: 600; background: {{t.chip}}; color: {{t.muted}}">RPG</span>
+<span style="height: 24px; padding: 0 9px; border-radius: 6px; display: inline-flex; align-items: center; font-size: 12px; font-weight: 600; background: {{t.chip}}; color: {{t.muted}}">액션</span>
+</div>
+<h1 style="margin: 0; font-size: 30px; font-weight: 800; letter-spacing: -0.03em; line-height: 1.15">사이버펑크 2077</h1>
+<label style="display: flex; align-items: center; gap: 10px; font-size: 13px; color: {{t.muted}}">상태
+<span style="position: relative; flex: 1; display: inline-flex; align-items: center">
+<span style="position: absolute; left: 14px; width: 8px; height: 8px; border-radius: 50%; background: {{dot}}"></span>
+<select style="width: 100%; height: 46px; padding: 0 12px 0 30px; border-radius: 10px; border: 1px solid {{t.border}}; background: {{t.surface}}; color: {{t.text}}; font: 600 15px 'Inter','Noto Sans KR',sans-serif">
+<option>미시작</option>
+<option>플레이중</option>
+<option selected="selected">클리어</option>
+<option>보류</option>
+<option>포기</option>
+</select>
+</span>
+</label>
+<dl style="margin: 6px 0 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px">
+<div><dt style="font-size: 12px; color: {{t.muted}}">구매일</dt><dd style="margin: 3px 0 0; font-size: 15px; font-weight: 700">2026-01-15</dd></div>
+<div><dt style="font-size: 12px; color: {{t.muted}}">구매가</dt><dd style="margin: 3px 0 0; font-size: 15px; font-weight: 700">66,000원</dd></div>
+<div><dt style="font-size: 12px; color: {{t.muted}}">플레이타임</dt><dd style="margin: 3px 0 0; font-size: 15px; font-weight: 700">62.4시간</dd></div>
+</dl>
+<div style="padding: 14px 16px; border-radius: 12px; background: {{t.accentTint}}; border: 1px solid {{t.accentLine}}; display: flex; align-items: baseline; justify-content: space-between">
+<span style="font-size: 13px; color: {{t.muted}}">시간당 비용</span>
+<span style="font-size: 24px; font-weight: 800; letter-spacing: -0.02em; color: {{t.accentText}}">1,058<span style="font-size: 13px; font-weight: 600; margin-left: 3px">원/h</span></span>
+</div>
+<div style="padding: 14px 16px; border-radius: 12px; background: {{t.surface}}; border: 1px solid {{t.border}}; display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; gap: 2px" role="img" aria-label="평점 5점 중 4점">
+<sc-for list="{{stars}}" as="s" hint-placeholder-count="5">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="{{s.fill}}" stroke="{{s.stroke}}" stroke-width="1.5" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.2l2.7 5.6 6.1.8-4.5 4.2 1.1 6.1L12 17l-5.4 2.9 1.1-6.1-4.5-4.2 6.1-.8z"></path></svg>
+</sc-for>
+</div>
+<span style="font-size: 15px; line-height: 1.5">"엔딩 보고 한참 멍했음"</span>
+</div>
+<span style="font-size: 12px; color: {{t.muted}}">출처 · 직접 입력</span>
+</div>
+<nav aria-label="주 메뉴" style="position: absolute; left: 0; right: 0; bottom: 0; height: 64px; display: flex; background: {{t.bg}}; border-top: 1px solid {{t.border}}">
+<a href="LibraryMobile.dc.html" aria-current="page" style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font-size: 11px; font-weight: 600; color: {{t.accentText}}">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="3" width="7" height="7" rx="1.5"></rect><rect x="3" y="14" width="7" height="7" rx="1.5"></rect><rect x="14" y="14" width="7" height="7" rx="1.5"></rect></svg>
+라이브러리</a>
+<a href="StatsMobile.dc.html" style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font-size: 11px; color: {{t.muted}}">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10"></path><path d="M10 20V4"></path><path d="M16 20v-7"></path><path d="M22 20H2"></path></svg>
+통계</a>
+<a href="Settings.dc.html" style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font-size: 11px; color: {{t.muted}}">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h10"></path><path d="M18 6h2"></path><circle cx="16" cy="6" r="2"></circle><path d="M4 12h4"></path><path d="M12 12h8"></path><circle cx="10" cy="12" r="2"></circle><path d="M4 18h12"></path><circle cx="18" cy="18" r="2"></circle></svg>
+설정</a>
+</nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":true,"section":"테마"},"statusScheme":{"editor":"enum","options":["현행안","교체안"],"default":"현행안","section":"테마"},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const mode = (this.props.dark ?? true) ? 'dark' : 'light';
+    const THEMES = {
+      dark: { bg: '#0E0E11', surface: '#17171C', chip: 'rgba(255,255,255,0.1)', border: '#2C2C35', text: '#F2F2F5', muted: '#A1A1AC' },
+      light: { bg: '#F6F6F8', surface: '#FFFFFF', chip: 'rgba(23,23,27,0.07)', border: '#E2E2E8', text: '#17171B', muted: '#5C5C68' }
+    };
+    const tint = (hex, a) => {
+      const n = parseInt(hex.slice(1), 16);
+      return 'rgba(' + (n >> 16) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + a + ')';
+    };
+    const accent = '#D12E34';
+    const bg = THEMES[mode].bg;
+    const t = {
+      ...THEMES[mode],
+      accentText: mode === 'dark' ? '#FF7276' : '#B4232A',
+      accentTint: tint(accent, mode === 'dark' ? 0.14 : 0.08),
+      accentLine: tint(accent, mode === 'dark' ? 0.55 : 0.4),
+      fade: 'linear-gradient(180deg, rgba(0,0,0,0.25) 0%, ' + tint(bg, 0.55) + ' 60%, ' + bg + ' 100%)'
+    };
+    const CLEARED = { 현행안: ['#22C55E', '#16A34A'], 교체안: ['#3B82F6', '#2563EB'] };
+    const cl = CLEARED[this.props.statusScheme ?? '현행안'] || CLEARED['현행안'];
+    const stars = [1, 2, 3, 4, 5].map((n) => ({ fill: n <= 4 ? t.accentText : 'none', stroke: n <= 4 ? t.accentText : t.muted }));
+    return { t, stars, dot: cl[mode === 'dark' ? 0 : 1] };
+  }
+}
+</script>
+</body>
+</html>

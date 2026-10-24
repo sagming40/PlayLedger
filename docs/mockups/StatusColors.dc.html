@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>상태 5색 비교</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=Noto+Sans+KR:wght@400;500;700;800&amp;display=swap">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 1200px; height: 980px; box-sizing: border-box; padding: 56px 64px; background: #0B0B0D; color: #F2F2F5; font-family: 'Inter','Noto Sans KR',sans-serif; display: flex; flex-direction: column; gap: 28px">
+<div style="display: flex; align-items: baseline; gap: 16px">
+<h1 style="margin: 0; font-size: 32px; font-weight: 800; letter-spacing: -0.02em">상태 5색</h1>
+<p style="margin: 0; font-size: 15px; color: #A1A1AC">색만으로 구분하지 않는다 · 점 + 글자</p>
+</div>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 32px">
+<sc-for list="{{schemes}}" as="sc" hint-placeholder-count="2">
+<section style="display: flex; flex-direction: column; gap: 14px">
+<div>
+<h2 style="margin: 0; font-size: 20px; font-weight: 700">{{sc.name}}</h2>
+<p style="margin: 4px 0 0; font-size: 13px; color: #A1A1AC">{{sc.sub}}</p>
+</div>
+<sc-for list="{{sc.panels}}" as="pn" hint-placeholder-count="2">
+<div style="border-radius: 14px; padding: 8px 18px; background: {{pn.bg}}; border: 1px solid {{pn.border}}; color: {{pn.text}}">
+<sc-for list="{{pn.rows}}" as="r" hint-placeholder-count="5">
+<div style="display: flex; align-items: center; gap: 14px; padding: 10px 0; border-bottom: 1px solid {{r.divider}}">
+<div style="width: 74px; height: 35px; border-radius: 6px; background: {{r.cover}}; flex-shrink: 0"></div>
+<div style="display: flex; flex-direction: column; gap: 3px; min-width: 0">
+<span style="font-size: 14px; font-weight: 600">{{r.title}}</span>
+<span style="font-size: 12px; display: flex; align-items: center; gap: 6px; color: {{pn.muted}}"><span style="width: 7px; height: 7px; border-radius: 50%; background: {{r.dot}}; display: inline-block"></span><span style="color: {{pn.text}}; font-weight: 500">{{r.label}}</span> · {{r.metric}}</span>
+</div>
+<span style="margin-left: auto; font-size: 11px; color: {{pn.muted}}; font-family: 'Inter',monospace">{{r.dot}}</span>
+</div>
+</sc-for>
+</div>
+</sc-for>
+</section>
+</sc-for>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1200,"height":980}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const THEMES = {
+      dark: { bg: '#17171C', border: '#2C2C35', text: '#F2F2F5', muted: '#A1A1AC', divider: '#24242C' },
+      light: { bg: '#FFFFFF', border: '#E2E2E8', text: '#17171B', muted: '#5C5C68', divider: '#EEEEF2' }
+    };
+    const SCHEMES = [
+      {
+        name: '현행안 · UI_DESIGN 4.1절',
+        sub: '플레이중 파랑 · 클리어 초록 · 포기 흐린 회색',
+        colors: {
+          BACKLOG: { dark: '#9A9AA6', light: '#7A7A86' },
+          PLAYING: { dark: '#3B82F6', light: '#2563EB' },
+          CLEARED: { dark: '#22C55E', light: '#16A34A' },
+          ON_HOLD: { dark: '#EAB308', light: '#CA8A04' },
+          DROPPED: { dark: '#5E5E68', light: '#B4B4BE' }
+        }
+      },
+      {
+        name: '교체안 · 9/30 대화',
+        sub: '플레이중 초록 · 클리어 파랑 · 포기 빨강',
+        colors: {
+          BACKLOG: { dark: '#9A9AA6', light: '#7A7A86' },
+          PLAYING: { dark: '#22C55E', light: '#16A34A' },
+          CLEARED: { dark: '#3B82F6', light: '#2563EB' },
+          ON_HOLD: { dark: '#EAB308', light: '#CA8A04' },
+          DROPPED: { dark: '#EF4444', light: '#DC2626' }
+        }
+      }
+    ];
+    const GAMES = [
+      { status: 'BACKLOG', label: '미시작', title: '발더스 게이트 3', metric: '방치 214일', cover: '#2B2140' },
+      { status: 'PLAYING', label: '플레이중', title: 'Hollow Knight', metric: '12.5시간', cover: '#1D2E45' },
+      { status: 'CLEARED', label: '클리어', title: '사이버펑크 2077', metric: '62.4시간', cover: '#3D2A10' },
+      { status: 'ON_HOLD', label: '보류', title: '문명 VI', metric: '8.0시간', cover: '#23382B' },
+      { status: 'DROPPED', label: '포기', title: 'Forza Horizon 5', metric: '1.2시간', cover: '#3A1E24' }
+    ];
+    const schemes = SCHEMES.map((s) => ({
+      name: s.name,
+      sub: s.sub,
+      panels: ['dark', 'light'].map((mode) => {
+        const t = THEMES[mode];
+        return {
+          ...t,
+          rows: GAMES.map((g) => ({ ...g, dot: s.colors[g.status][mode], divider: t.divider }))
+        };
+      })
+    }));
+    return { schemes };
+  }
+}
+</script>
+</body>
+</html>

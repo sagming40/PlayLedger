@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>S-06 설정</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=Noto+Sans+KR:wght@400;500;700;800&amp;display=swap">
+<style>
+body{margin:0}
+a{color:inherit;text-decoration:none}a:hover{opacity:.9}
+input::placeholder{color:#6E6E7A}
+</style>
+</helmet>
+<div style="min-height: 900px; display: flex; flex-wrap: wrap; background: {{t.bg}}; color: {{t.text}}; font-family: 'Inter','Noto Sans KR',sans-serif">
+<aside style="flex: 1 1 220px; box-sizing: border-box; padding: 28px 16px; border-right: 1px solid {{t.border}}; display: flex; flex-direction: column; gap: 28px">
+<div style="display: flex; align-items: center; gap: 10px; padding: 0 10px">
+<span style="width: 10px; height: 10px; border-radius: 3px; background: {{t.accent}}; display: inline-block"></span>
+<span style="font-size: 17px; font-weight: 800; letter-spacing: 0.04em">PLAYLEDGER</span>
+</div>
+<nav aria-label="주 메뉴" style="display: flex; flex-direction: column; gap: 4px">
+<a href="Library.dc.html" style="display: flex; align-items: center; gap: 10px; height: 44px; padding: 0 12px; border-radius: 8px; font-size: 15px; color: {{t.muted}}">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="3" width="7" height="7" rx="1.5"></rect><rect x="3" y="14" width="7" height="7" rx="1.5"></rect><rect x="14" y="14" width="7" height="7" rx="1.5"></rect></svg>
+라이브러리</a>
+<a href="Stats.dc.html" style="display: flex; align-items: center; gap: 10px; height: 44px; padding: 0 12px; border-radius: 8px; font-size: 15px; color: {{t.muted}}">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10"></path><path d="M10 20V4"></path><path d="M16 20v-7"></path><path d="M22 20H2"></path></svg>
+통계</a>
+<a href="Settings.dc.html" aria-current="page" style="display: flex; align-items: center; gap: 10px; height: 44px; padding: 0 12px; border-radius: 8px; font-size: 15px; font-weight: 600; background: {{t.accentTint}}; color: {{t.accentText}}">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h10"></path><path d="M18 6h2"></path><circle cx="16" cy="6" r="2"></circle><path d="M4 12h4"></path><path d="M12 12h8"></path><circle cx="10" cy="12" r="2"></circle><path d="M4 18h12"></path><circle cx="18" cy="18" r="2"></circle></svg>
+설정</a>
+</nav>
+</aside>
+<main style="flex: 999 1 560px; min-width: 0; box-sizing: border-box; padding: 32px 40px 56px; display: flex; flex-direction: column; gap: 20px">
+<h1 style="margin: 0 0 4px; font-size: 30px; font-weight: 800; letter-spacing: -0.02em">설정</h1>
+<section style="max-width: 720px; padding: 22px 24px; border-radius: 14px; background: {{t.surface}}; border: 1px solid {{t.border}}; display: flex; align-items: center; gap: 16px">
+<div aria-hidden="true" style="width: 52px; height: 52px; border-radius: 50%; background: {{t.accentTint}}; border: 1px solid {{t.accentLine}}; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 800; color: {{t.accentText}}">사</div>
+<div style="display: flex; flex-direction: column; gap: 4px; min-width: 0">
+<h2 style="margin: 0; font-size: 13px; font-weight: 600; color: {{t.muted}}">계정</h2>
+<span style="font-size: 18px; font-weight: 700">[닉네임]</span>
+<span style="font-size: 14px; color: {{t.muted}}">[이메일]</span>
+</div>
+</section>
+<section style="max-width: 720px; padding: 22px 24px; border-radius: 14px; background: {{t.surface}}; border: 1px solid {{t.border}}; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px">
+<h2 id="themeLabel" style="margin: 0; font-size: 16px; font-weight: 700">화면 테마</h2>
+<div role="group" aria-labelledby="themeLabel" style="display: inline-flex; padding: 4px; gap: 4px; border-radius: 12px; background: {{t.bg}}; border: 1px solid {{t.border}}">
+<button type="button" aria-pressed="true" style="height: 40px; padding: 0 16px; border-radius: 8px; border: 1px solid {{t.accentLine}}; background: {{t.accentTint}}; color: {{t.accentText}}; font: 600 14px 'Inter','Noto Sans KR',sans-serif">시스템</button>
+<button type="button" aria-pressed="false" style="height: 40px; padding: 0 16px; border-radius: 8px; border: 1px solid transparent; background: transparent; color: {{t.muted}}; font: 500 14px 'Inter','Noto Sans KR',sans-serif">다크</button>
+<button type="button" aria-pressed="false" style="height: 40px; padding: 0 16px; border-radius: 8px; border: 1px solid transparent; background: transparent; color: {{t.muted}}; font: 500 14px 'Inter','Noto Sans KR',sans-serif">라이트</button>
+</div>
+</section>
+<section style="max-width: 720px; padding: 22px 24px; border-radius: 14px; background: {{t.surface}}; border: 1px solid {{t.border}}; display: flex; flex-direction: column; gap: 14px">
+<div style="display: flex; align-items: center; gap: 10px">
+<h2 style="margin: 0; font-size: 16px; font-weight: 700">Steam 연동</h2>
+<span style="height: 22px; padding: 0 8px; border-radius: 6px; display: inline-flex; align-items: center; font-size: 11px; font-weight: 700; background: {{t.surface2}}; color: {{t.muted}}">M8 예정</span>
+</div>
+<div style="display: flex; flex-direction: column; gap: 8px">
+<label for="steamId" style="font-size: 14px; font-weight: 600; color: {{t.muted}}">Steam ID</label>
+<div style="display: flex; flex-wrap: wrap; gap: 10px">
+<input id="steamId" type="text" disabled="disabled" placeholder="7656119…" style="flex: 1 1 260px; height: 46px; box-sizing: border-box; padding: 0 14px; border-radius: 10px; border: 1px solid {{t.border}}; background: {{t.bg}}; color: {{t.text}}; font: 400 15px 'Inter','Noto Sans KR',sans-serif; opacity: 0.6">
+<button type="button" disabled="disabled" style="height: 46px; padding: 0 18px; border-radius: 10px; border: 1px solid {{t.border}}; background: {{t.surface2}}; color: {{t.muted}}; font: 600 14px 'Inter','Noto Sans KR',sans-serif">지금 동기화</button>
+</div>
+<span style="font-size: 13px; color: {{t.muted}}">Steam 프로필의 게임 세부 정보가 공개여야 동기화됩니다</span>
+</div>
+</section>
+<section style="max-width: 720px; padding: 22px 24px; border-radius: 14px; background: {{t.surface}}; border: 1px solid {{t.border}}; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px">
+<div style="display: flex; align-items: center; gap: 10px">
+<h2 style="margin: 0; font-size: 16px; font-weight: 700">Discord 연결</h2>
+<span style="height: 22px; padding: 0 8px; border-radius: 6px; display: inline-flex; align-items: center; font-size: 11px; font-weight: 700; background: {{t.surface2}}; color: {{t.muted}}">M11 예정</span>
+</div>
+<button type="button" disabled="disabled" style="height: 44px; padding: 0 16px; border-radius: 10px; border: 1px solid {{t.border}}; background: {{t.surface2}}; color: {{t.muted}}; font: 600 14px 'Inter','Noto Sans KR',sans-serif">Discord 계정 연결</button>
+</section>
+<div style="max-width: 720px; padding-top: 4px">
+<button type="button" style="height: 46px; padding: 0 20px; border-radius: 10px; border: 1px solid {{t.accentLine}}; background: transparent; color: {{t.accentText}}; font: 600 15px 'Inter','Noto Sans KR',sans-serif">로그아웃</button>
+</div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":true,"section":"테마"},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const mode = (this.props.dark ?? true) ? 'dark' : 'light';
+    const THEMES = {
+      dark: { bg: '#0E0E11', surface: '#17171C', surface2: '#22222A', border: '#2C2C35', text: '#F2F2F5', muted: '#A1A1AC' },
+      light: { bg: '#F6F6F8', surface: '#FFFFFF', surface2: '#EEEEF2', border: '#E2E2E8', text: '#17171B', muted: '#5C5C68' }
+    };
+    const tint = (hex, a) => {
+      const n = parseInt(hex.slice(1), 16);
+      return 'rgba(' + (n >> 16) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + a + ')';
+    };
+    const accent = '#D12E34';
+    const t = {
+      ...THEMES[mode],
+      accent,
+      accentText: mode === 'dark' ? '#FF7276' : '#B4232A',
+      accentTint: tint(accent, mode === 'dark' ? 0.14 : 0.08),
+      accentLine: tint(accent, mode === 'dark' ? 0.55 : 0.4)
+    };
+    return { t };
+  }
+}
+</script>
+</body>
+</html>

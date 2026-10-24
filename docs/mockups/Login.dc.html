@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>S-01 로그인 · 가입</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=Noto+Sans+KR:wght@400;500;700;800&amp;display=swap">
+<style>
+body{margin:0}
+input::placeholder{color:#6E6E7A}
+</style>
+</helmet>
+<div style="position: relative; min-height: 900px; overflow: hidden; display: flex; align-items: center; justify-content: center; background: {{t.bg}}; color: {{t.text}}; font-family: 'Inter','Noto Sans KR',sans-serif">
+<div aria-hidden="true" style="position: absolute; top: -40px; left: -20px; right: -20px; display: grid; grid-template-columns: repeat(14, minmax(0, 1fr)); gap: 10px; opacity: {{t.wallOpacity}}">
+<sc-for list="{{tiles}}" as="c" hint-placeholder-count="56">
+<div style="aspect-ratio: 2 / 3; border-radius: 6px; background: {{c}}"></div>
+</sc-for>
+</div>
+
+<main style="position: relative; width: 100%; max-width: 380px; box-sizing: border-box; padding: 48px 20px; display: flex; flex-direction: column; gap: 28px">
+<div style="display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; align-items: center; gap: 10px">
+<span style="width: 12px; height: 12px; border-radius: 3px; background: {{t.accent}}; display: inline-block"></span>
+<span style="font-size: 20px; font-weight: 800; letter-spacing: 0.04em">PLAYLEDGER</span>
+</div>
+<h1 style="margin: 0; font-size: 34px; font-weight: 800; letter-spacing: -0.03em; line-height: 1.2">{{heading}}</h1>
+<p style="margin: 0; font-size: 15px; color: {{t.muted}}">사놓고 안 한 게임, 이제 숫자로 관리하자</p>
+</div>
+<form style="display: flex; flex-direction: column; gap: 16px">
+<div style="display: flex; flex-direction: column; gap: 6px">
+<label for="email" style="font-size: 13px; font-weight: 600">이메일</label>
+<input id="email" type="email" autocomplete="email" placeholder="you@example.com" style="height: 46px; box-sizing: border-box; padding: 0 14px; border-radius: 10px; border: 1px solid {{t.inputLine}}; background: {{t.inputBg}}; color: {{t.text}}; font: 400 15px 'Inter','Noto Sans KR',sans-serif">
+</div>
+<sc-if value="{{isRegister}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; flex-direction: column; gap: 6px">
+<label for="nickname" style="font-size: 13px; font-weight: 600">닉네임</label>
+<input id="nickname" type="text" autocomplete="nickname" style="height: 46px; box-sizing: border-box; padding: 0 14px; border-radius: 10px; border: 1px solid {{t.inputLine}}; background: {{t.inputBg}}; color: {{t.text}}; font: 400 15px 'Inter','Noto Sans KR',sans-serif">
+<span style="font-size: 12px; color: {{t.muted}}">2~30자</span>
+</div>
+</sc-if>
+<div style="display: flex; flex-direction: column; gap: 6px">
+<label for="password" style="font-size: 13px; font-weight: 600">비밀번호</label>
+<input id="password" type="password" autocomplete="{{pwAuto}}" style="height: 46px; box-sizing: border-box; padding: 0 14px; border-radius: 10px; border: 1px solid {{t.inputLine}}; background: {{t.inputBg}}; color: {{t.text}}; font: 400 15px 'Inter','Noto Sans KR',sans-serif">
+<sc-if value="{{isRegister}}" hint-placeholder-val="{{false}}"><span style="font-size: 12px; color: {{t.muted}}">최소 8자</span></sc-if>
+</div>
+<sc-if value="{{showError}}" hint-placeholder-val="{{false}}">
+<p role="alert" style="margin: 0; font-size: 13px; color: {{t.errorText}}">이메일 또는 비밀번호가 올바르지 않습니다</p>
+</sc-if>
+<button type="button" style="height: 48px; margin-top: 4px; border-radius: 10px; border: none; background: {{t.accent}}; color: #FFFFFF; font: 700 16px 'Inter','Noto Sans KR',sans-serif">{{submit}}</button>
+</form>
+<p style="margin: 0; text-align: center; font-size: 14px; color: {{t.muted}}">{{switchLead}} <button type="button" onClick="{{toggle}}" style="height: 44px; padding: 0 4px; border: none; background: transparent; color: {{t.accentText}}; font: 600 14px 'Inter','Noto Sans KR',sans-serif; cursor: pointer">{{switchLabel}}</button></p>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":true,"section":"테마"},"showError":{"editor":"boolean","default":false,"section":"상태"},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { register: false };
+  }
+  renderVals() {
+    const mode = (this.props.dark ?? true) ? 'dark' : 'light';
+    const THEMES = {
+      dark: { bg: '#0E0E11', text: '#F2F2F5', muted: '#A1A1AC', inputBg: 'rgba(23,23,28,0.85)', inputLine: '#34343E', errorText: '#FF7276' },
+      light: { bg: '#F6F6F8', text: '#17171B', muted: '#5C5C68', inputBg: 'rgba(255,255,255,0.92)', inputLine: '#D6D6DE', errorText: '#B4232A' }
+    };
+    const tint = (hex, a) => {
+      const n = parseInt(hex.slice(1), 16);
+      return 'rgba(' + (n >> 16) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + a + ')';
+    };
+    const bg = THEMES[mode].bg;
+    const t = {
+      ...THEMES[mode],
+      accent: '#D12E34',
+      accentText: mode === 'dark' ? '#FF7276' : '#B4232A',
+      wallOpacity: mode === 'dark' ? '0.75' : '0.35',
+      fade: 'radial-gradient(ellipse 46% 70% at 50% 50%, ' + tint(bg, 0.96) + ' 0%, ' + tint(bg, 0.86) + ' 55%, ' + tint(bg, 0.45) + ' 100%)'
+    };
+    const HUES = ['#2B2140', '#1D2E45', '#3D2A10', '#33301C', '#1F3A2C', '#1C2A33', '#23382B', '#1E3440', '#3A1E24', '#2E2638', '#262630'];
+    const tiles = Array.from({ length: 56 }, (_, i) => HUES[(i * 7 + Math.floor(i / 14) * 3) % HUES.length]);
+    const reg = this.state.register;
+    return {
+      t,
+      tiles,
+      isRegister: reg,
+      heading: reg ? '가입하기' : '다시 오셨네요',
+      submit: reg ? '가입하기' : '로그인',
+      pwAuto: reg ? 'new-password' : 'current-password',
+      switchLead: reg ? '이미 계정이 있으신가요?' : '계정이 없으신가요?',
+      switchLabel: reg ? '로그인' : '가입',
+      showError: !reg && (this.props.showError ?? false),
+      toggle: () => this.setState({ register: !reg })
+    };
+  }
+}
+</script>
+</body>
+</html>

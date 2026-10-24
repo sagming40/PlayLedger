@@ -1,0 +1,157 @@
+{
+  "v": 3,
+  "attachments": {},
+  "boards": {
+    "DeleteDialog.dc.html": {
+      "h": 900,
+      "title": "S-04 삭제 확인",
+      "w": 1440,
+      "x": 1520,
+      "y": 5180
+    },
+    "Detail.dc.html": {
+      "expand": "fill",
+      "h": 1120,
+      "title": "S-04 게임 상세",
+      "w": 1440,
+      "x": 1990,
+      "y": 2180
+    },
+    "DetailMobile.dc.html": {
+      "h": 844,
+      "title": "S-04 게임 상세 · 모바일",
+      "w": 390,
+      "x": 3040,
+      "y": 5180
+    },
+    "Form.dc.html": {
+      "expand": "fill",
+      "h": 1180,
+      "is_interactive": true,
+      "title": "S-03 게임 등록 (상태에 따라 평점 칸)",
+      "w": 1440,
+      "x": 1520,
+      "y": 3880
+    },
+    "Library.dc.html": {
+      "expand": "fill",
+      "h": 1280,
+      "title": "S-02 라이브러리 · 데스크톱",
+      "w": 1440,
+      "x": 0,
+      "y": 2180
+    },
+    "LibraryEmpty.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "title": "S-02 빈 상태 · 게임 0개",
+      "w": 1440,
+      "x": 0,
+      "y": 5180
+    },
+    "LibraryMobile.dc.html": {
+      "h": 844,
+      "title": "S-02 라이브러리 · 모바일",
+      "w": 390,
+      "x": 1520,
+      "y": 2180
+    },
+    "Login.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "title": "S-01 로그인 · 가입 (전환 동작)",
+      "w": 1440,
+      "x": 0,
+      "y": 3880
+    },
+    "Main.dc.html": {
+      "h": 1760,
+      "title": "컬러 시안 A~D · 다크 / 라이트",
+      "w": 1440,
+      "x": 0,
+      "y": 0
+    },
+    "Settings.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "title": "S-06 설정",
+      "w": 1440,
+      "x": 3040,
+      "y": 3880
+    },
+    "Stats.dc.html": {
+      "expand": "fill",
+      "h": 1240,
+      "title": "S-05 통계",
+      "w": 1440,
+      "x": 3510,
+      "y": 2180
+    },
+    "StatsMobile.dc.html": {
+      "h": 844,
+      "title": "S-05 통계 · 모바일",
+      "w": 390,
+      "x": 3510,
+      "y": 5180
+    },
+    "StatusColors.dc.html": {
+      "h": 980,
+      "title": "상태 5색 · 현행안 vs 교체안",
+      "w": 1200,
+      "x": 1520,
+      "y": 0
+    }
+  },
+  "createdOnFiles": {
+    "at": "2026-10-24T13:30:00Z",
+    "v": 1
+  },
+  "designSystems": [],
+  "launch": {
+    "view": "canvas"
+  },
+  "notes": {
+    "titlePalette": {
+      "kind": "title1",
+      "maxW": 2720,
+      "text": "컬러 시안 · 상태 색",
+      "w": 240,
+      "x": 0,
+      "y": -300
+    },
+    "titleScreens": {
+      "kind": "title1",
+      "maxW": 4950,
+      "text": "화면 · S-02 라이브러리 · S-04 상세 · S-05 통계",
+      "w": 240,
+      "x": 0,
+      "y": 1900
+    },
+    "titleScreens2": {
+      "kind": "title1",
+      "maxW": 4480,
+      "text": "화면 · S-01 로그인 · S-03 등록 · S-06 설정 · 빈 상태 · 모바일",
+      "w": 240,
+      "x": 0,
+      "y": 3600
+    }
+  },
+  "order": [
+    "Main.dc.html",
+    "StatusColors.dc.html",
+    "Library.dc.html",
+    "LibraryMobile.dc.html",
+    "Detail.dc.html",
+    "Stats.dc.html",
+    "Login.dc.html",
+    "Form.dc.html",
+    "Settings.dc.html",
+    "LibraryEmpty.dc.html",
+    "DeleteDialog.dc.html",
+    "DetailMobile.dc.html",
+    "StatsMobile.dc.html"
+  ],
+  "pages": [],
+  "title": "PlayLedger 목업"
+}

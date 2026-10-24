@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>S-05 통계</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=Noto+Sans+KR:wght@400;500;700;800&amp;display=swap">
+<style>
+body{margin:0}
+a{color:inherit;text-decoration:none}a:hover{opacity:.9}
+</style>
+</helmet>
+<div style="min-height: 1240px; display: flex; flex-wrap: wrap; background: {{t.bg}}; color: {{t.text}}; font-family: 'Inter','Noto Sans KR',sans-serif">
+<aside style="flex: 1 1 220px; box-sizing: border-box; padding: 28px 16px; border-right: 1px solid {{t.border}}; display: flex; flex-direction: column; gap: 28px">
+<div style="display: flex; align-items: center; gap: 10px; padding: 0 10px">
+<span style="width: 10px; height: 10px; border-radius: 3px; background: {{t.accent}}; display: inline-block"></span>
+<span style="font-size: 17px; font-weight: 800; letter-spacing: 0.04em">PLAYLEDGER</span>
+</div>
+<nav aria-label="주 메뉴" style="display: flex; flex-direction: column; gap: 4px">
+<a href="Library.dc.html" style="display: flex; align-items: center; gap: 10px; height: 44px; padding: 0 12px; border-radius: 8px; font-size: 15px; color: {{t.muted}}">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="3" width="7" height="7" rx="1.5"></rect><rect x="3" y="14" width="7" height="7" rx="1.5"></rect><rect x="14" y="14" width="7" height="7" rx="1.5"></rect></svg>
+라이브러리</a>
+<a href="Stats.dc.html" aria-current="page" style="display: flex; align-items: center; gap: 10px; height: 44px; padding: 0 12px; border-radius: 8px; font-size: 15px; font-weight: 600; background: {{t.accentTint}}; color: {{t.accentText}}">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10"></path><path d="M10 20V4"></path><path d="M16 20v-7"></path><path d="M22 20H2"></path></svg>
+통계</a>
+<a href="#" style="display: flex; align-items: center; gap: 10px; height: 44px; padding: 0 12px; border-radius: 8px; font-size: 15px; color: {{t.muted}}">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h10"></path><path d="M18 6h2"></path><circle cx="16" cy="6" r="2"></circle><path d="M4 12h4"></path><path d="M12 12h8"></path><circle cx="10" cy="12" r="2"></circle><path d="M4 18h12"></path><circle cx="18" cy="18" r="2"></circle></svg>
+설정</a>
+</nav>
+</aside>
+<main style="flex: 999 1 560px; min-width: 0; box-sizing: border-box; padding: 32px 40px 56px; display: flex; flex-direction: column; gap: 24px; max-width: 1180px">
+<h1 style="margin: 0; font-size: 30px; font-weight: 800; letter-spacing: -0.02em">통계</h1>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px">
+<sc-for list="{{kpis}}" as="k" hint-placeholder-count="4">
+<div style="padding: 20px 22px; border-radius: 14px; background: {{k.bg}}; border: 1px solid {{k.line}}; display: flex; flex-direction: column; gap: 4px">
+<span style="font-size: 38px; font-weight: 800; letter-spacing: -0.03em; color: {{k.color}}">{{k.value}}</span>
+<span style="font-size: 14px; color: {{t.muted}}">{{k.label}}</span>
+</div>
+</sc-for>
+</div>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 20px">
+<sc-for list="{{lists}}" as="l" hint-placeholder-count="2">
+<section style="padding: 22px 24px; border-radius: 14px; background: {{t.surface}}; border: 1px solid {{t.border}}; display: flex; flex-direction: column; gap: 8px">
+<h2 style="margin: 0 0 6px; font-size: 16px; font-weight: 700">{{l.title}}</h2>
+<sc-for list="{{l.rows}}" as="r" hint-placeholder-count="3">
+<a href="Detail.dc.html" style="display: flex; align-items: center; gap: 14px; padding: 8px 0">
+<span style="width: 16px; font-size: 14px; font-weight: 700; color: {{t.muted}}">{{r.rank}}</span>
+<span style="width: 86px; height: 40px; border-radius: 6px; background: {{r.cover}}; flex-shrink: 0"></span>
+<span style="font-size: 15px; font-weight: 600; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{r.title}}</span>
+<span style="font-size: 15px; font-weight: 700; color: {{t.accentText}}">{{r.value}}</span>
+</a>
+</sc-for>
+<button type="button" style="align-self: flex-end; height: 36px; padding: 0 12px; border: none; border-radius: 8px; background: transparent; color: {{t.muted}}; font: 500 13px 'Inter','Noto Sans KR',sans-serif">더보기</button>
+</section>
+</sc-for>
+</div>
+<section style="padding: 22px 24px; border-radius: 14px; background: {{t.surface}}; border: 1px solid {{t.border}}; display: flex; flex-direction: column; gap: 16px">
+<h2 style="margin: 0; font-size: 16px; font-weight: 700">장르별 완주율</h2>
+<sc-for list="{{genres}}" as="g" hint-placeholder-count="3">
+<div style="display: flex; align-items: center; gap: 16px">
+<span style="width: 72px; font-size: 14px; color: {{t.muted}}">{{g.name}}</span>
+<div style="flex: 1; height: 12px; border-radius: 999px; background: {{t.surface2}}; overflow: hidden">
+<div style="height: 12px; width: {{g.width}}; border-radius: 999px; background: {{t.accent}}"></div>
+</div>
+<span style="width: 48px; text-align: right; font-size: 15px; font-weight: 700">{{g.pct}}</span>
+</div>
+</sc-for>
+</section>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":true,"section":"테마"},"palette":{"editor":"enum","options":["A 심야 극장","B 핑크 시네마","C 장부 앰버","D 바이올렛"],"default":"A 심야 극장","section":"테마"},"$preview":{"width":1440,"height":1240}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const mode = (this.props.dark ?? true) ? 'dark' : 'light';
+    const THEMES = {
+      dark: { bg: '#0E0E11', surface: '#17171C', surface2: '#22222A', border: '#2C2C35', text: '#F2F2F5', muted: '#A1A1AC' },
+      light: { bg: '#F6F6F8', surface: '#FFFFFF', surface2: '#EEEEF2', border: '#E2E2E8', text: '#17171B', muted: '#5C5C68' }
+    };
+    const PALETTES = {
+      A: { accent: '#D12E34', onAccent: '#FFFFFF', textOn: { dark: '#FF7276', light: '#B4232A' } },
+      B: { accent: '#D9245F', onAccent: '#FFFFFF', textOn: { dark: '#FF7AA2', light: '#B8174F' } },
+      C: { accent: '#F5A524', onAccent: '#17171B', textOn: { dark: '#F5B84A', light: '#8A5300' } },
+      D: { accent: '#7C3AED', onAccent: '#FFFFFF', textOn: { dark: '#B39DFA', light: '#5B2FD1' } }
+    };
+    const tint = (hex, a) => {
+      const n = parseInt(hex.slice(1), 16);
+      return 'rgba(' + (n >> 16) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + a + ')';
+    };
+    const p = PALETTES[String(this.props.palette ?? 'A').charAt(0)] || PALETTES.A;
+    const t = {
+      ...THEMES[mode],
+      accent: p.accent,
+      accentText: p.textOn[mode],
+      accentTint: tint(p.accent, mode === 'dark' ? 0.14 : 0.08),
+      accentLine: tint(p.accent, mode === 'dark' ? 0.55 : 0.4)
+    };
+    const kpi = (label, value, loud) => ({
+      label, value,
+      bg: loud ? t.accentTint : t.surface,
+      line: loud ? t.accentLine : t.border,
+      color: loud ? t.accentText : t.text
+    });
+    const kpis = [kpi('총 보유', '42', false), kpi('미시작', '18', false), kpi('사장률', '31.0%', true), kpi('완주율', '42.9%', true)];
+    const lists = [
+      {
+        title: '오래 방치된 게임',
+        rows: [
+          { rank: '1', title: '발더스 게이트 3', value: '214일', cover: '#2B2140' },
+          { rank: '2', title: '엘든 링', value: '180일', cover: '#33301C' },
+          { rank: '3', title: '데스 스트랜딩', value: '156일', cover: '#1C2A33' }
+        ]
+      },
+      {
+        title: '시간당 비용이 높은 게임',
+        rows: [
+          { rank: '1', title: 'Forza Horizon 5', value: '33,000원/h', cover: '#3A1E24' },
+          { rank: '2', title: '문명 VI', value: '12,400원/h', cover: '#23382B' },
+          { rank: '3', title: 'Celeste', value: '1,175원/h', cover: t.surface2 }
+        ]
+      }
+    ];
+    const genres = [
+      { name: 'RPG', pct: '52%', width: '52%' },
+      { name: '액션', pct: '31%', width: '31%' },
+      { name: '전략', pct: '12%', width: '12%' }
+    ];
+    return { t, kpis, lists, genres };
+  }
+}
+</script>
+</body>
+</html>

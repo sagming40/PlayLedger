@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>S-02 라이브러리 모바일</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=Noto+Sans+KR:wght@400;500;700;800&amp;display=swap">
+<style>
+body{margin:0}
+a{color:inherit;text-decoration:none}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: {{t.bg}}; color: {{t.text}}; font-family: 'Inter','Noto Sans KR',sans-serif">
+<header style="height: 60px; box-sizing: border-box; padding: 0 12px 0 20px; display: flex; align-items: center; justify-content: space-between">
+<h1 style="margin: 0; font-size: 22px; font-weight: 800; letter-spacing: -0.02em">라이브러리</h1>
+<div style="display: flex; gap: 4px">
+<button type="button" aria-label="다음 게임 추첨" style="width: 44px; height: 44px; border: none; border-radius: 10px; background: transparent; color: {{t.text}}; display: inline-flex; align-items: center; justify-content: center">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="4"></rect><circle cx="8.5" cy="8.5" r="1.2" fill="currentColor"></circle><circle cx="15.5" cy="15.5" r="1.2" fill="currentColor"></circle><circle cx="15.5" cy="8.5" r="1.2" fill="currentColor"></circle><circle cx="8.5" cy="15.5" r="1.2" fill="currentColor"></circle></svg>
+</button>
+<button type="button" aria-label="게임 등록" style="width: 44px; height: 44px; border: none; border-radius: 10px; background: {{t.accent}}; color: {{t.onAccent}}; display: inline-flex; align-items: center; justify-content: center">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>
+</button>
+</div>
+</header>
+<div role="group" aria-label="상태 필터" style="display: flex; gap: 8px; padding: 4px 20px 0; overflow-x: auto; white-space: nowrap">
+<sc-for list="{{chips}}" as="c" hint-placeholder-count="6">
+<button type="button" aria-pressed="{{c.pressed}}" style="flex-shrink: 0; height: 36px; padding: 0 14px; border-radius: 999px; font: {{c.font}}; background: {{c.bg}}; color: {{c.color}}; border: 1px solid {{c.line}}">{{c.label}}</button>
+</sc-for>
+</div>
+<p style="margin: 14px 20px 6px; font-size: 13px; color: {{t.muted}}">총 <strong style="color: {{t.text}}">42</strong>개 · 미시작 <strong style="color: {{t.accentText}}">18</strong>개</p>
+<div style="display: flex; flex-direction: column; padding: 0 20px">
+<sc-for list="{{games}}" as="g" hint-placeholder-count="7">
+<a href="Detail.dc.html" style="display: flex; align-items: center; gap: 14px; padding: 11px 0; border-bottom: 1px solid {{t.divider}}">
+<div style="width: 112px; height: 52px; flex-shrink: 0; border-radius: 8px; background: {{g.cover}}; display: flex; align-items: center; justify-content: center">
+<sc-if value="{{g.noCover}}" hint-placeholder-val="{{false}}"><span style="font-size: 18px; font-weight: 800; color: {{t.faint}}">{{g.initial}}</span></sc-if>
+</div>
+<div style="min-width: 0; display: flex; flex-direction: column; gap: 4px">
+<span style="font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{g.title}}</span>
+<span style="font-size: 13px; display: flex; align-items: center; gap: 6px; color: {{t.muted}}"><span style="width: 7px; height: 7px; border-radius: 50%; background: {{g.dot}}; display: inline-block; flex-shrink: 0"></span><span style="color: {{t.text}}">{{g.label}}</span> · <span style="color: {{g.metricColor}}; font-weight: {{g.metricWeight}}">{{g.metric}}</span></span>
+<span style="font-size: 12px; color: {{t.muted}}">{{g.genres}}</span>
+</div>
+</a>
+</sc-for>
+</div>
+<nav aria-label="주 메뉴" style="position: absolute; left: 0; right: 0; bottom: 0; height: 64px; display: flex; background: {{t.bg}}; border-top: 1px solid {{t.border}}">
+<a href="LibraryMobile.dc.html" aria-current="page" style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font-size: 11px; font-weight: 600; color: {{t.accentText}}">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="3" width="7" height="7" rx="1.5"></rect><rect x="3" y="14" width="7" height="7" rx="1.5"></rect><rect x="14" y="14" width="7" height="7" rx="1.5"></rect></svg>
+라이브러리</a>
+<a href="Stats.dc.html" style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font-size: 11px; color: {{t.muted}}">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10"></path><path d="M10 20V4"></path><path d="M16 20v-7"></path><path d="M22 20H2"></path></svg>
+통계</a>
+<a href="#" style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font-size: 11px; color: {{t.muted}}">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h10"></path><path d="M18 6h2"></path><circle cx="16" cy="6" r="2"></circle><path d="M4 12h4"></path><path d="M12 12h8"></path><circle cx="10" cy="12" r="2"></circle><path d="M4 18h12"></path><circle cx="18" cy="18" r="2"></circle></svg>
+설정</a>
+</nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":true,"section":"테마"},"palette":{"editor":"enum","options":["A 심야 극장","B 핑크 시네마","C 장부 앰버","D 바이올렛"],"default":"A 심야 극장","section":"테마"},"statusScheme":{"editor":"enum","options":["현행안","교체안"],"default":"현행안","section":"테마"},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const mode = (this.props.dark ?? true) ? 'dark' : 'light';
+    const THEMES = {
+      dark: { bg: '#0E0E11', surface: '#17171C', surface2: '#22222A', border: '#2C2C35', divider: '#1F1F26', text: '#F2F2F5', muted: '#A1A1AC', faint: '#4A4A55' },
+      light: { bg: '#F6F6F8', surface: '#FFFFFF', surface2: '#E6E6EC', border: '#E2E2E8', divider: '#E8E8EE', text: '#17171B', muted: '#5C5C68', faint: '#9A9AA6' }
+    };
+    const PALETTES = {
+      A: { accent: '#D12E34', onAccent: '#FFFFFF', textOn: { dark: '#FF7276', light: '#B4232A' } },
+      B: { accent: '#D9245F', onAccent: '#FFFFFF', textOn: { dark: '#FF7AA2', light: '#B8174F' } },
+      C: { accent: '#F5A524', onAccent: '#17171B', textOn: { dark: '#F5B84A', light: '#8A5300' } },
+      D: { accent: '#7C3AED', onAccent: '#FFFFFF', textOn: { dark: '#B39DFA', light: '#5B2FD1' } }
+    };
+    const STATUS = {
+      현행안: { BACKLOG: ['#9A9AA6', '#7A7A86'], PLAYING: ['#3B82F6', '#2563EB'], CLEARED: ['#22C55E', '#16A34A'], ON_HOLD: ['#EAB308', '#CA8A04'], DROPPED: ['#5E5E68', '#B4B4BE'] },
+      교체안: { BACKLOG: ['#9A9AA6', '#7A7A86'], PLAYING: ['#22C55E', '#16A34A'], CLEARED: ['#3B82F6', '#2563EB'], ON_HOLD: ['#EAB308', '#CA8A04'], DROPPED: ['#EF4444', '#DC2626'] }
+    };
+    const LABEL = { BACKLOG: '미시작', PLAYING: '플레이중', CLEARED: '클리어', ON_HOLD: '보류', DROPPED: '포기' };
+    const tint = (hex, a) => {
+      const n = parseInt(hex.slice(1), 16);
+      return 'rgba(' + (n >> 16) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + a + ')';
+    };
+    const p = PALETTES[String(this.props.palette ?? 'A').charAt(0)] || PALETTES.A;
+    const sc = STATUS[this.props.statusScheme ?? '현행안'] || STATUS['현행안'];
+    const dotOf = (s) => sc[s][mode === 'dark' ? 0 : 1];
+    const t = {
+      ...THEMES[mode],
+      accent: p.accent,
+      onAccent: p.onAccent,
+      accentText: p.textOn[mode],
+      accentTint: tint(p.accent, mode === 'dark' ? 0.14 : 0.08),
+      accentLine: tint(p.accent, mode === 'dark' ? 0.55 : 0.4)
+    };
+    const chips = ['전체', '미시작', '플레이중', '클리어', '보류', '포기'].map((label, i) => {
+      const on = i === 0;
+      return {
+        label,
+        pressed: on ? 'true' : 'false',
+        bg: on ? t.accentTint : 'transparent',
+        color: on ? t.accentText : t.muted,
+        line: on ? t.accentLine : t.border,
+        font: (on ? '600' : '500') + " 14px 'Inter','Noto Sans KR',sans-serif"
+      };
+    });
+    const RAW = [
+      { title: '발더스 게이트 3', status: 'BACKLOG', idle: 214, genres: 'RPG', cover: '#2B2140' },
+      { title: 'Hollow Knight', status: 'PLAYING', hours: '12.5', genres: '액션 · 어드벤처', cover: '#1D2E45' },
+      { title: '사이버펑크 2077', status: 'CLEARED', hours: '62.4', genres: 'RPG · 액션', cover: '#3D2A10' },
+      { title: '엘든 링', status: 'BACKLOG', idle: 180, genres: '액션 · RPG', cover: '#33301C' },
+      { title: '스타듀 밸리', status: 'PLAYING', hours: '40.5', genres: '시뮬레이션 · RPG', cover: '#1F3A2C' },
+      { title: 'Celeste', status: 'CLEARED', hours: '18.3', genres: '액션 · 캐주얼', cover: null },
+      { title: '문명 VI', status: 'ON_HOLD', hours: '8.0', genres: '전략', cover: '#23382B' },
+      { title: 'Forza Horizon 5', status: 'DROPPED', hours: '1.2', genres: '레이싱', cover: '#3A1E24' }
+    ];
+    const games = RAW.map((g) => {
+      const backlog = g.status === 'BACKLOG';
+      const loud = backlog && g.idle >= 180;
+      return {
+        title: g.title,
+        genres: g.genres,
+        label: LABEL[g.status],
+        dot: dotOf(g.status),
+        metric: backlog ? '방치 ' + g.idle + '일' : g.hours + '시간',
+        metricColor: loud ? t.accentText : t.muted,
+        metricWeight: loud ? '700' : '400',
+        noCover: g.cover === null,
+        cover: g.cover || t.surface2,
+        initial: g.title.slice(0, 2)
+      };
+    });
+    return { t, chips, games };
+  }
+}
+</script>
+</body>
+</html>

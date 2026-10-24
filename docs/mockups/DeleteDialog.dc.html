@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>S-04 삭제 확인</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=Noto+Sans+KR:wght@400;500;700;800&amp;display=swap">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="position: relative; width: 1440px; height: 900px; overflow: hidden; background: {{t.bg}}; font-family: 'Inter','Noto Sans KR',sans-serif">
+<div aria-hidden="true" style="position: absolute; inset: 0">
+<dc-import name="Detail" dark="{{dark}}" hint-size="1440px,1120px"></dc-import>
+</div>
+<div aria-hidden="true" style="position: absolute; inset: 0; background: {{t.scrim}}"></div>
+<div role="dialog" aria-modal="true" aria-labelledby="delTitle" aria-describedby="delBody" style="position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 420px; box-sizing: border-box; padding: 26px 26px 22px; border-radius: 16px; background: {{t.surface}}; border: 1px solid {{t.border}}; color: {{t.text}}; display: flex; flex-direction: column; gap: 12px">
+<h2 id="delTitle" style="margin: 0; font-size: 20px; font-weight: 800; letter-spacing: -0.01em">이 기록을 삭제할까요?</h2>
+<p id="delBody" style="margin: 0; font-size: 15px; line-height: 1.55; color: {{t.muted}}"><strong style="color: {{t.text}}">사이버펑크 2077</strong>의 구매일 · 구매가 · 플레이타임 · 평점이 함께 지워져요. 되돌릴 수 없어요.</p>
+<div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px">
+<button type="button" style="height: 44px; padding: 0 18px; border-radius: 10px; border: 1px solid {{t.border}}; background: {{t.surface}}; color: {{t.text}}; font: 500 15px 'Inter','Noto Sans KR',sans-serif">취소</button>
+<button type="button" style="height: 44px; padding: 0 18px; border-radius: 10px; border: none; background: #D12E34; color: #FFFFFF; font: 700 15px 'Inter','Noto Sans KR',sans-serif">삭제</button>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":true,"section":"테마"},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const dark = this.props.dark ?? true;
+    const t = dark
+      ? { bg: '#0E0E11', surface: '#1C1C22', border: '#34343E', text: '#F2F2F5', muted: '#A1A1AC', scrim: 'rgba(5,5,7,0.68)' }
+      : { bg: '#F6F6F8', surface: '#FFFFFF', border: '#E2E2E8', text: '#17171B', muted: '#5C5C68', scrim: 'rgba(23,23,27,0.45)' };
+    return { t, dark };
+  }
+}
+</script>
+</body>
+</html>

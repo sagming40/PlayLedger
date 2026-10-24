@@ -14,7 +14,7 @@ PlayLedger: 사놓고 안 한 게임을 구매일 · 구매가 · 플레이타�
 | 기능 범위는? 하지 않을 것은? | [`docs/01_requirements.md`](docs/01_requirements.md) (범위는 3장, 나중 아이디어는 4.4절) |
 | 레이어 · 디렉터리 구조, 인증 흐름은? | [`docs/02_architecture.md`](docs/02_architecture.md) |
 | DB는 어떻게 생겼고 왜? | [`docs/03_erd.md`](docs/03_erd.md) |
-| 화면은 어떻게 생겼고 왜? | [`docs/04_ui_design.md`](docs/04_ui_design.md) |
+| 화면은 어떻게 생겼고 왜? 색 · 테마는? | [`docs/04_ui_design.md`](docs/04_ui_design.md) (색 · 테마는 4.4절), 그림은 [`docs/mockups/`](docs/mockups/README.md) |
 | 클라이언트가 지킬 인증 계약 · 에러 응답 규칙은? | [`docs/06_api_spec.md`](docs/06_api_spec.md) (엔드포인트 목록은 Swagger `/docs`) |
 | 이게 뭐고 어떻게 실행해? | [`README.md`](README.md) |
 | 작업할 때 항상 지킬 규칙은? | 이 파일 |

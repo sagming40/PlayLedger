@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>컬러 시안</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=Noto+Sans+KR:wght@400;500;700;800&amp;display=swap">
+<style>
+body{margin:0}
+a{color:inherit}a:hover{opacity:.85}
+</style>
+</helmet>
+<div style="width: 1440px; height: 1760px; box-sizing: border-box; padding: 56px 64px; background: #0B0B0D; color: #F2F2F5; font-family: 'Inter','Noto Sans KR',sans-serif; display: flex; flex-direction: column; gap: 32px">
+<div style="display: flex; align-items: baseline; gap: 16px">
+<h1 style="margin: 0; font-size: 32px; font-weight: 800; letter-spacing: -0.02em">컬러 시안</h1>
+<p style="margin: 0; font-size: 15px; color: #A1A1AC">포인트 색 하나 + 무채색 · 상태는 작은 점 + 글자</p>
+</div>
+<sc-for list="{{palettes}}" as="p" hint-placeholder-count="4">
+<section style="display: flex; flex-direction: column; gap: 14px">
+<h2 style="margin: 0; font-size: 20px; font-weight: 700">{{p.name}}</h2>
+<div style="display: flex; gap: 24px">
+<sc-for list="{{p.halves}}" as="h" hint-placeholder-count="2">
+<div style="flex: 1; min-width: 0; box-sizing: border-box; height: 330px; padding: 24px; border-radius: 14px; background: {{h.bg}}; color: {{h.text}}; border: 1px solid {{h.border}}; display: flex; flex-direction: column; gap: 18px">
+<div style="display: flex; justify-content: space-between; align-items: center">
+<span style="font-size: 13px; font-weight: 600; color: {{h.muted}}">{{h.label}}</span>
+<div style="display: flex; gap: 10px">
+<sc-for list="{{h.swatches}}" as="s" hint-placeholder-count="5">
+<div style="display: flex; flex-direction: column; align-items: center; gap: 4px">
+<div style="width: 44px; height: 28px; border-radius: 6px; background: {{s.hex}}; border: 1px solid {{h.border}}"></div>
+<span style="font-size: 10px; color: {{h.muted}}; font-family: 'Inter',monospace">{{s.hex}}</span>
+</div>
+</sc-for>
+</div>
+</div>
+<div style="display: flex; gap: 22px; align-items: flex-start">
+<div style="width: 250px; flex-shrink: 0; border-radius: 10px; overflow: hidden; background: {{h.surface}}; border: 1px solid {{h.border}}">
+<div style="height: 116px; background: #2B2140; display: flex; align-items: flex-end; padding: 12px; box-sizing: border-box">
+<span style="font-size: 18px; font-weight: 800; color: #FFFFFF; letter-spacing: -0.01em">발더스 게이트 3</span>
+</div>
+<div style="padding: 12px 14px; display: flex; flex-direction: column; gap: 6px">
+<span style="font-size: 15px; font-weight: 600">발더스 게이트 3</span>
+<span style="font-size: 13px; display: flex; align-items: center; gap: 6px; color: {{h.muted}}"><span style="width: 7px; height: 7px; border-radius: 50%; background: {{h.backlog}}; display: inline-block"></span>미시작 · <span style="color: {{h.accentText}}; font-weight: 600">방치 214일</span></span>
+<span style="font-size: 12px; color: {{h.muted}}">RPG</span>
+</div>
+</div>
+<div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 14px">
+<div style="display: flex; gap: 10px">
+<button type="button" style="height: 40px; padding: 0 16px; border-radius: 8px; border: none; background: {{h.accent}}; color: {{h.onAccent}}; font: 600 14px 'Inter','Noto Sans KR',sans-serif">+ 게임 등록</button>
+<button type="button" style="height: 40px; padding: 0 16px; border-radius: 8px; border: 1px solid {{h.border}}; background: {{h.surface}}; color: {{h.text}}; font: 500 14px 'Inter','Noto Sans KR',sans-serif">취소</button>
+</div>
+<div style="display: flex; gap: 8px">
+<span style="height: 30px; padding: 0 12px; border-radius: 999px; display: inline-flex; align-items: center; font-size: 13px; font-weight: 600; background: {{h.accentTint}}; color: {{h.accentText}}; border: 1px solid {{h.accentLine}}">전체</span>
+<span style="height: 30px; padding: 0 12px; border-radius: 999px; display: inline-flex; align-items: center; font-size: 13px; color: {{h.muted}}; border: 1px solid {{h.border}}">미시작</span>
+<span style="height: 30px; padding: 0 12px; border-radius: 999px; display: inline-flex; align-items: center; font-size: 13px; color: {{h.muted}}; border: 1px solid {{h.border}}">플레이중</span>
+</div>
+<div style="display: flex; gap: 10px">
+<div style="flex: 1; padding: 14px 16px; border-radius: 10px; background: {{h.surface}}; border: 1px solid {{h.border}}">
+<div style="font-size: 26px; font-weight: 800; letter-spacing: -0.02em">42</div>
+<div style="font-size: 12px; color: {{h.muted}}">총 보유</div>
+</div>
+<div style="flex: 1; padding: 14px 16px; border-radius: 10px; background: {{h.accentTint}}; border: 1px solid {{h.accentLine}}">
+<div style="font-size: 26px; font-weight: 800; letter-spacing: -0.02em; color: {{h.accentText}}">42.9%</div>
+<div style="font-size: 12px; color: {{h.muted}}">완주율</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</sc-for>
+</div>
+</section>
+</sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1760}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const THEMES = {
+      dark: { label: '다크', bg: '#0E0E11', surface: '#17171C', border: '#2C2C35', text: '#F2F2F5', muted: '#A1A1AC', backlog: '#9A9AA6' },
+      light: { label: '라이트', bg: '#F6F6F8', surface: '#FFFFFF', border: '#E2E2E8', text: '#17171B', muted: '#5C5C68', backlog: '#7A7A86' }
+    };
+    const PALETTES = [
+      { name: 'A · 심야 극장', accent: '#D12E34', onAccent: '#FFFFFF', textOn: { dark: '#FF7276', light: '#B4232A' } },
+      { name: 'B · 핑크 시네마', accent: '#D9245F', onAccent: '#FFFFFF', textOn: { dark: '#FF7AA2', light: '#B8174F' } },
+      { name: 'C · 장부 앰버', accent: '#F5A524', onAccent: '#17171B', textOn: { dark: '#F5B84A', light: '#8A5300' } },
+      { name: 'D · 바이올렛', accent: '#7C3AED', onAccent: '#FFFFFF', textOn: { dark: '#B39DFA', light: '#5B2FD1' } }
+    ];
+    const tint = (hex, a) => {
+      const n = parseInt(hex.slice(1), 16);
+      return 'rgba(' + (n >> 16) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + a + ')';
+    };
+    const palettes = PALETTES.map((p) => ({
+      name: p.name,
+      halves: ['dark', 'light'].map((mode) => {
+        const t = THEMES[mode];
+        return {
+          ...t,
+          accent: p.accent,
+          onAccent: p.onAccent,
+          accentText: p.textOn[mode],
+          accentTint: tint(p.accent, mode === 'dark' ? 0.14 : 0.08),
+          accentLine: tint(p.accent, mode === 'dark' ? 0.55 : 0.4),
+          swatches: [
+            { hex: t.bg }, { hex: t.surface }, { hex: t.border }, { hex: t.text }, { hex: p.accent }
+          ]
+        };
+      })
+    }));
+    return { palettes };
+  }
+}
+</script>
+</body>
+</html>
