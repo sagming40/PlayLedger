@@ -27,7 +27,14 @@ export const useAuthStore = defineStore('auth', () => {
 
     // ② 그 TOKEN으로 내가 누구인지 물어본다
     // LOGIN 응답에는 TOKEN만 들어있고 유저 정보는 존재하지 않는다 (API_SPEC 3.1절)
-    user.value = await authApi.me()
+    try {
+      user.value = await authApi.me()
+    } catch (e) {
+      // ②가 실패하면 ①에서 넣은 TOKEN도 되돌린다
+      // 그대로 두면 "user는 없는데 TOKEN은 붙어 나가는" 반쯤 로그인된 상태가 남는다
+      setAccessToken(null)
+      throw e
+    }
   }
 
   async function register(email: string, password: string, nickname: string) {
