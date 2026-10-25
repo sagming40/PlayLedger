@@ -11,6 +11,8 @@ declare module 'vue-router' {
     // 로그인 없이 들어올 수 있는 화면. 표시가 없으면 전부 보호된 화면이다
     // 반대(보호할 화면에 표시)로 두면, 새 화면에 표시를 빠뜨리는 순간 아무나 들어온다
     public?: boolean
+    // 화면이 제목을 직접 그린다 (S-02 포스터 벽 안의 제목). 표시가 있으면 레이아웃의 공통 제목을 숨긴다
+    ownTitle?: boolean
   }
 }
 
@@ -34,8 +36,24 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'library',
         name: 'library',
-        meta: { title: '라이브러리' },
+        meta: { title: '라이브러리', ownTitle: true },
         component: () => import('@/views/LibraryView.vue'),
+      },
+      // S-03 · S-04는 라이브러리의 하위 화면이라 주소도 /library 아래에 둔다 (UI_DESIGN 2.1절)
+      // new를 :id보다 먼저 ─ 위에서부터 맞춰 보므로 뒤에 두면 'new'가 id로 읽힌다
+      // 화면은 다음 작업(S-03 · M3 S-04)에서 채운다. 지금은 목록 카드 · 등록 버튼이 갈 자리만 있다
+      {
+        path: 'library/new',
+        name: 'entry-new',
+        meta: { title: '게임 등록' },
+        component: () => import('@/views/EntryNewView.vue'),
+      },
+      {
+        // (\\d+) ─ 숫자만 받는다. 문자열 안이라 역슬래시를 두 번 쓴다
+        path: 'library/:id(\\d+)',
+        name: 'entry-detail',
+        meta: { title: '게임 상세' },
+        component: () => import('@/views/EntryDetailView.vue'),
       },
       {
         path: 'stats',

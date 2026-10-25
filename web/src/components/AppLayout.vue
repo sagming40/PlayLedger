@@ -45,7 +45,8 @@ const menu = [
 
     <!-- 본문 기둥 -->
     <div class="flex min-h-screen min-w-0 flex-1 flex-col">
-      <header class="flex items-center justify-between px-5 pt-5 pb-1 md:px-10 md:pt-8">
+      <!-- ownTitle ─ 화면이 제목을 직접 그리는 경우(S-02 포스터 벽 안) 여기서는 그리지 않는다 -->
+      <header v-if="!route.meta.ownTitle" class="flex items-center justify-between px-5 pt-5 pb-1 md:px-10 md:pt-8">
         <h1 class="text-2xl font-extrabold tracking-tight md:text-3xl">{{ route.meta.title }}</h1>
         <!-- 오른쪽은 화면별 동작 버튼(+ 등) 자리 -->
       </header>
