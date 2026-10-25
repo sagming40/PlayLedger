@@ -1,12 +1,16 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
 import AppLayout from '@/components/AppLayout.vue'
+import { authGuard } from './guard'
 
 // meta에 어떤 값이 들어갈 수 있는지 TypeScript에게 알려준다
 // 그렇지 않으면 route.meta.title 사용 시 값을 찾지 못해 에러를 띄운다
 declare module 'vue-router' {
   interface RouteMeta {
     title?: string
+    // 로그인 없이 들어올 수 있는 화면. 표시가 없으면 전부 보호된 화면이다
+    // 반대(보호할 화면에 표시)로 두면, 새 화면에 표시를 빠뜨리는 순간 아무나 들어온다
+    public?: boolean
   }
 }
 
@@ -16,6 +20,7 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/login',
     name: 'login',
+    meta: { public: true },
     component: () => import('@/views/LoginView.vue'),
   },
 
@@ -57,5 +62,8 @@ const router = createRouter({
   history: createWebHistory(),
   routes,
 })
+
+// 모든 화면 이동이 이 문지기를 먼저 거친다 (guard.ts)
+router.beforeEach(authGuard)
 
 export default router

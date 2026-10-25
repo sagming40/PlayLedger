@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { safeRedirect } from '@/router/guard'
 import { ApiError } from '@/api/errors'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -16,6 +17,7 @@ import {
 } from '@/components/ui/card'
 
 const router = useRouter()
+const route = useRoute()
 const auth = useAuthStore()
 
 // ─── 화면 상태 ─────────────────────────────────────────
@@ -71,7 +73,9 @@ async function onSubmit() {
     }
     await auth.login(email.value, password.value)
 
-    router.push('/library')
+    // 가드가 기억해 둔 원래 주소로 돌아간다 (UI_DESIGN 2.3절 "가려던 주소를 기억하는 이유")
+    // replace ─ 뒤로가기로 로그인 화면에 다시 오지 않게 기록을 덮어쓴다
+    router.replace(safeRedirect(route.query.redirect))
   } catch (e) {
     // SERVER가 준 detail은 그대로 보여줄 수 있는 한국어 문장이다 (API_SPEC 2.3절)
     // ApiError가 아닌 것(코드 버그 등)까지 사용자에게 날것으로 보이면 안 되므로 갈라둔다
