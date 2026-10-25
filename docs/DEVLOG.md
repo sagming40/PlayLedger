@@ -12,7 +12,7 @@
 
 **완료** · M1 (백엔드 기초) — 모델 6종 · 마이그레이션 4건 · 인증 전 항목 · 장르 시드 · 정규화 규칙(`core/normalize.py`) · 게임 조회 · 생성 서비스(`find_or_create_game`) · 장르 목록 API · 장르 연결 서비스 · 보유 기록 CRUD 전체 · pytest 환경 · 테스트 19건 · **GitHub Actions** · **API_SPEC** 완료. **PR #2 병합 완료** (2026-09-28)
 
-**진행 중** · M2 (프론트 연동) — **1단계(껍데기) 완료**. Vite 잔재 정리 · 라우터(중첩 · 지연 로딩) · 메인 레이아웃(48rem) · API 호출 모듈 1차 · Vitest 10건 · CI 프론트 job. **2단계(인증) 3/5** — auth 스토어(Pinia) · S-01 로그인 · 가입 · API 모듈 2차(401 재발급 · 동시 1회, Vitest 19건) 완료. 복원 + 가드 · S-06 남음. 3단계(데이터) 미착수. **PR #3으로 `main`에 중간 병합** (2026-10-24)
+**진행 중** · M2 (프론트 연동) — **1단계(껍데기) 완료**. Vite 잔재 정리 · 라우터(중첩 · 지연 로딩) · 메인 레이아웃(48rem) · API 호출 모듈 1차 · Vitest 10건 · CI 프론트 job. **2단계(인증) 4/5** — auth 스토어(Pinia) · S-01 로그인 · 가입 · API 모듈 2차(401 재발급 · 동시 1회) · 로그인 복원 + 라우터 가드 완료 (Vitest 35건). S-06 남음. 완료 기준 1번 충족. 3단계(데이터) 미착수. **PR #3으로 `main`에 중간 병합** (2026-10-24)
 
 **디자인** · 색 · 테마 확정 (2026-10-24) — A · 심야 극장 `#D12E34`, 상태 5색 현행안, 다크 · 라이트 둘 다(F-24 앞당김). 기준은 `UI_DESIGN` 4.4절, 그림은 `docs/mockups/`
 
@@ -54,7 +54,7 @@
 
 **실행 방법** · 터미널 3개 — 프로젝트 루트에서 `docker compose up -d` / `server`에서 `uvicorn app.main:app --reload --port 8001` / `web`에서 `npm run dev` / 테스트는 `server`에서 `docker compose up -d` 후 `pytest`
 
-**다음에 할 일** · M2 2단계(인증) — 앱 시작 시 로그인 복원 + 라우터 가드(`refreshAccessToken` 재사용, `isReady` 켜기) → S-06(테마 토큰 · 전환 포함)
+**다음에 할 일** · M2 2단계(인증) 마지막 — S-06 설정(계정 정보 · 로그아웃 · 테마 전환) + 테마 토큰을 `style.css`에 적용. 로그아웃 버튼이 생기면 완료 기준 5번(로그아웃 후 뒤로가기)을 브라우저로 확인
 
 ---
 
@@ -98,6 +98,49 @@
 ---
 
 <!-- 새 기록은 이 아래에 추가한다 (최신이 위로) -->
+
+## 2026-10-25(오전/데스크톱 A) — M2 진행 중: 로그인 복원 + 라우터 가드, 완료 기준 1번 충족
+
+**관련 마일스톤**: M2 (프론트 연동) → 진행 중 (2단계 4/5)
+
+**한 일**
+- `stores/auth.ts` — `restore()` 신설. `refreshAccessToken()`으로 TOKEN을 받고 `/me`로 사용자를 채운 뒤 `isReady`를 켠다. 연달아 불려도 한 번만 돈다. `login()`도 끝나면 `isReady`를 켠다
+- `router/guard.ts` 신설
+  - `authGuard` — 복원이 끝날 때까지 기다린 뒤, 비로그인 + 보호 화면이면 `/login?redirect=원래주소`, 로그인 + `/login`이면 원래 주소(없으면 `/library`)
+  - `safeRedirect` — `/`로 시작하는 사이트 안 주소만 허용. `//evil.example` · `/\evil.example` · 외부 URL · `/login` 자신은 홈으로
+- `router/index.ts` — `meta.public`(로그인 화면만 표시), `router.beforeEach(authGuard)`
+- `App.vue` — 복원 중 "불러오는 중…" 표시(로그인 화면 번쩍임 방지), 쓰는 도중 `user`가 비면 `/login?redirect=…`로 이동
+- `LoginView.vue` — 로그인 후 `router.replace(safeRedirect(redirect))`
+- `router/guard.test.ts` 신설 — 16건. Vitest 합계 35건
+- 검증 — `vue-tsc` 통과, `npm test` 35 passed, `npm run build` 통과
+- 브라우저 실측 (Vite 5174 · API 8001, 확인용 계정은 끝나고 DB에서 삭제)
+  - 비로그인으로 `/library?status=BACKLOG` → `/login?redirect=/library?status=BACKLOG`, `/api/auth/refresh` 1건
+  - 가입 · 로그인 → `/library?status=BACKLOG`로 복귀
+  - **새로고침 → 주소 유지, `/api/auth/refresh` 1건 · `/api/auth/me` 1건, localStorage 비어 있음** (완료 기준 1번)
+  - `/library?status=BACKLOG&sort=idle`로 들어가면 `redirect` 안의 `&`가 `%26`으로 인코딩되어 값이 통째로 보존되고, 로그인 후 두 값이 다 붙은 주소로 복귀
+
+**결정 기록**
+- **설계 검증(시나리오 13개)에서 구멍 2개를 찾았다**
+  ①**복원 중 `/me`만 실패** — refresh는 성공해서 TOKEN이 들어갔는데 `/me`가 500이면, `user`는 비고 TOKEN은 남는다. 10/24에 `login()`에서 막은 "반쯤 로그인된 상태"가 복원 경로에서 다시 생긴다. 실패하면 TOKEN도 비운다.
+  ②**쓰는 도중 세션 만료** — 재발급까지 실패하면 스토어가 `user`를 비우지만, 가드는 화면을 옮길 때만 돌기 때문에 가만히 있는 화면에서는 아무도 로그인 화면으로 보내지 않는다. App.vue가 `isAuthenticated`를 지켜보다 `false`가 되면 보낸다
+- **보호 대상을 표시하지 않고 공개 화면을 표시한다** (`meta.public`) — 반대로 하면 새 화면을 만들 때 표시를 빠뜨리는 순간 비로그인으로 들어올 수 있다. 빠뜨렸을 때 막히는 쪽이 안전하다
+- **로그인 후 이동은 `push`가 아니라 `replace`** — 뒤로가기로 로그인 화면에 다시 오지 않게 한다
+- **복원 중 연결이 끊기면 비로그인으로 시작한다** — 로그인 화면에서 다시 시도하면 "연결에 실패했습니다"가 뜬다. 오프라인 전용 화면은 v1.0 범위가 아니다
+
+**막혔던 점 / 트러블슈팅**
+- 증상: 확인용 API 서버가 `ValidationError: database_url Field required` + `postgres_user Extra inputs are not permitted`로 뜨지 않음
+  - 원인: 프로젝트 루트에서 실행해 `server/.env` 대신 루트 `.env`(Compose용 DB 계정)를 읽었다. `config.py`의 `env_file=".env"`는 실행 위치 기준이다
+  - 해결: 작업 디렉터리를 `server/`로 두고 실행
+  - 교훈: 서버는 항상 `server/`에서 띄운다 (`CLAUDE.md` 자주 쓰는 명령과 같음). 루트 `.env`의 비밀번호가 오류 메시지에 그대로 찍히므로 이 오류 출력은 남에게 보여주지 않는다
+- 증상: 확인용 API가 8001이 아니라 8002로 떠서 Vite 프록시(8001)와 어긋남
+  - 해결: 포트를 8001로 고정해 다시 실행
+- 뮤테이션 검증 — 장치 5개를 하나씩 뺐을 때, "스토어 안의 이미 복원했으면 다시 안 함"만 살아남았다. 가드가 `isReady`를 먼저 봐서 그 줄에 닿지 않기 때문. `restore()`를 직접 두 번 부르는 테스트를 추가해 잡았다
+
+**다음에 할 일**
+- S-06 설정 + 테마 토큰 적용 · 테마 전환 → M2 2단계 완료
+- 로그아웃 버튼으로 완료 기준 5번 브라우저 확인
+
+---
 
 ## 2026-10-24(심야/데스크톱 A) — M2 진행 중: API 호출 모듈 2차 (401 재발급 · 동시 1회)
 
