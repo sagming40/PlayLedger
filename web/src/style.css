@@ -1,5 +1,7 @@
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+/* 글꼴 ─ Inter(영문 · 숫자) + Noto Sans KR(한글) (UI_DESIGN 4.4절)
+   지금은 구글 서버에서 받는다. 내장 여부는 M5에서 검토 */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+KR:wght@400;500;700;800&display=swap');
 
 @import "tailwindcss";
 @import "tw-animate-css";
@@ -7,7 +9,19 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  --font-sans: 'Inter', 'Noto Sans KR', ui-sans-serif, system-ui, sans-serif;
   --font-heading: var(--font-sans);
+  /* 포인트 색 강조 3종 ─ 글자 · 옅은 바탕 · 테두리 (UI_DESIGN 4.4절)
+     bg-brand-tint · border-brand-line · text-brand-text 로 쓴다 */
+  --color-brand-text: var(--brand-text);
+  --color-brand-tint: var(--brand-tint);
+  --color-brand-line: var(--brand-line);
+  /* 상태 5색 (UI_DESIGN 4.1절) ─ bg-status-playing 처럼 쓴다. 색만으로 구분하지 않고 글자와 함께 쓴다 */
+  --color-status-backlog: var(--status-backlog);
+  --color-status-playing: var(--status-playing);
+  --color-status-cleared: var(--status-cleared);
+  --color-status-on-hold: var(--status-on-hold);
+  --color-status-dropped: var(--status-dropped);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -45,73 +59,95 @@
   --radius-xl: calc(var(--radius) + 4px);
 }
 
+/* ─── 색 토큰 ─────────────────────────────────────────────
+   값은 UI_DESIGN 4.4절 표가 단일 출처다. 여기는 그 값을 옮겨 적은 구현일 뿐이라,
+   색을 바꾸려면 문서를 먼저 고친다. 그림은 docs/mockups/
+   :root = 라이트, .dark = 다크. <html>에 .dark를 붙이고 떼는 일은 stores/theme.ts가 한다 */
 :root {
   --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --background: #F6F6F8;
+  --foreground: #17171B;
+  --card: #FFFFFF;
+  --card-foreground: #17171B;
+  --popover: #FFFFFF;
+  --popover-foreground: #17171B;
+  /* 포인트 색 하나 ─ A · 심야 극장. 주 버튼 · 로고 점 · 막대그래프 */
+  --primary: #D12E34;
+  --primary-foreground: #FFFFFF;
+  --secondary: #EEEEF2;
+  --secondary-foreground: #17171B;
+  --muted: #EEEEF2;
+  --muted-foreground: #5C5C68;
+  --accent: #EEEEF2;
+  --accent-foreground: #17171B;
+  /* 오류 글자 = 포인트 글자색. 화면에 빨강을 하나만 두기 위해서다 */
+  --destructive: #B4232A;
+  --border: #E2E2E8;
+  --input: #D6D6DE;
+  --ring: rgb(209 46 52 / 0.4);
+  --brand-text: #B4232A;
+  --brand-tint: rgb(209 46 52 / 0.08);
+  --brand-line: rgb(209 46 52 / 0.4);
+  --status-backlog: #7A7A86;
+  --status-playing: #2563EB;
+  --status-cleared: #16A34A;
+  --status-on-hold: #CA8A04;
+  --status-dropped: #B4B4BE;
+  --chart-1: #D12E34;
+  --chart-2: #2563EB;
+  --chart-3: #16A34A;
+  --chart-4: #CA8A04;
+  --chart-5: #7A7A86;
+  --sidebar: #F6F6F8;
+  --sidebar-foreground: #17171B;
+  --sidebar-primary: #D12E34;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: rgb(209 46 52 / 0.08);
+  --sidebar-accent-foreground: #B4232A;
+  --sidebar-border: #E2E2E8;
+  --sidebar-ring: rgb(209 46 52 / 0.4);
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --background: #0E0E11;
+  --foreground: #F2F2F5;
+  --card: #17171C;
+  --card-foreground: #F2F2F5;
+  --popover: #17171C;
+  --popover-foreground: #F2F2F5;
+  --primary: #D12E34;
+  --primary-foreground: #FFFFFF;
+  --secondary: #22222A;
+  --secondary-foreground: #F2F2F5;
+  --muted: #22222A;
+  --muted-foreground: #A1A1AC;
+  --accent: #22222A;
+  --accent-foreground: #F2F2F5;
+  --destructive: #FF7276;
+  --border: #2C2C35;
+  --input: #34343E;
+  --ring: rgb(209 46 52 / 0.55);
+  --brand-text: #FF7276;
+  --brand-tint: rgb(209 46 52 / 0.14);
+  --brand-line: rgb(209 46 52 / 0.55);
+  --status-backlog: #9A9AA6;
+  --status-playing: #3B82F6;
+  --status-cleared: #22C55E;
+  --status-on-hold: #EAB308;
+  --status-dropped: #5E5E68;
+  --chart-1: #D12E34;
+  --chart-2: #3B82F6;
+  --chart-3: #22C55E;
+  --chart-4: #EAB308;
+  --chart-5: #9A9AA6;
+  --sidebar: #0E0E11;
+  --sidebar-foreground: #F2F2F5;
+  --sidebar-primary: #D12E34;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: rgb(209 46 52 / 0.14);
+  --sidebar-accent-foreground: #FF7276;
+  --sidebar-border: #2C2C35;
+  --sidebar-ring: rgb(209 46 52 / 0.55);
 }
 
 @layer base {

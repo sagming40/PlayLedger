@@ -5,6 +5,20 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PLAYLEDGER</title>
+    <!-- 앱(Vue)이 뜨기 전에 테마부터 입힌다 ─ 늦게 입히면 다크를 고른 사람에게 흰 화면이 번쩍인다
+         규칙은 src/lib/theme.ts와 같다. 바꿀 때는 둘 다 고친다 (키 이름 'pl-theme' 포함) -->
+    <script>
+      (function () {
+        var pref = 'system'
+        try {
+          var saved = localStorage.getItem('pl-theme')
+          if (saved === 'dark' || saved === 'light' || saved === 'system') pref = saved
+        } catch (e) {}
+        var dark = pref === 'dark' || (pref === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+        document.documentElement.classList.toggle('dark', dark)
+        document.documentElement.style.colorScheme = dark ? 'dark' : 'light'
+      })()
+    </script>
   </head>
   <body>
     <div id="app"></div>
