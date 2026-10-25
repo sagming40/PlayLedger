@@ -21,6 +21,20 @@ export function safeRedirect(value: LocationQueryValue | LocationQueryValue[] | 
 }
 
 /**
+ * 로그인 상태가 끝났을 때 보낼 곳 (App.vue가 쓴다)
+ *
+ * 직접 로그아웃했다면 로그인 화면으로만 보낸다 ─ 설정 화면에서 로그아웃했는데 다시 로그인하자마자
+ * 설정 화면으로 돌아가면 어색하다. 세션이 저절로 끝났다면 보던 주소를 기억해 그 자리로 돌려보낸다
+ */
+export function loginRouteAfterSessionEnd(
+  reason: 'logout' | 'expired' | null,
+  currentPath: string,
+): RouteLocationRaw {
+  if (reason === 'logout') return { name: 'login' }
+  return { name: 'login', query: { redirect: currentPath } }
+}
+
+/**
  * 화면을 옮길 때마다 실행되는 문지기 (UI_DESIGN 2.3절)
  *
  * ① 아직 로그인 여부를 모르면(isReady가 꺼져 있으면) 복원이 끝날 때까지 기다린다

@@ -2,19 +2,21 @@
 import { watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { loginRouteAfterSessionEnd } from '@/router/guard'
 
 const auth = useAuthStore()
 const route = useRoute()
 const router = useRouter()
 
-// 쓰는 도중 세션이 끝나면(재발급까지 실패 → user가 빈다) 로그인 화면으로 보낸다
+// 로그인 상태가 끝나면(직접 로그아웃 · 재발급 실패) 로그인 화면으로 보낸다
 // 라우터 가드는 "화면을 옮길 때"만 돌아서, 가만히 있는 화면에서는 아무도 보내주지 않는다
 // 비유: 문지기는 문을 지나갈 때만 출입증을 보지만, 출입증이 만료되면 방송으로 안내해 내보낸다
+// replace ─ 지금 화면 기록을 로그인 화면으로 덮는다. 뒤로가기는 그 이전 화면으로 가고, 가드가 다시 막는다
 watch(
   () => auth.isAuthenticated,
   (loggedIn) => {
     if (!loggedIn && auth.isReady && route.meta.public !== true) {
-      router.replace({ name: 'login', query: { redirect: route.fullPath } })
+      router.replace(loginRouteAfterSessionEnd(auth.sessionEnd, route.fullPath))
     }
   },
 )

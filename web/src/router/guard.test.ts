@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import type { RouteLocationNormalized } from 'vue-router'
-import { authGuard, safeRedirect } from './guard'
+import { authGuard, loginRouteAfterSessionEnd, safeRedirect } from './guard'
 import { useAuthStore } from '@/stores/auth'
 import { request, setAccessToken } from '@/api/client'
 
@@ -188,5 +188,43 @@ describe('복원 실패', () => {
 
     expect(result).toEqual({ name: 'login', query: { redirect: '/library' } })
     expect(useAuthStore().isReady).toBe(true)
+  })
+})
+
+describe('로그인 상태가 끝났을 때', () => {
+  it('직접 로그아웃하면 돌아갈 주소 없이 로그인 화면으로', () => {
+    expect(loginRouteAfterSessionEnd('logout', '/settings')).toEqual({ name: 'login' })
+  })
+
+  it('세션이 저절로 끝나면 보던 주소를 기억한다', () => {
+    expect(loginRouteAfterSessionEnd('expired', '/library?status=BACKLOG')).toEqual({
+      name: 'login',
+      query: { redirect: '/library?status=BACKLOG' },
+    })
+  })
+
+  it('스토어가 끝난 이유를 구분해 둔다 ─ 로그아웃은 logout, 재발급 실패는 expired', async () => {
+    fakeServer({ refresh: () => json(200, { access_token: 't1' }) })
+    const auth = useAuthStore()
+    await auth.restore()
+    await auth.logout()
+    expect(auth.sessionEnd).toBe('logout')
+
+    // 다시 로그인한 뒤 재발급까지 실패하는 상황
+    fakeServer({ refresh: () => json(401, { detail: '다시 로그인해 주세요' }) })
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        if (url === '/api/auth/login') return json(200, { access_token: 't2' })
+        if (url === '/api/auth/me') return json(200, ME)
+        if (url === '/api/auth/refresh') return json(401, { detail: '다시 로그인해 주세요' })
+        return json(401, { detail: '인증이 필요합니다' })
+      }),
+    )
+    await auth.login('a@example.com', 'pw')
+    expect(auth.sessionEnd).toBeNull()
+    await request('/entries').catch(() => undefined)
+    expect(auth.sessionEnd).toBe('expired')
+    expect(auth.user).toBeNull()
   })
 })

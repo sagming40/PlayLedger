@@ -19,10 +19,16 @@ export const useAuthStore = defineStore('auth', () => {
   // access TOKEN은 15분마다 사라지지만 그때도 로그인 상태는 유지된다
   const isAuthenticated = computed(() => user.value !== null)
 
+  // 로그인 상태가 어떻게 끝났는가 ─ App.vue가 로그인 화면으로 보낼 때 구분한다
+  // 'logout'  = 사용자가 직접 로그아웃 → 로그인 화면으로만 (돌아갈 주소를 기억하지 않는다)
+  // 'expired' = 쓰는 도중 세션이 끝남 → 보던 주소를 기억해서, 다시 로그인하면 그 자리로
+  const sessionEnd = ref<'logout' | 'expired' | null>(null)
+
   // 재발급까지 실패하면 client.ts가 이 함수를 부른다 (API_SPEC 3.2절)
   // TOKEN은 client.ts가 이미 비웠다. 여기서는 화이트보드만 지운다
   // 로그인 화면으로 보내는 일은 App.vue가 user가 비는 순간을 보고 한다
   setAuthFailureHandler(() => {
+    if (user.value !== null) sessionEnd.value = 'expired'
     user.value = null
   })
 
@@ -78,6 +84,7 @@ export const useAuthStore = defineStore('auth', () => {
     }
     // 로그인했다면 로그인 여부는 이미 아는 상태다
     isReady.value = true
+    sessionEnd.value = null
   }
 
   async function register(email: string, password: string, nickname: string) {
@@ -92,9 +99,11 @@ export const useAuthStore = defineStore('auth', () => {
       // SERVER 호출 성공/실패 여부와 관계없이 이쪽은 반드시 비운다 (API_SPEC 3.4절)
       // "LOGOUT 실패"라는 상태를 사용자에게 만들어주지 않기 위해서이다
       setAccessToken(null)
+      // user보다 먼저 적는다 ─ App.vue는 user가 비는 순간 이 값을 읽는다
+      sessionEnd.value = 'logout'
       user.value = null
     }
   }
 
-  return { user, isReady, isAuthenticated, restore, login, register, logout }
+  return { user, isReady, isAuthenticated, sessionEnd, restore, login, register, logout }
 })
