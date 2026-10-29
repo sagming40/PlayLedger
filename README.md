@@ -298,9 +298,11 @@ pytest -v
 
 | 기기 | CPU | 메모리 | GPU |
 |---|---|---|---|
-| 데스크톱 A | AMD Ryzen 5 9600X | DDR5 32GB | RTX 5070 |
-| 데스크톱 B | AMD Ryzen 9 5900X | DDR4 64GB | RTX 3080 |
+| 데스크톱 B (회사) | Intel Core i5-11400 | DDR4 16GB | UHD Graphics 730 (내장) |
+| 데스크톱 A (집) | AMD Ryzen 5 9600X | DDR5 32GB | RTX 5070 |
 | 노트북 (Lenovo IdeaPad Flex 5) | Intel Core i7-1255U | LPDDR4x 16GB | Iris Xe (내장) |
+
+> 자주 쓰는 순서대로 적었습니다. 데스크톱 B는 2026-10-29에 학교 PC(Ryzen 9 5900X)에서 회사 PC로 바뀌었습니다.
 
 - **OS** · Windows 11 (공통)
 - **대상** · 웹 (데스크톱 · 모바일 브라우저)

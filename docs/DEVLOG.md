@@ -23,8 +23,8 @@
 **환경 요약**
 | 항목 | 값 |
 |---|---|
-| Python | 데스크톱 A ─ 3.13.5 · 데스크톱 B/노트북 ─ 3.13.9 (Anaconda 빌드). 3.13 안에서는 차이 없음 |
-| Node.js | v24.15.0 |
+| Python | 데스크톱 B ─ 3.14.8 (Miniconda) · 데스크톱 A ─ 3.13.5 · 노트북 ─ 3.13.9 (Anaconda 빌드). CI는 3.13. 3.14에서도 `pytest` 19건 통과 (2026-10-29) |
+| Node.js | v24.15.0 (데스크톱 B ─ v24.22.0) |
 | FastAPI | 0.141.1 |
 | Uvicorn | 0.53.0 |
 | SQLAlchemy | 2.0.54 |
@@ -98,6 +98,30 @@
 ---
 
 <!-- 새 기록은 이 아래에 추가한다 (최신이 위로) -->
+
+## 2026-10-29(오전/데스크톱 B) — 새 데스크톱 B(회사) 세팅: 서버가 안 뜨던 문제 해결
+
+**관련 마일스톤**: M2 (프론트 연동) → 진행 중 (코드 변경 없음, 환경만)
+
+**한 일**
+- 데스크톱 B를 학교 PC(Ryzen 9 5900X)에서 회사 PC(i5-11400 · DDR4 16GB · UHD 730)로 교체. `README` 개발 환경 표를 자주 쓰는 순(B 회사 > A 집 > 노트북)으로 고치고, `CLAUDE.md`의 기기 표기도 맞춤. 이전 기록의 "데스크톱 B"는 학교 PC다
+- `server/.env` 주소 수정 → `alembic upgrade head`(빈 DB에서 4건, `1e1d15e51ba2`) → `CREATE DATABASE playledger_test` → `pytest` **19 passed (10.44초)**
+- 확인: 임시 포트 8011로 띄워 `GET /api/genres` · `POST /api/auth/refresh` 둘 다 401 `{"detail":"인증이 필요합니다"}`(로그인 전이라 정상). 이후 사용자가 8001 · 5173으로 다시 띄워 화면 정상 동작 확인
+- `server/.env.example`에 `DATABASE_URL` 형식을 적고, `CLAUDE.md` 함정에 "DB 주소 형식" 추가
+
+**막혔던 점 / 트러블슈팅**
+- 증상: `uvicorn` 기동 시 `ModuleNotFoundError: No module named 'psycopg2'`. Vite 쪽에는 `http proxy error: /api/auth/refresh` · `ECONNREFUSED 127.0.0.1:8001`만 보임
+  - 원인: `server/.env`의 두 주소가 `postgresql://...@localhost:5432/...`였다. 드라이버를 안 적으면 SQLAlchemy가 기본 동기 드라이버 psycopg2를 찾는다(이 프로젝트는 asyncpg). 포트도 컨테이너 안쪽 5432를 적었다
+  - 해결: `postgresql+asyncpg://...@localhost:5434/...`로 수정 (비밀번호는 그대로)
+  - 교훈: `.env.example`에 키 이름만 있고 **값의 형식**이 없었다. 기기를 새로 맞출 때마다 기억에 기대게 되므로 형식을 예시 파일에 남겼다. Vite의 프록시 에러는 결과일 뿐이라, 원인은 항상 API 터미널에서 찾는다
+- 증상: 연결이 된 뒤에도 `alembic current`가 리비전을 출력하지 않음
+  - 원인: 새 기기라 마이그레이션이 한 번도 적용되지 않았고, 테스트 DB도 없었다
+  - 해결: `alembic upgrade head`, `CREATE DATABASE playledger_test`
+
+**다음에 할 일**
+- (변동 없음) M2.5 위치 결정 → S-03 등록 폼
+
+---
 
 ## 2026-10-25(저녁/데스크톱 A) — M2.5 결정 준비, 세션 종료
 
