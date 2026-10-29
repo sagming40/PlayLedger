@@ -1,7 +1,7 @@
 # CLAUDE.md
 
 이 저장소에서 일하는 Claude가 지키는 공통 규칙이다.
-세션끼리는 기억을 공유하지 않고, 기기도 3대(데스크톱 A · 데스크톱 B · 노트북)라서 **저장소가 공용 노트**다. 이 파일과 `docs/`가 기억 역할을 한다.
+세션끼리는 기억을 공유하지 않고, 기기도 3대(데스크톱 B 회사 · 데스크톱 A 집 · 노트북, 자주 쓰는 순)라서 **저장소가 공용 노트**다. 이 파일과 `docs/`가 기억 역할을 한다.
 
 PlayLedger: 사놓고 안 한 게임을 구매일 · 구매가 · 플레이타임으로 기록하고, 방치일수 · 시간당 비용 · 완주율 같은 숫자로 보여 주는 웹 서비스. 1인 학습 프로젝트다.
 
@@ -69,6 +69,7 @@ PlayLedger: 사놓고 안 한 게임을 구매일 · 구매가 · 플레이타�
   - 빈 줄 하나 뒤 Description: `- ` 목록으로 무엇을 · 왜 바꿨는지, 확인한 결과(테스트 건수 등)를 적는다. 동작 변경이 없으면 그렇게 적는다
 
 ## 함정 (고치기 전에 확인)
+- **DB 주소 형식**: `server/.env`의 `DATABASE_URL` · `TEST_DATABASE_URL`은 `postgresql+asyncpg://...@localhost:5434/...`이다. `+asyncpg`가 빠지면 `No module named 'psycopg2'`로 서버가 안 뜨고, Vite에는 `http proxy error ... ECONNREFUSED`만 보인다
 - **DB 비밀번호**: `postgres` 컨테이너는 볼륨을 **처음 만들 때만** 루트 `.env`의 `POSTGRES_PASSWORD`를 읽는다. 나중에 `.env`만 바꾸면 `InvalidPasswordError`가 난다. 루트 `.env`와 `server/.env`의 `DATABASE_URL` · `TEST_DATABASE_URL` 세 곳의 비밀번호가 같아야 한다
 - **테스트 DB**: 기기마다 `playledger_test`를 한 번 만들어야 한다 (README "시작하기"). 이름이 `_test`로 끝나지 않으면 `conftest.py`가 테스트를 시작하지 않는다
 - **테스트 클라이언트는 `https://test`**: refresh 쿠키가 `Secure`라서 http로 부르면 쿠키가 실리지 않는다
