@@ -1,11 +1,11 @@
-// 테마(다크 · 라이트) 판정 규칙 (UI_DESIGN 4.4절, F-24)
+// 테마(다크 · 라이트) 판정 규칙 (DESIGN 4.4절, F-24)
 // 브라우저 객체를 직접 만지지 않는 순수 함수만 둔다 ─ 테스트에서 가짜 저장소 · 가짜 <html>로 검증한다
 // index.html의 인라인 스크립트가 같은 규칙을 한 번 더 적는다 (앱이 뜨기 전에 써야 해서). 바꿀 때는 둘 다 고친다
 
 export type ThemePreference = 'system' | 'dark' | 'light'
 export type ResolvedTheme = 'dark' | 'light'
 
-// localStorage 키. 이 앱이 브라우저에 남기는 유일한 값이다 (MILESTONES M2 완료 기준 7번)
+// localStorage 키. 이 앱이 브라우저에 남기는 유일한 값이다 (PLAN M2 완료 기준 7번)
 export const THEME_KEY = 'pl-theme'
 
 const VALID: readonly ThemePreference[] = ['system', 'dark', 'light']

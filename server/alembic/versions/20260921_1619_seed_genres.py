@@ -29,7 +29,7 @@ genres_table = sa.table(
     sa.column("steam_genre_id", sa.String),
 )
 
-# ERD 2.5절 장르 목록과 같은 순서 · 값 (문서가 원본. 파일은 복사본)
+# 장르 목록의 원본은 이 파일이다. 고른 기준은 DATA_MODEL 2.5절
 # id는 적지 않는다 ─ SERIAL이 번호를 자동으로 매기도록 둔다.
 GENRES = [
     {"steam_genre_id": "1", "name": "액션"},

@@ -1,5 +1,5 @@
 # app/services/game.py
-"""게임 마스터 데이터를 찾거나 만드는 곳 (ERD 2.4절, ARCHITECTURE 2.2절)
+"""게임 마스터 데이터를 찾거나 만드는 곳 (DATA_MODEL 2.4절, ARCHITECTURE 2.2절)
 
 게임을 얻는 입구는 이 곳 한 군데 뿐이다.
 등록 API · Steam 동기화 · Seed Script가 모두 이 함수를 거친다.
@@ -39,7 +39,7 @@ async def _find_game(
 async def find_or_create_game(
     db: AsyncSession, title: str, steam_appid: int | None = None
 ) -> Game:
-    """게임을 찾아서 돌려주고, 없다면 새로 생성하여 돌려준다. (ERD 2.4절 판별 순서)
+    """게임을 찾아서 돌려주고, 없다면 새로 생성하여 돌려준다. (DATA_MODEL 2.4절 판별 순서)
 
     commit은 하지 않는다. 장바구니에 담는 것까지만 하고 계산은 부른쪽에서 한다.
     게임과 보유 기록(entry)이 함께 저장되거나 함께 취소되어야 한다.

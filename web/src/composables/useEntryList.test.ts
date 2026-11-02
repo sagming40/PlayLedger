@@ -3,7 +3,7 @@ import { PAGE_SIZE, useEntryList } from './useEntryList'
 import { setAccessToken } from '@/api/client'
 import type { Entry } from '@/api/entries'
 
-// S-02 목록 불러오기 (UI_DESIGN 3.2 · 6장)
+// S-02 목록 불러오기 (DESIGN 3.2 · 6장)
 // 20개씩 추가 로드 · 겹친 요청 · 중복 기록 · 실패를 가짜 SERVER로 만든다
 
 function json(status: number, body?: unknown) {

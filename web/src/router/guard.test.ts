@@ -5,7 +5,7 @@ import { authGuard, loginRouteAfterSessionEnd, safeRedirect } from './guard'
 import { useAuthStore } from '@/stores/auth'
 import { request, setAccessToken } from '@/api/client'
 
-// 앱 시작 시 로그인 복원 + 라우터 가드 (UI_DESIGN 2.3절, API_SPEC 3.3절)
+// 앱 시작 시 로그인 복원 + 라우터 가드 (DESIGN 2.3절, ARCHITECTURE 3.4절)
 // 새로고침 · 쿠키 만료 · 동시 이동처럼 브라우저에서 매번 손으로 만들기 번거로운 상황을 여기서 고정한다
 
 function json(status: number, body?: unknown) {

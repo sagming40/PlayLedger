@@ -41,7 +41,7 @@ export interface ListParams {
   offset?: number
 }
 
-// GET /api/entries ─ 최근 수정순 (UI_DESIGN 3.2절 정렬 기본값, SERVER가 정렬한다)
+// GET /api/entries ─ 최근 수정순 (DESIGN 3.2절 정렬 기본값, SERVER가 정렬한다)
 export function listEntries(params: ListParams = {}) {
   const query = new URLSearchParams()
   if (params.status) query.set('status', params.status)

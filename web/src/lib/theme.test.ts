@@ -3,7 +3,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { applyTheme, readPreference, resolveTheme, THEME_KEY, writePreference } from './theme'
 import { useThemeStore } from '@/stores/theme'
 
-// 테마 전환 (F-24, UI_DESIGN 4.4절)
+// 테마 전환 (F-24, DESIGN 4.4절)
 // OS 설정 변경 · 저장소 차단은 브라우저에서 매번 만들기 번거로워 여기서 고정한다
 
 function fakeStorage(initial: Record<string, string> = {}) {

@@ -1,6 +1,6 @@
 # ============================================================
 # games / genres / game_genres
-# 게임 마스터 데이터 ─ 모든 사용자가 공유한다 (ERD 2.4절)
+# 게임 마스터 데이터 ─ 모든 사용자가 공유한다 (DATA_MODEL 2.4절)
 # ============================================================
 
 from datetime import date, datetime
@@ -30,7 +30,7 @@ game_genres = Table(
         Integer,
         ForeignKey("genres.id", ondelete="CASCADE"),
         primary_key=True,
-        index=True,  # 장르로 게임 찾기 조회용 (ERD 4장)
+        index=True,  # 장르로 게임 찾기 조회용 (DATA_MODEL 4장)
     ),
 )
 
@@ -41,7 +41,7 @@ class Genre(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(50), unique=True)
 
-    # Steam 공식 장르 ID (ERD 2.5절) 추후 Steam 동기화 시 장르를 자동으로 붙이는 기준이다.
+    # Steam 공식 장르 ID (DATA_MODEL 2.5절) 추후 Steam 동기화 시 장르를 자동으로 붙이는 기준이다.
     # 이름표(name)는 언어설정 마다 바뀌지만 사물함 번호(ID)는 바뀌지 않는 것과 같다.
     # Mapped[str]에 Optional(| None)이 없으므로 NOT NULL로 만들어진다.
     steam_genre_id: Mapped[str] = mapped_column(String(10), unique=True)
@@ -50,7 +50,7 @@ class Genre(Base):
 class Game(Base):
     __tablename__ = "games"
 
-    # 수동 등록 게임(steam_appid 없음)끼리만 title_norm 중복을 금지한다 (ERD 2.4절)
+    # 수동 등록 게임(steam_appid 없음)끼리만 title_norm 중복을 금지한다 (DATA_MODEL 2.4절)
     # 비유: 주민번호(steam_appid)가 없는 손님은 이름으로만 구분이 가능하므로 동일한 이름이
     # 중복으로 적히면 구분할 방법이 없다. 주민번호가 있는 손님은 번호로 구분가능 하므로 이 규칙에서 제외시킨다.
     # UNIQUE '제약'이 아니라 UNIQUE '인덱스'로 만든다

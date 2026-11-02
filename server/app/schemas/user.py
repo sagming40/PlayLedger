@@ -17,12 +17,12 @@ class UserCreate(BaseModel):
 
     email: EmailStr                                       # 형식이 email인지 검사
     password: str = Field(min_length=8, max_length=128)
-    nickname: str = Field(min_length=2, max_length=30)    # ERD ─ varchar(30)
+    nickname: str = Field(min_length=2, max_length=30)    # models/user.py ─ varchar(30)
 
     @field_validator("email")
     @classmethod
     def normalize_email(cls, value: str) -> str:
-        """Email을 소문자로 통일한다 (ERD 2.1절)
+        """Email을 소문자로 통일한다 (DATA_MODEL 2.1절)
 
         title_norm과 같은 원리 ─ 들어오는 경로가 어디든
         서버에서 항상 같은 모양으로 변환하여 저장한다.
@@ -64,7 +64,7 @@ class LoginRequest(BaseModel):
     UserCreate와 다르게 EmailStr가 아닌 그냥 str이다.
     형식이 틀린 email도 일단 받아서 "로그인 실패"로 처리해야 한다.
     422로 "이메일 형식이 아닙니다"를 돌려주면,
-    응답 종류가 갈리는 것 자체가 공격자에게 정보가 된다 (UI_DESIGN 3.1절)
+    응답 종류가 갈리는 것 자체가 공격자에게 정보가 된다 (DESIGN 3.1절)
     """
 
     email: str

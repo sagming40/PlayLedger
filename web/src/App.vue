@@ -23,7 +23,7 @@ watch(
 </script>
 
 <template>
-  <!-- 복원(refresh)이 끝나기 전 ─ 아직 로그인 여부를 모른다 (UI_DESIGN 2.3절)
+  <!-- 복원(refresh)이 끝나기 전 ─ 아직 로그인 여부를 모른다 (DESIGN 2.3절)
        이 자리를 비워두지 않으면 로그인된 사용자에게도 로그인 화면이 번쩍 보인다 -->
   <div
     v-if="!auth.isReady"

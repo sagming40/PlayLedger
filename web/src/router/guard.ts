@@ -35,7 +35,7 @@ export function loginRouteAfterSessionEnd(
 }
 
 /**
- * 화면을 옮길 때마다 실행되는 문지기 (UI_DESIGN 2.3절)
+ * 화면을 옮길 때마다 실행되는 문지기 (DESIGN 2.3절)
  *
  * ① 아직 로그인 여부를 모르면(isReady가 꺼져 있으면) 복원이 끝날 때까지 기다린다
  *    ─ 기다리지 않고 판단하면 로그인된 사용자도 로그인 화면으로 번쩍 밀려난다

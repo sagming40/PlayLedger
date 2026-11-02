@@ -1,5 +1,5 @@
 
-/* 글꼴 ─ Inter(영문 · 숫자) + Noto Sans KR(한글) (UI_DESIGN 4.4절)
+/* 글꼴 ─ Inter(영문 · 숫자) + Noto Sans KR(한글) (DESIGN 4.4절)
    지금은 구글 서버에서 받는다. 내장 여부는 M5에서 검토 */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+KR:wght@400;500;700;800&display=swap');
 
@@ -11,12 +11,12 @@
 @theme inline {
   --font-sans: 'Inter', 'Noto Sans KR', ui-sans-serif, system-ui, sans-serif;
   --font-heading: var(--font-sans);
-  /* 포인트 색 강조 3종 ─ 글자 · 옅은 바탕 · 테두리 (UI_DESIGN 4.4절)
+  /* 포인트 색 강조 3종 ─ 글자 · 옅은 바탕 · 테두리 (DESIGN 4.4절)
      bg-brand-tint · border-brand-line · text-brand-text 로 쓴다 */
   --color-brand-text: var(--brand-text);
   --color-brand-tint: var(--brand-tint);
   --color-brand-line: var(--brand-line);
-  /* 상태 5색 (UI_DESIGN 4.1절) ─ bg-status-playing 처럼 쓴다. 색만으로 구분하지 않고 글자와 함께 쓴다 */
+  /* 상태 5색 (DESIGN 4.1절) ─ bg-status-playing 처럼 쓴다. 색만으로 구분하지 않고 글자와 함께 쓴다 */
   --color-status-backlog: var(--status-backlog);
   --color-status-playing: var(--status-playing);
   --color-status-cleared: var(--status-cleared);
@@ -60,7 +60,7 @@
 }
 
 /* ─── 색 토큰 ─────────────────────────────────────────────
-   값은 UI_DESIGN 4.4절 표가 단일 출처다. 여기는 그 값을 옮겨 적은 구현일 뿐이라,
+   값은 DESIGN 4.4절 표가 단일 출처다. 여기는 그 값을 옮겨 적은 구현일 뿐이라,
    색을 바꾸려면 문서를 먼저 고친다. 그림은 docs/mockups/
    :root = 라이트, .dark = 다크. <html>에 .dark를 붙이고 떼는 일은 stores/theme.ts가 한다 */
 :root {

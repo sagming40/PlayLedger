@@ -15,7 +15,7 @@ describe('toApiError', () => {
   })
 
   it('422 배열에서 입력칸과 규칙만 뽑아낸다', () => {
-    // API_SPEC 4.4절의 실제 응답 예시를 그대로 옮김
+    // ARCHITECTURE 3.9절의 실제 응답 예시를 그대로 옮김
     const err = toApiError(422, {
       detail: [
         {

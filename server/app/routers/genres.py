@@ -1,5 +1,5 @@
 # app/routers/genres.py
-# 장르 API ─ 고정 목록이라 조회만 있다 (ERD 2.5절)
+# 장르 API ─ 고정 목록이라 조회만 있다 (DATA_MODEL 2.5절)
 
 from fastapi import APIRouter, Depends
 from sqlalchemy import select

@@ -1,5 +1,5 @@
 # app/core/normalize.py
-"""입력값을 '비교할 수 있는 모양'으로 바꾸는 규칙 모음. (ERD 2.1 · 2.4절, ARCHITECTURE 2.2절)
+"""입력값을 '비교할 수 있는 모양'으로 바꾸는 규칙 모음. (DATA_MODEL 2.1 · 2.4절, ARCHITECTURE 2.2절)
 
 오직 "규칙"만 정해둔다. DB · 요청은 신경쓰지 않는다.
 비유: 도량형 기준표. 저울(schema)도 창고(service)도 표(core/normalize.py)를 보고 잰다.
@@ -8,7 +8,7 @@
 
 import unicodedata
 
-# games.title_norm 컬럼 길이와 같아야 한다 (ERD 2.4절 ─ varchar(200))
+# games.title_norm 컬럼 길이와 같아야 한다 (models/game.py ─ varchar(200))
 TITLE_NORM_MAX_LENGTH = 200
 
 
@@ -49,7 +49,7 @@ def normalize_title(title: str) -> str:
 
 
 def normalize_email(email: str) -> str:
-    """이메일을 비교할 수 있는 형태로 변환한다. (ERD 2.1절)
+    """이메일을 비교할 수 있는 형태로 변환한다. (DATA_MODEL 2.1절)
 
     제목과 달리 앞뒤 공백 제거 + 소문자까지만 변환한다
     이메일은 '메일이 실제로 보내져야 하는 주소'이기 때문에 기호를 지우거나

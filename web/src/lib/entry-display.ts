@@ -1,4 +1,4 @@
-// 보유 기록을 화면에 보일 글자로 바꾸는 규칙 (UI_DESIGN 3.2 · 4.1 · 4.2절)
+// 보유 기록을 화면에 보일 글자로 바꾸는 규칙 (DESIGN 3.2 · 4.1 · 4.2절)
 // 계산은 SERVER가 하는 것이 원칙이지만(S-05), 목록 카드의 방치일수 · 시간 표기는 화면 표시 변환이라 여기서 한다
 
 import type { Entry, EntryStatus } from '@/api/entries'
@@ -46,18 +46,18 @@ export function idleDays(purchasedAt: string | null, today: Date = new Date()): 
   return Math.max(0, days)
 }
 
-/** 분 → '12.5시간'. SERVER는 분으로 주고 화면은 시간(소수 한 자리)으로 보여준다 (UI_DESIGN 3.2절) */
+/** 분 → '12.5시간'. SERVER는 분으로 주고 화면은 시간(소수 한 자리)으로 보여준다 (DESIGN 3.2절) */
 export function formatPlaytime(minutes: number): string {
   return `${(minutes / 60).toFixed(1)}시간`
 }
 
 export interface CardMetric {
   text: string | null // 상태 뒤에 붙는 글자. 없으면 상태만 보인다
-  loud: boolean // 180일 이상 방치 ─ 포인트 글자색으로 강조 (UI_DESIGN 4.2절)
+  loud: boolean // 180일 이상 방치 ─ 포인트 글자색으로 강조 (DESIGN 4.2절)
 }
 
 /**
- * 카드 두 번째 줄의 '상태 · ○○' 부분 (UI_DESIGN 3.2절 표)
+ * 카드 두 번째 줄의 '상태 · ○○' 부분 (DESIGN 3.2절 표)
  * 미시작은 플레이타임(0시간) 대신 방치일수 ─ 이 앱이 풀려는 문제가 목록에서 바로 보이게
  */
 export function cardMetric(entry: Pick<Entry, 'status' | 'purchased_at' | 'playtime_minutes'>, today: Date = new Date()): CardMetric {
@@ -69,7 +69,7 @@ export function cardMetric(entry: Pick<Entry, 'status' | 'purchased_at' | 'playt
   return { text: formatPlaytime(entry.playtime_minutes), loud: false }
 }
 
-/** 커버가 없을 때 보여줄 제목 앞 두 글자 (UI_DESIGN 4.4절). 공백은 건너뛴다 */
+/** 커버가 없을 때 보여줄 제목 앞 두 글자 (DESIGN 4.4절). 공백은 건너뛴다 */
 export function titleInitials(title: string): string {
   return Array.from(title.replace(/\s+/g, '')).slice(0, 2).join('')
 }

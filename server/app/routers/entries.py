@@ -67,17 +67,17 @@ async def create_entry(
     # ① 없는 장르 id가 섞여 있으면 거절 ─ 게임 상태와 상관없이 항상 검사
     await _ensure_genres_exist(db, data.genre_ids)
 
-    # ② 게임 찾기/만들기 ─ 판별은 서비스 한 곳에서만 (ERD 2.4절)
+    # ② 게임 찾기/만들기 ─ 판별은 서비스 한 곳에서만 (DATA_MODEL 2.4절)
     game = await find_or_create_game(db, data.title)
 
-    # ③ 이미 내 라이브러리에 있으면 거절 (UI_DESIGN 3.3절 문구)
+    # ③ 이미 내 라이브러리에 있으면 거절 (DESIGN 3.3절 문구)
     if await entry_exists(db, user_id=user.id, game_id=game.id):
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="이미 등록된 게임입니다",
         )
 
-    # ④ 장르가 빈 게임만 채운다 (ERD 2.5절)
+    # ④ 장르가 빈 게임만 채운다 (DATA_MODEL 2.5절)
     await attach_genres_if_empty(db, game.id, data.genre_ids)
 
     # ⑤ 보유 기록 만들기
@@ -177,7 +177,7 @@ async def update_my_entry(
                 detail=f"{field}은(는) 비울 수 없습니다",
             )
 
-    # 장르를 보냈으면 연결 규칙을 그대로 적용 (ERD 2.5절)
+    # 장르를 보냈으면 연결 규칙을 그대로 적용 (DATA_MODEL 2.5절)
     # 0개인 게임에만 채워지고, 이미 존재하는 경우 조용히 무시된다
     if genre_ids is not None:
         await _ensure_genres_exist(db, genre_ids)

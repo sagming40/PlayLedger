@@ -1,6 +1,6 @@
 """Genre 연결 동시 실행 ─ FOR UPDATE가 후발 요청을 막는지 확인한다.
 
-ERD 2.5절: Game의 Genre는 0개일 때만 채운다.
+DATA_MODEL 2.5절: Game의 Genre는 0개일 때만 채운다.
 "0개인지 확인 → 채우기" 사이에 다른 유저가 끼어들면 Genre가 합쳐지므로,
 그 틈을 Game 행 잠금(FOR UPDATE)으로 막는다. 이 TEST가 그 잠금을 지킨다.
 """

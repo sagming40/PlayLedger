@@ -101,7 +101,7 @@ def create_refresh_token() -> str:
 
 
 def hash_refresh_token(token: str) -> str:
-    """DB에 저장할 형태로 변환 (ERD 2.2절)
+    """DB에 저장할 형태로 변환 (DATA_MODEL 2.2절)
 
     비밀번호와 달리 argon2가 아닌 SHA-256을 사용한다.
     argon2가 느린 이유는 사람이 만든 보안이 약한 비밀번호를 하나씩 대입해보는 공격을 막기 위함이다.

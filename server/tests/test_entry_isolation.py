@@ -63,7 +63,7 @@ async def test_other_users_entry_looks_exactly_like_a_missing_one(client, auth_h
     """404를 주는 것만으로는 부족하다.
 
     '남의 것'과 '없는 것'의 응답이 완전히 같아야 존재 여부가 새어 나가지 않는다.
-    로그인 실패 메시지를 하나로 통일한 것(UI_DESIGN 3.1절)과 같은 원리 —
+    로그인 실패 메시지를 하나로 통일한 것(DESIGN 3.1절)과 같은 원리 —
     응답이 갈리는 것 자체가 공격자에게는 정보다.
     """
     a = await auth_headers(A_EMAIL)

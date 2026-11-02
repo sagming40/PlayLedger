@@ -11,7 +11,7 @@ const theme = useThemeStore()
 // 아바타 자리에 닉네임 첫 글자 ─ 사진 업로드는 범위 밖이다
 const initial = computed(() => auth.user?.nickname.charAt(0) ?? '')
 
-// 화면 테마 (F-24, UI_DESIGN 3.6 · 4.4절)
+// 화면 테마 (F-24, DESIGN 3.6 · 4.4절)
 const THEME_OPTIONS: { value: ThemePreference; label: string }[] = [
   { value: 'system', label: '시스템' },
   { value: 'dark', label: '다크' },
@@ -72,7 +72,7 @@ async function onLogout() {
       </div>
     </section>
 
-    <!-- Steam 연동 ─ M8에서 연결한다. 자리와 안내 문구만 먼저 보여준다 (UI_DESIGN 3.6절) -->
+    <!-- Steam 연동 ─ M8에서 연결한다. 자리와 안내 문구만 먼저 보여준다 (DESIGN 3.6절) -->
     <section class="flex flex-col gap-3.5 rounded-[14px] border border-border bg-card p-6">
       <div class="flex items-center gap-2.5">
         <h2 class="text-base font-bold">Steam 연동</h2>

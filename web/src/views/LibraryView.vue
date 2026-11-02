@@ -5,13 +5,13 @@ import { useEntryList } from '@/composables/useEntryList'
 import { STATUS_DOT_CLASS, STATUS_LABEL, cardMetric, titleInitials } from '@/lib/entry-display'
 import { Button } from '@/components/ui/button'
 
-// S-02 라이브러리 (UI_DESIGN 3.2절, 그림은 docs/mockups/Library · LibraryMobile · LibraryEmpty)
+// S-02 라이브러리 (DESIGN 3.2절, 그림은 docs/mockups/Library · LibraryMobile · LibraryEmpty)
 const list = useEntryList()
 
 // "오늘"은 화면을 연 시점으로 고정한다 ─ 카드마다 new Date()를 부르면 자정에 걸쳐 그릴 때 날짜가 섞인다
 const today = new Date()
 
-// 위쪽 포스터 벽 24칸 (UI_DESIGN 4.4절 원칙 ─ 게임 커버가 화면의 주인공)
+// 위쪽 포스터 벽 24칸 (DESIGN 4.4절 원칙 ─ 게임 커버가 화면의 주인공)
 // 커버 이미지는 M2.5 이후라, 지금은 커버 없는 게임의 대체 표시(제목 앞 두 글자)로 채운다
 // 기록이 24개보다 적으면 돌려 써서 칸을 채운다. 0개면 빈 칸(점선)으로 둔다
 const wall = computed(() => {
@@ -23,7 +23,7 @@ const wall = computed(() => {
 // 첫 로딩 뼈대 8장 ─ 목록 자리를 미리 잡아 데이터가 들어올 때 화면이 덜컥 밀리지 않게 한다
 const SKELETON_COUNT = 8
 
-// 목록 끝 표지 ─ 화면에 들어오면 다음 20개를 부른다 (UI_DESIGN 3.2절 "끝에 도달하면 추가 로드")
+// 목록 끝 표지 ─ 화면에 들어오면 다음 20개를 부른다 (DESIGN 3.2절 "끝에 도달하면 추가 로드")
 // 미리 400px 전에 부르게 해서 끝에 닿았을 때는 이미 와 있도록 한다
 const sentinel = ref<HTMLElement | null>(null)
 let observer: IntersectionObserver | null = null
@@ -112,13 +112,13 @@ onBeforeUnmount(() => {
       </div>
     </div>
 
-    <!-- 처음부터 실패 ─ 목록 대신 안내 + 다시 시도 (UI_DESIGN 6장) -->
+    <!-- 처음부터 실패 ─ 목록 대신 안내 + 다시 시도 (DESIGN 6장) -->
     <div v-else-if="list.firstError.value" role="alert" class="flex flex-col items-center gap-3 py-16 text-center">
       <p class="text-[15px]">{{ list.firstError.value }}</p>
       <Button variant="outline" class="h-11 rounded-[10px]" @click="list.loadFirst()">다시 시도</Button>
     </div>
 
-    <!-- 0개 ─ 행동을 유도한다 (UI_DESIGN 5장) -->
+    <!-- 0개 ─ 행동을 유도한다 (DESIGN 5장) -->
     <div v-else-if="list.isEmpty.value" class="flex flex-col items-center gap-3.5 py-16 text-center">
       <Gamepad2 class="size-14 text-muted-foreground" stroke-width="1.5" aria-hidden="true" />
       <h2 class="text-[22px] font-bold">아직 등록된 게임이 없어요</h2>
@@ -148,7 +148,7 @@ onBeforeUnmount(() => {
             </div>
             <div class="flex min-w-0 flex-col gap-1 md:gap-1.5 md:px-3.5 md:pt-3 md:pb-3.5">
               <span class="truncate text-[15px] font-semibold">{{ entry.game.title }}</span>
-              <!-- 상태는 점 + 글자 (UI_DESIGN 4.1절 ─ 색만으로 구분하지 않는다) -->
+              <!-- 상태는 점 + 글자 (DESIGN 4.1절 ─ 색만으로 구분하지 않는다) -->
               <span class="flex items-center gap-1.5 text-[13px] text-muted-foreground">
                 <span class="size-[7px] shrink-0 rounded-full" :class="STATUS_DOT_CLASS[entry.status]" aria-hidden="true" />
                 <span class="text-foreground">{{ STATUS_LABEL[entry.status] }}</span>
@@ -196,7 +196,7 @@ onBeforeUnmount(() => {
 }
 
 /* 48rem부터 카드 그리드 ─ 칸 폭을 정하지 않고 232px 이상으로 들어가는 만큼 (목업 Library)
-   48rem은 Tailwind md:와 같은 기준이다 (UI_DESIGN 2.2절) */
+   48rem은 Tailwind md:와 같은 기준이다 (DESIGN 2.2절) */
 @media (min-width: 48rem) {
   .card-grid {
     grid-template-columns: repeat(auto-fill, minmax(232px, 1fr));

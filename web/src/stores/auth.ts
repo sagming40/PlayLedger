@@ -24,7 +24,7 @@ export const useAuthStore = defineStore('auth', () => {
   // 'expired' = 쓰는 도중 세션이 끝남 → 보던 주소를 기억해서, 다시 로그인하면 그 자리로
   const sessionEnd = ref<'logout' | 'expired' | null>(null)
 
-  // 재발급까지 실패하면 client.ts가 이 함수를 부른다 (API_SPEC 3.2절)
+  // 재발급까지 실패하면 client.ts가 이 함수를 부른다 (ARCHITECTURE 3.3절)
   // TOKEN은 client.ts가 이미 비웠다. 여기서는 화이트보드만 지운다
   // 로그인 화면으로 보내는 일은 App.vue가 user가 비는 순간을 보고 한다
   setAuthFailureHandler(() => {
@@ -38,7 +38,7 @@ export const useAuthStore = defineStore('auth', () => {
   // ─── 동작 ───────────────────────────────────────────────
 
   /**
-   * 앱 시작 시 refresh COOKIE로 로그인 상태를 되살린다 (API_SPEC 3.3절, UI_DESIGN 2.3절)
+   * 앱 시작 시 refresh COOKIE로 로그인 상태를 되살린다 (ARCHITECTURE 3.4절, DESIGN 2.3절)
    *
    * access TOKEN은 MEMORY에만 있어서 새로고침하면 사라진다. COOKIE가 살아 있으면 다시 받는다
    * 이때의 401은 오류가 아니라 "로그인하지 않은 상태"다 ─ 문구를 띄우지 않는다
@@ -49,7 +49,7 @@ export const useAuthStore = defineStore('auth', () => {
     if (!restoring) {
       restoring = (async () => {
         try {
-          // client.ts의 재발급을 그대로 쓴다 ─ 동시 1회 보장이 여기에도 적용된다 (API_SPEC 3.2절 ③원칙)
+          // client.ts의 재발급을 그대로 쓴다 ─ 동시 1회 보장이 여기에도 적용된다 (ARCHITECTURE 3.3절 ③원칙)
           if (await refreshAccessToken()) {
             user.value = await authApi.me()
           }
@@ -73,7 +73,7 @@ export const useAuthStore = defineStore('auth', () => {
     setAccessToken(res.access_token)
 
     // ② 그 TOKEN으로 내가 누구인지 물어본다
-    // LOGIN 응답에는 TOKEN만 들어있고 유저 정보는 존재하지 않는다 (API_SPEC 3.1절)
+    // LOGIN 응답에는 TOKEN만 들어있고 유저 정보는 존재하지 않는다 (ARCHITECTURE 3.2절)
     try {
       user.value = await authApi.me()
     } catch (e) {
@@ -96,7 +96,7 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       await authApi.logout()
     } finally {
-      // SERVER 호출 성공/실패 여부와 관계없이 이쪽은 반드시 비운다 (API_SPEC 3.4절)
+      // SERVER 호출 성공/실패 여부와 관계없이 이쪽은 반드시 비운다 (ARCHITECTURE 3.5절)
       // "LOGOUT 실패"라는 상태를 사용자에게 만들어주지 않기 위해서이다
       setAccessToken(null)
       // user보다 먼저 적는다 ─ App.vue는 user가 비는 순간 이 값을 읽는다

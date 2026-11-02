@@ -1,5 +1,5 @@
 # app/services/entry.py
-"""보유 기록을 조회하는 곳 (ERD 2.6절)
+"""보유 기록을 조회하는 곳 (DATA_MODEL 2.6절)
 
 모든 함수는 반드시 user_id를 받는다 ─ "누구의 기록인지"가 확인되지 않으면 아무것도 꺼낼 수 없다
 비유: 은행 금고. 계좌번호(entry_id)만으로는 열리지 않고, 본인 확인(user_id) 함께 있어야 열린다
@@ -12,7 +12,7 @@ from sqlalchemy.orm import selectinload
 from app.models.entry import Entry
 from app.models.game import Game
 
-# 목록 조회의 최대 개수 ─ 화면이 20개씩 불러온다 (UI_DESIGN 3.2절)
+# 목록 조회의 최대 개수 ─ 화면이 20개씩 불러온다 (DESIGN 3.2절)
 # 상한을 정해두지 않으면 limit=999999로 요청해 DB를 통으로 긁어갈 수 있다
 MAX_LIMIT = 100
 
@@ -64,7 +64,7 @@ async def list_entries(
     limit: int = 20,
     offset: int = 0,
 ) -> tuple[list[Entry], int]:
-    """내 보유 기록 목록과 전체 개수를 함께 반환한다. (ERD 3.1절)
+    """내 보유 기록 목록과 전체 개수를 함께 반환한다.
 
     비유: 서류함에서 20장을 꺼내면서 "모두 몇 장인지"까지 같이 세어준다.
     개수를 각각 따로 정하는 이유: 20개만 받으면 화면에서는 "여기까지가 전부인지 더 있는건지"를 알 방법이 없다.
@@ -80,7 +80,7 @@ async def list_entries(
         select(func.count()).select_from(Entry).where(*conditions)
     )
 
-    # ② 이번 페이지 ─ 최근 수정순 (UI_DESIGN 3.2절 정렬 default값)
+    # ② 이번 페이지 ─ 최근 수정순 (DESIGN 3.2절 정렬 default값)
     # id를 2번째 기준으로 두는 이유: updated_at이 동일 row끼리 순서가 매번 달라질 수 있다
     # 즉, 1페이지와 2페이지에 동일한 기록이 겹치거나 빠지는 경우가 발생한다
     stmt = (

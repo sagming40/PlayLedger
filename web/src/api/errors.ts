@@ -1,4 +1,4 @@
-// 422 Array의 한 항목에서 사용할 것들만 추려낸 모양 (API_SPEC 4.4절)
+// 422 Array의 한 항목에서 사용할 것들만 추려낸 모양 (ARCHITECTURE 3.9절)
 export interface FieldIssue {
   field: string                   // 어느 입력칸인지 ('email', 'password')
   rule: string                    // 무슨 규칙을 어겼는지 ('string_too_short')
@@ -7,7 +7,7 @@ export interface FieldIssue {
 
 // SERVER 4xx · 5xx로 답했을 때 던지는 오류
 // status를 들고 다니는 이유는, 호출하는 쪽이 "401이면 로그인으로" 처럼
-// 상태 코드로만 분기하기 위함이다 (API_SPEC 3.2절 ④원칙 ─ 문구로 분기하지 않는다)
+// 상태 코드로만 분기하기 위함이다 (ARCHITECTURE 3.3절 ④원칙 ─ 문구로 분기하지 않는다)
 export class ApiError extends Error {
   readonly status: number
   readonly issues: FieldIssue[]
@@ -28,13 +28,13 @@ const FALLBACK_MESSAGE = '요청을 처리하지 못했습니다. 잠시 후 다
 export function toApiError(status: number, body: unknown): ApiError {
   const detail = (body as { detail?: unknown } | null)?.detail
 
-  // ① 문자열 ─ SERVER가 한국어로 써준 문장. 그대로 화면에 사용할 수 있다 (API_SPEC 2.3절)
+  // ① 문자열 ─ SERVER가 한국어로 써준 문장. 그대로 화면에 사용할 수 있다 (ARCHITECTURE 3.1절)
   if (typeof detail === 'string') {
     if (status >= 500) return new ApiError(status, FALLBACK_MESSAGE)
     return new ApiError(status, detail)
   }
 
-  // ② 배열 ─ Pydantic이 만든 422 (API_SPEC 4.4절)
+  // ② 배열 ─ Pydantic이 만든 422 (ARCHITECTURE 3.9절)
   // msg는 영문이기 때문에 화면에 띄우지 못한다. 어느 칸에서 무슨 규칙이 깨졌는지만 뽑아둔다
   if (Array.isArray(detail)) {
     const issues: FieldIssue[] = detail.map((item) => {

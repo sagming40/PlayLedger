@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import { cardMetric, formatPlaytime, idleDays, titleInitials } from './entry-display'
 
-// 카드에 보이는 글자 (UI_DESIGN 3.2 · 4.2절)
+// 카드에 보이는 글자 (DESIGN 3.2 · 4.2절)
 // "오늘"을 고정해서 날짜가 바뀌어도 결과가 같게 한다
 
 const TODAY = new Date(2026, 9, 25, 9, 30) // 2026-10-25 09:30 (그 지역 시각)
@@ -46,7 +46,7 @@ describe('카드 두 번째 줄', () => {
       text: '방치 214일',
       loud: true,
     })
-    // 경계 ─ 딱 180일부터 강조 (UI_DESIGN 4.2절 "180일 이상")
+    // 경계 ─ 딱 180일부터 강조 (DESIGN 4.2절 "180일 이상")
     expect(cardMetric({ status: 'BACKLOG', purchased_at: '2026-04-28', playtime_minutes: 0 }, TODAY)).toEqual({
       text: '방치 180일',
       loud: true,

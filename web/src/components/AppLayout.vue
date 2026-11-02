@@ -18,7 +18,7 @@ const menu = [
 <template>
   <!-- md: = 48rem 이상. Tailwind의 default가 기준선이다
        rem이라 루트 글꼴 크기에 따라 실제 px이 달라진다 (기본 16px이면 768px)
-       색은 전부 style.css 토큰 ─ 다크 · 라이트가 .dark 하나로 같이 바뀐다 (UI_DESIGN 4.4절) -->
+       색은 전부 style.css 토큰 ─ 다크 · 라이트가 .dark 하나로 같이 바뀐다 (DESIGN 4.4절) -->
   <div class="min-h-screen bg-background text-foreground md:flex">
 
     <!-- 사이드바 ─ hidden(기본 숨김) + md:flex(48rem부터 보임) -->
@@ -29,7 +29,7 @@ const menu = [
         <span class="text-[17px] font-extrabold tracking-[0.04em]">PLAYLEDGER</span>
       </div>
       <nav aria-label="주 메뉴" class="flex flex-col gap-1">
-        <!-- 활성 메뉴는 색을 꽉 채우지 않고 옅은 바탕 + 포인트 글자색 (UI_DESIGN 4.4절 원칙) -->
+        <!-- 활성 메뉴는 색을 꽉 채우지 않고 옅은 바탕 + 포인트 글자색 (DESIGN 4.4절 원칙) -->
         <RouterLink
           v-for="item in menu"
           :key="item.name"

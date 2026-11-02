@@ -1,10 +1,10 @@
 import { ApiError, toApiError } from './errors'
 
-// 모든 API는 /api로 시작한다 (API_SPEC 2장)
+// 모든 API는 /api로 시작한다 (ARCHITECTURE 3.1절)
 // 개발 → Vite / 운영 → Nginx가 이 접두사만 SERVER로 넘긴다
 const BASE_URL = '/api'
 
-// access TOKEN은 MEMORY에만 넣어둔다 (API_SPEC 3.1절)
+// access TOKEN은 MEMORY에만 넣어둔다 (ARCHITECTURE 3.2절)
 // localStorage에 넣으면 Script가 끼어들었을 때 그대로 읽힌다
 // 새로고침하면 사라지지만 의도된 동작이다 ─ refresh COOKIE로 다시 받는다 (3.3절)
 let accessToken: string | null = null
@@ -14,7 +14,7 @@ let accessToken: string | null = null
 // 비유: 퇴근 처리한 직원에게 뒤늦게 도착한 출입증은 책상에 올려두지 않고 버린다
 let tokenEpoch = 0
 
-// 지금 진행 중인 재발급. 없으면 null (API_SPEC 3.2절 ③원칙)
+// 지금 진행 중인 재발급. 없으면 null (ARCHITECTURE 3.3절 ③원칙)
 // 동시에 401을 받은 요청들은 새로 보내지 않고 이 약속 하나를 같이 기다린다
 let refreshing: Promise<boolean> | null = null
 
@@ -22,7 +22,7 @@ let refreshing: Promise<boolean> | null = null
 // client.ts가 스토어 · 라우터를 직접 import하면 순환이 생기므로 등록받는다
 let onAuthFailure: (() => void) | null = null
 
-// 401이 와도 재발급하지 않는 경로 (API_SPEC 3.2절 ②원칙)
+// 401이 와도 재발급하지 않는 경로 (ARCHITECTURE 3.3절 ②원칙)
 // login의 401은 자격 증명 오류, refresh의 401은 세션 만료 ─ 재발급하면 스스로를 부르는 순환이 된다
 const NO_REFRESH_PATHS = new Set(['/auth/login', '/auth/refresh'])
 
@@ -58,7 +58,7 @@ async function sendOnce(path: string, options: RequestOptions, token: string | n
     })
   } catch {
     // SERVER가 꺼져 있거나 INTERNET이 끊긴 경우. RESPONSES 자체가 없어서 STATUS CODE도 없다
-    // 0은 "HTTP RESPONSES이 아니다"라는 표시로 사용한다 (UI_DESIGN 6장 NETWORK ERROR)
+    // 0은 "HTTP RESPONSES이 아니다"라는 표시로 사용한다 (DESIGN 6장 NETWORK ERROR)
     throw new ApiError(0, '연결에 실패했습니다')
   }
 }
@@ -86,7 +86,7 @@ async function doRefresh(): Promise<boolean> {
 /**
  * refresh COOKIE로 access TOKEN을 새로 받는다. 성공하면 true, 로그인이 끝난 상태면 false
  *
- * 동시에 몇 번을 불러도 SERVER에는 1번만 간다 (API_SPEC 3.2절 ③원칙)
+ * 동시에 몇 번을 불러도 SERVER에는 1번만 간다 (ARCHITECTURE 3.3절 ③원칙)
  * refresh TOKEN은 쓸 때마다 교체되므로, 같은 TOKEN으로 두 번 보내면 뒤의 것이 "폐기된 TOKEN 재사용"으로
  * 판정되어 SERVER가 이 사용자의 TOKEN을 전부 폐기한다 ─ 정상 사용자가 로그아웃된다
  * 앱 시작 시 로그인 복원(3.3절)도 이 함수를 쓴다
@@ -109,13 +109,13 @@ async function send<T>(path: string, options: RequestOptions, retried: boolean):
   const sentToken = accessToken
   const res = await sendOnce(path, options, sentToken)
 
-  // 204는 본문이 없다 (API_SPEC 2.2절) res.json()을 CALL하면 PARSING에서 터진다
+  // 204는 본문이 없다 (ARCHITECTURE 3.1절) res.json()을 CALL하면 PARSING에서 터진다
   if (res.status === 204) return undefined as T
 
   // 본문이 JSON이 아닐 수도 있으므로, 실패해도 넘어간다. 판단은 아래 STATUS CODE로 한다
   const payload = await res.json().catch(() => null)
 
-  // 401 처리 ─ 판단은 STATUS CODE와 경로로만 한다. detail 문구는 보지 않는다 (API_SPEC 3.2절 ④원칙)
+  // 401 처리 ─ 판단은 STATUS CODE와 경로로만 한다. detail 문구는 보지 않는다 (ARCHITECTURE 3.3절 ④원칙)
   if (res.status === 401 && !NO_REFRESH_PATHS.has(path)) {
     if (!retried) {
       // 다른 요청이 그 사이 새 TOKEN을 받아왔다면 재발급 없이 바로 다시 보낸다

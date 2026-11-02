@@ -2,15 +2,15 @@ import { computed, ref } from 'vue'
 import { listEntries, type Entry } from '@/api/entries'
 import { ApiError } from '@/api/errors'
 
-// 목록은 20개씩 불러온다 (UI_DESIGN 3.2절). SERVER의 상한(MAX_LIMIT 100)보다 작아야 한다
+// 목록은 20개씩 불러온다 (DESIGN 3.2절). SERVER의 상한(MAX_LIMIT 100)보다 작아야 한다
 export const PAGE_SIZE = 20
 
 /**
- * S-02 라이브러리 목록의 상태와 불러오기 (UI_DESIGN 3.2 · 5 · 6장)
+ * S-02 라이브러리 목록의 상태와 불러오기 (DESIGN 3.2 · 5 · 6장)
  *
  * 스토어(Pinia)가 아니라 화면이 그때그때 만든다 ─ A로 로그아웃하고 B로 로그인하면
  * 화면이 새로 만들어지면서 목록도 비어서 시작한다. 전역에 두면 A의 목록이 B 화면에 남을 수 있다
- * (MILESTONES M2 완료 기준 "같은 창에서 A → B 전환 시 A의 목록이 남지 않음")
+ * (PLAN M2 완료 기준 "같은 창에서 A → B 전환 시 A의 목록이 남지 않음")
  */
 export function useEntryList() {
   const items = ref<Entry[]>([])

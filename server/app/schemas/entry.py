@@ -1,5 +1,5 @@
 # app/schemas/entry.py
-# 보유 기록의 입력(등록) · 출력(응답) 모양 (ERD 2.6절)
+# 보유 기록의 입력(등록) · 출력(응답) 모양 (DATA_MODEL 2.6절)
 
 from datetime import date, datetime
 from typing import Annotated, Literal
@@ -50,7 +50,7 @@ class EntryCreate(BaseModel):
     @field_validator("title")
     @classmethod
     def check_title(cls, v: str) -> str:
-        """정규화했을 때 빈 값이거나 길이가 너무 길면 거부한다 (ERD 2.4절 4단계)
+        """정규화했을 때 빈 값이거나 길이가 너무 길면 거부한다 (DATA_MODEL 2.4절 4단계)
 
         결과는 버리고 검사만 한다 ─ title_norm은 서비스가 다시 계산한다
         입구(schema)만 신뢰하지 않는 것이 find_or_create_game의 원칙이다
@@ -81,7 +81,7 @@ class EntryListResponse(BaseModel):
     """목록 응답 ─ 이번 페이지의 기록들 + 전체 개수
 
     비유: 택배 상자에 물건과 함께 "총 42개 중 20개" 쪽지를 넣어 보내는 것
-    개수가 적혀있어야 화면이 "총 42개 · 미시작 18개" 요약 줄을 그릴 수 있다 (UI_DESIGN 3.2절)
+    개수가 적혀있어야 화면이 "총 42개 · 미시작 18개" 요약 줄을 그릴 수 있다 (DESIGN 3.2절)
     """
 
     items: list[EntryRead]
@@ -96,7 +96,7 @@ class EntryUpdate(BaseModel):
     비유: 주문서 수정 요청서. 빈칸 → "건드리지 말 것", 취소선 → "삭제"
     """
 
-    # title은 아예 받지 않는다 ─ extra="forbid"에 걸림 (422, ERD 2.6절)
+    # title은 아예 받지 않는다 ─ extra="forbid"에 걸림 (422, DATA_MODEL 2.6절)
     # 제목을 수정하는 것은 이 기록이 가리키는 게임 자체를 갈아 끼워버리는 것이라 허용하지 않는다
     model_config = ConfigDict(extra="forbid")
 

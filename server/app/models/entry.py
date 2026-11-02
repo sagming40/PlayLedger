@@ -1,6 +1,6 @@
 # ============================================================
 # entries ─ 특정 사용자가 특정 게임을 보유한 기록
-# PlayLedger의 중심 테이블 (ERD 2.6절)
+# PlayLedger의 중심 테이블 (DATA_MODEL 2.6절)
 # ============================================================
 
 from datetime import date, datetime
@@ -32,12 +32,12 @@ class Entry(Base):
     )
 
     # 게임은 여러 사용자가 공유하는 마스터 데이터이기 때문에 쉽게 삭제되면 안된다.
-    # RESTRICT = 누군가가 참조 중이면 삭제 자체를 거부한다. (ERD 2.0절)
+    # RESTRICT = 누군가가 참조 중이면 삭제 자체를 거부한다. (DATA_MODEL 2.0절)
     game_id: Mapped[int] = mapped_column(
         ForeignKey("games.id", ondelete="RESTRICT")
     )
 
-    # 진행 상태 ─ ENUM 타입 대신 varchar + CHECK (ERD 2.0절 공통 규칙)
+    # 진행 상태 ─ ENUM 타입 대신 varchar + CHECK (DATA_MODEL 2.0절 공통 규칙)
     status: Mapped[str] = mapped_column(String(10))
 
     purchased_at: Mapped[date | None]
@@ -46,7 +46,7 @@ class Entry(Base):
     purchase_price: Mapped[int | None]
 
     # 분 단위 정수 ─ Steam이 분(minute)을 반환하고, 시간(hour) 소수로 변환하면
-    # 증가분 계산에서 반올림 오차가 쌓인다 (ERD 2.6절)
+    # 증가분 계산에서 반올림 오차가 쌓인다 (DATA_MODEL 2.6절)
     playtime_minutes: Mapped[int] = mapped_column(server_default="0")
 
     # "평가되지 않음(NULL)"과 "0"점은 엄연히 다르다. 평균 계산 시 NULL은 자동으로 제외된다.
@@ -73,10 +73,10 @@ class Entry(Base):
 
     __table_args__ = (
         # 같은 사용자가 같은 게임을 중복 등록할 수 없다
-        # UNIQUE는 INDEX 역할도 겸하기 때문에 유저별 조회에도 사용된다 (ERD 4장)
+        # UNIQUE는 INDEX 역할도 겸하기 때문에 유저별 조회에도 사용된다 (DATA_MODEL 4장)
         UniqueConstraint("user_id", "game_id"),
 
-        # 상태별 필터링이 가장 잦은 조회 (ERD 4장)
+        # 상태별 필터링이 가장 잦은 조회 (DATA_MODEL 4장)
         Index("ix_entries_user_status", "user_id", "status"),
 
         # 최후 방어선 ─ 아래 5개 CHECK는 서버 코드를 거치지 않는 경로로도 막는다.

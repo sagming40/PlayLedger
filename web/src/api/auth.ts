@@ -31,7 +31,7 @@ export function register(email: string, password: string, nickname: string) {
   })
 }
 
-// 204 ─ 돌려받을 본문이 없다 (API_SPEC 2.2절)
+// 204 ─ 돌려받을 본문이 없다 (ARCHITECTURE 3.1절)
 export function logout() {
   return request<void>('/auth/logout', { method: 'POST' })
 }

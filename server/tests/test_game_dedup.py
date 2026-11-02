@@ -1,6 +1,6 @@
 """Game 중복 판별 ─ 표기가 달라도 동일한 Game이고, 동시 등록에도 ROW가 하나만 남는다.
 
-ERD 2.4절 판별 순서:
+DATA_MODEL 2.4절 판별 순서:
 1단계 steam_appid / 2단계 title_norm(수동 Game) / 3단계 INSERT / 4단계 충돌 시 재조회
 """
 

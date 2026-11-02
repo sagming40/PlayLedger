@@ -32,13 +32,13 @@ const submitting = ref(false)   // 서버 응답을 기다리는 중인지
 
 const isRegister = computed(() => mode.value === 'register')
 
-// 배경 타일 98장(14열 × 7줄 ─ 1440×900 화면을 아래까지 채운다)의 색 ─ 게임 커버 대신 쓰는 추상 타일 (UI_DESIGN 4.4절)
+// 배경 타일 98장(14열 × 7줄 ─ 1440×900 화면을 아래까지 채운다)의 색 ─ 게임 커버 대신 쓰는 추상 타일 (DESIGN 4.4절)
 // 로그인 전에는 내 라이브러리를 알 수 없고, 남의 게임 이미지를 쓰면 저작권 문제가 생긴다
 // 색은 테마와 무관하게 어두운 포스터 톤이고, 밝기는 아래 template의 opacity가 테마별로 조절한다
 const TILE_HUES = ['#2B2140', '#1D2E45', '#3D2A10', '#33301C', '#1F3A2C', '#1C2A33', '#23382B', '#1E3440', '#3A1E24', '#2E2638', '#262630']
 const tiles = Array.from({ length: 98 }, (_, i) => TILE_HUES[(i * 7 + Math.floor(i / 14) * 3) % TILE_HUES.length])
 
-// 버튼을 누를 수 있는 상태인가 (UI_DESIGN 3.1절 ─ 빈 값이면 비활성화, 중복 제출 차단)
+// 버튼을 누를 수 있는 상태인가 (DESIGN 3.1절 ─ 빈 값이면 비활성화, 중복 제출 차단)
 const canSubmit = computed(() => {
   if (submitting.value) return false                      // 이미 보내는 중이면 잠금
   if (!email.value || !password.value) return false
@@ -71,11 +71,11 @@ async function onSubmit() {
     }
     await auth.login(email.value, password.value)
 
-    // 가드가 기억해 둔 원래 주소로 돌아간다 (UI_DESIGN 2.3절 "가려던 주소를 기억하는 이유")
+    // 가드가 기억해 둔 원래 주소로 돌아간다 (DESIGN 2.3절 "가려던 주소를 기억하는 이유")
     // replace ─ 뒤로가기로 로그인 화면에 다시 오지 않게 기록을 덮어쓴다
     router.replace(safeRedirect(route.query.redirect))
   } catch (e) {
-    // SERVER가 준 detail은 그대로 보여줄 수 있는 한국어 문장이다 (API_SPEC 2.3절)
+    // SERVER가 준 detail은 그대로 보여줄 수 있는 한국어 문장이다 (ARCHITECTURE 3.1절)
     // ApiError가 아닌 것(코드 버그 등)까지 사용자에게 날것으로 보이면 안 되므로 갈라둔다
     errorMessage.value =
       e instanceof ApiError ? e.message : '알 수 없는 오류가 발생했습니다'
@@ -157,7 +157,7 @@ async function onSubmit() {
           <span v-if="isRegister" id="password-help" class="text-xs text-muted-foreground">최소 8자</span>
         </div>
 
-        <!-- 알림창이 아니라 폼 안의 빨간 텍스트 (UI_DESIGN 3.1절) -->
+        <!-- 알림창이 아니라 폼 안의 빨간 텍스트 (DESIGN 3.1절) -->
         <p v-if="errorMessage" role="alert" class="text-sm text-destructive">{{ errorMessage }}</p>
 
         <Button type="submit" class="mt-1 h-12 w-full rounded-[10px] text-base font-bold" :disabled="!canSubmit">

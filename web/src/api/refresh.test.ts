@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from 'vite
 import { request, refreshAccessToken, setAccessToken, setAuthFailureHandler } from './client'
 import { ApiError } from './errors'
 
-// API_SPEC 3.2절 401 처리 4원칙 + 설계 검증에서 찾은 경쟁 상황 2가지
+// ARCHITECTURE 3.3절 401 처리 4원칙 + 설계 검증에서 찾은 경쟁 상황 2가지
 // 토큰 만료 · 동시 재발급은 브라우저에서 손으로 만들 수 없는 상황이라 여기서만 검증한다
 
 function json(status: number, body?: unknown) {
@@ -64,7 +64,7 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
-describe('401 처리 4원칙 (API_SPEC 3.2절)', () => {
+describe('401 처리 4원칙 (ARCHITECTURE 3.3절)', () => {
   it('만료된 TOKEN이면 재발급 후 새 TOKEN으로 원래 요청을 다시 보낸다', async () => {
     const server = fakeServer({ valid: ['new'], refresh: () => json(200, { access_token: 'new' }) })
     setAccessToken('old')
