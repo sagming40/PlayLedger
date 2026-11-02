@@ -16,11 +16,9 @@
 PlayLedger는 보유 목록이 아니라 **소비 이력**을 기록합니다.
 언제 얼마에 샀고, 얼마나 했고, 얼마나 방치했는지를 숫자로 환산해서 보여줍니다.
 
-> **현재 상태: M1(백엔드 기초) 완료 · M2(프론트 연동) 진행 중**
+> **개발 중입니다.** 진행 상황은 [개발 계획](docs/PLAN.md)에 있습니다.
 >
-> Vue 3 + FastAPI 스택으로 재설계했습니다. 인증(가입 · 로그인 · 토큰 재발급 · 로그아웃)과
-> 보유 기록 CRUD를 API로 구현했고, 핵심 규칙 19건을 자동 테스트로 보호하며 push마다 CI가 검증합니다.
-> 현재는 화면(Vue)을 붙이는 단계로, 라우팅 · 레이아웃과 로그인 · 가입 화면까지 올라가 있습니다.
+> Vue 3 + FastAPI 스택으로 재설계했습니다. 인증과 보유 기록 CRUD를 API로 구현했고, 핵심 규칙을 자동 테스트로 보호하며 push마다 CI가 검증합니다.
 > React Native + Django로 진행하던 이전 버전은 [`v0-rn-django`](../../tree/v0-rn-django) 태그에 보존되어 있습니다.
 
 ---
@@ -143,7 +141,7 @@ flowchart LR
 | 테스트 · 운영 | pytest, GitHub Actions | 자동 테스트, CI |
 | | Docker Compose, Nginx | 실행 환경, 배포 |
 
-기술별 선택 이유는 [시스템 아키텍처 문서 3장](docs/ARCHITECTURE.md)에 있습니다.
+기술별 선택 이유는 [결정 기록 0002](docs/decisions/0002-stack-switch.md)에 있습니다.
 
 ---
 
@@ -168,7 +166,7 @@ erDiagram
 - `entries.source` 컬럼 — Steam 동기화가 직접 입력한 데이터를 덮어쓰지 못하게 막는 장치
 - 플레이타임을 분 단위 정수로 저장 — 동기화 증가분을 세션으로 기록할 때 반올림 오차가 쌓이지 않음
 
-전체 스키마와 근거는 [데이터 모델 문서](docs/DATA_MODEL.md)에 있습니다.
+설계 근거는 [데이터 모델 문서](docs/DATA_MODEL.md), 실제 스키마는 `server/app/models/`와 `server/alembic/versions/`에 있습니다.
 
 ---
 
@@ -217,7 +215,7 @@ playledger/
 **v1.0이 완결된 앱입니다.** 이후 버전은 그 위에 하나씩 얹는 확장이고,
 어느 단계에서 멈춰도 그 시점까지는 완성품으로 남도록 순서를 잡았습니다.
 
-마일스톤별 진행 상황과 완료 기준은 [개발 일정 문서](docs/PLAN.md)에 있습니다.
+마일스톤별 진행 상황과 완료 기준은 [개발 계획](docs/PLAN.md)에 있습니다.
 
 ---
 
@@ -226,12 +224,12 @@ playledger/
 | 문서 | 내용 |
 |---|---|
 | [요구사항 정의서](docs/REQUIREMENTS.md) | 기능 범위, 계산식, 유즈케이스, 하지 않을 것 |
-| [시스템 아키텍처](docs/ARCHITECTURE.md) | 전체 구조, 기술 선택 근거, 인증 · 동기화 흐름 |
-| [데이터 모델](docs/DATA_MODEL.md) | 테이블 9종, 관계 설계, 조회 쿼리 |
-| [화면 설계서](docs/DESIGN.md) | 화면 8종, 네비게이션, 상태 전환 |
-| [개발 일정](docs/PLAN.md) | 마일스톤, 완료 기준, 일정 리스크 |
-| [API 명세서](docs/06_api_spec.md) | 인증 계약과 에러 응답 규칙 |
-| [DEVLOG](docs/DEVLOG.md) | 세션별 작업 기록, 트러블슈팅 |
+| [아키텍처](docs/ARCHITECTURE.md) | 전체 구조, API 계약(인증 · 에러 규칙), 인증 · 동기화 흐름 |
+| [데이터 모델](docs/DATA_MODEL.md) | 테이블 9종의 관계와 설계 이유, 조회 쿼리 |
+| [화면 설계](docs/DESIGN.md) | 화면 8종, 네비게이션, 상태 전환, 색 · 테마 ([목업](docs/mockups/README.md)) |
+| [개발 계획](docs/PLAN.md) | 마일스톤, 진행 현황, 완료 기준, 일정 리스크 |
+| [결정 기록](docs/decisions/README.md) | 왜 이렇게 정했는지 |
+| [DEVLOG](docs/DEVLOG.md) | 세션별 작업 기록, 트러블슈팅 ([지난 기록](docs/archive/README.md)) |
 
 > 엔드포인트 목록은 FastAPI가 자동으로 만들어주는 Swagger 화면(`/docs`)으로 대신합니다.
 
@@ -286,7 +284,7 @@ pytest -v
 
 > `Activate.ps1` 실행이 차단되면 `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` 후 다시 시도합니다.
 
-**사용 중인 포트와 설치 버전은 [DEVLOG 환경 요약](docs/DEVLOG.md#현재-상태)이 기준입니다.**
+**포트** · DB `5434` · API `8001` · 프론트 `5173`. 패키지 버전은 `server/requirements.txt` · `web/package.json`, DB 이미지는 `docker-compose.yml`, CI 환경은 `.github/workflows/ci.yml`이 기준입니다.
 
 ---
 
@@ -305,6 +303,8 @@ pytest -v
 > 자주 쓰는 순서대로 적었습니다. 데스크톱 B는 2026-10-29에 학교 PC(Ryzen 9 5900X)에서 회사 PC로 바뀌었습니다.
 
 - **OS** · Windows 11 (공통)
+- **런타임** · Python: 데스크톱 B 3.14.8 (Miniconda) · 데스크톱 A 3.13.5 · 노트북 3.13.9 (Anaconda 빌드), CI는 3.13. Node.js: v24.15.0 (데스크톱 B v24.22.0)
+- **DB 도구** · HeidiSQL (PostgreSQL 접속 가능한 버전. 기기마다 달라도 됩니다)
 - **대상** · 웹 (데스크톱 · 모바일 브라우저)
 - **기기 간 이동** · 코드는 Git으로만 옮깁니다. `.env`와 DB 데이터는 Git으로 옮겨지지 않으므로 기기마다 따로 만듭니다
 

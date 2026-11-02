@@ -9,20 +9,23 @@ PlayLedger: 사놓고 안 한 게임을 구매일 · 구매가 · 플레이타�
 | 질문 | 문서 |
 |---|---|
 | 지금 어디까지 왔고 바로 다음에 뭘 해? | [`docs/DEVLOG.md`](docs/DEVLOG.md) "현재 상태" |
-| 겪은 문제와 해결, 결정의 근거는? | [`docs/DEVLOG.md`](docs/DEVLOG.md) 세션 기록 (최신이 위) |
-| 무엇을 어떤 순서로 만들어? 완료 기준은? | [`docs/PLAN.md`](docs/PLAN.md) |
+| 겪은 문제와 해결은? | [`docs/DEVLOG.md`](docs/DEVLOG.md) 세션 기록 (최신이 위), 끝난 단계는 [`docs/archive/`](docs/archive/README.md) |
+| 왜 이렇게 정했어? | [`docs/decisions/`](docs/decisions/README.md), 작은 판단은 DEVLOG `[설계]` · archive의 "결정 기록" |
+| 무엇을 어떤 순서로 만들어? 어디까지 왔어? 완료 기준은? | [`docs/PLAN.md`](docs/PLAN.md) |
 | 기능 범위는? 하지 않을 것은? | [`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md) (범위는 3장, 나중 아이디어는 4.4절) |
 | 레이어 · 디렉터리 구조, 인증 흐름은? | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) |
-| DB는 어떻게 생겼고 왜? | [`docs/DATA_MODEL.md`](docs/DATA_MODEL.md) |
+| 클라이언트가 지킬 인증 계약 · 에러 응답 규칙은? | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) 3장 (엔드포인트 목록은 Swagger `/docs`) |
+| DB는 어떻게 생겼고 왜? | [`docs/DATA_MODEL.md`](docs/DATA_MODEL.md) (컬럼은 `server/app/models/` · `server/alembic/versions/`) |
 | 화면은 어떻게 생겼고 왜? 색 · 테마는? | [`docs/DESIGN.md`](docs/DESIGN.md) (색 · 테마는 4.4절), 그림은 [`docs/mockups/`](docs/mockups/README.md) |
-| 클라이언트가 지킬 인증 계약 · 에러 응답 규칙은? | [`docs/06_api_spec.md`](docs/06_api_spec.md) (엔드포인트 목록은 Swagger `/docs`) |
 | 이게 뭐고 어떻게 실행해? | [`README.md`](README.md) |
 | 작업할 때 항상 지킬 규칙은? | 이 파일 |
 
-- 같은 내용을 두 곳에 쓰지 않는다. 다른 문서 내용이 필요하면 링크(또는 "ERD 2.5절"처럼 절 번호)로 가리킨다
-- 설계가 바뀌면 **설계 문서를 코드보다 먼저** 고친다
+- 문서의 기본 틀은 전역 설정의 "문서 체계" 절이다. 코드가 담지 못하는 것만 적고, 코드에서 알 수 있는 것은 원본을 가리킨다
+- **전역 문서 체계와 다르게**: `docs/mockups/`의 파일 이름은 `화면.기기.html`이 아니라 `화면.dc.html`로 둔다. 디자인 캔버스 원본의 사본이라 이름을 바꾸면 링크 · `support.js` · `canvas.json`을 같이 고쳐야 하고 캔버스와 어긋날 수 있다 ([decisions/0001](docs/decisions/0001-docs-refactor.md))
+- 같은 내용을 두 곳에 쓰지 않는다. 다른 문서 내용이 필요하면 링크(또는 "DATA_MODEL 2.5절"처럼 절 번호)로 가리킨다
+- 아직 코드가 없는 설계는 **문서가 먼저**, 코드가 원본인 것은 코드가 먼저다. 설계를 바꾸면 같은 작업 안에서 문서도 맞춘다
 - 문서의 장 · 절 번호를 바꾸면 그 번호를 부르는 자리를 검색해서 같이 고친다
-- DEVLOG의 지난 기록은 고치지 않고 위에 새 항목을 덧붙인다
+- DEVLOG의 지난 기록은 고치지 않고 위에 새 항목을 덧붙인다. `archive/`도 고치지 않는다 (옛 문서 이름은 archive/README 대응표)
 
 ## 시작할 때
 1. `git pull`
@@ -31,8 +34,8 @@ PlayLedger: 사놓고 안 한 게임을 구매일 · 구매가 · 플레이타�
 
 ## 끝날 때
 - DEVLOG "현재 상태"를 고친다 (완료 / 진행 중 / 다음에 할 일)
-- 겪은 문제 · 결정은 **그 세션 안에서** DEVLOG에 적는다. 형식은 DEVLOG 위쪽 "작성 규칙" · "기록 템플릿"을 따른다. 막혔던 점은 해결됐어도 남긴다
-- 끝낸 항목은 MILESTONES 작업 목록 체크박스와 2장 요약 표에 반영한다. 계획에 없던 작업은 `*(계획에 없던 작업)*`을 붙여 추가한다
+- 겪은 문제 · 결정은 **그 세션 안에서** DEVLOG에 적는다. 형식은 전역 "문서 체계"와 DEVLOG 위쪽 "작성 규칙"을 따른다. 막혔던 점은 해결됐어도 남긴다
+- 끝낸 항목은 PLAN 작업 목록 체크박스와 2장 진행 현황 표에 반영한다. 계획에 없던 작업은 `*(계획에 없던 작업)*`을 붙여 추가한다
 
 ## 작업 규칙
 - **전역 설정 위치**: 회사 PC는 `C:\_dev\CLAUDE.md`, 집 PC · 노트북은 `~/.claude/CLAUDE.md`
@@ -41,8 +44,8 @@ PlayLedger: 사놓고 안 한 게임을 구매일 · 구매가 · 플레이타�
   - **전역 작업 방식과 다르게**: 코드를 쓰는 본격 작업(마일스톤 작업 항목, 기능 추가)에 들어가기 전에는 "자동으로 할까, 직접 칠래?"를 **반드시** 한 줄로 물어본다(전역은 "물어봐도 된다"). 이미 정해 줬으면 묻지 않는다. 2026-10-24부터 이 저장소에서 지켜 온 규칙을 유지한다
   - 사전 검증에서 따라갈 시나리오에 **동시 실행**(토큰 재발급 · 같은 게임 · 장르 동시 생성)을 꼭 넣는다 — 이 저장소의 함정 · 테스트가 여기에 몰려 있다
   - 보고에는 설계한 진행 순서도 넣는다
-- **주석**: 기존 코드처럼 한국어로, "왜 이렇게 했나"와 비유를 곁들인다. 문서를 근거로 삼은 줄에는 `(ERD 2.4절)`처럼 출처를 단다
-- **범위**: 새 기능 아이디어가 떠오르면 바로 구현하지 않고 `REQUIREMENTS` 4.4절에 항목만 추가한다. 범위를 일부러 넓힐 때는 사유를 변경 이력에 남긴다
+- **주석**: 기존 코드처럼 한국어로, "왜 이렇게 했나"와 비유를 곁들인다. 문서를 근거로 삼은 줄에는 `(DATA_MODEL 2.4절)`처럼 출처를 단다
+- **범위**: 새 기능 아이디어가 떠오르면 바로 구현하지 않고 `REQUIREMENTS` 4.4절에 항목만 추가한다. 범위를 일부러 넓힐 때는 사유를 `decisions/`나 DEVLOG `[설계]`에 남긴다
 - **검증**: 원칙(관찰값을 남긴다)은 전역 "작업 방식"을 따른다. PlayLedger에서는 네트워크 탭 기록도 관찰값으로 남긴다
   - 서버를 고쳤으면 `pytest`, 프론트를 고쳤으면 `vue-tsc -b --noEmit` · `npm test`를 돌린다
   - 응답 본문의 모양은 코드에 적혀 있지 않다. 문서에 JSON을 옮길 때는 Swagger `Execute`로 실제 응답을 받아 옮긴다
@@ -70,9 +73,9 @@ PlayLedger: 사놓고 안 한 게임을 구매일 · 구매가 · 플레이타�
 - **DB 비밀번호**: `postgres` 컨테이너는 볼륨을 **처음 만들 때만** 루트 `.env`의 `POSTGRES_PASSWORD`를 읽는다. 나중에 `.env`만 바꾸면 `InvalidPasswordError`가 난다. 루트 `.env`와 `server/.env`의 `DATABASE_URL` · `TEST_DATABASE_URL` 세 곳의 비밀번호가 같아야 한다
 - **테스트 DB**: 기기마다 `playledger_test`를 한 번 만들어야 한다 (README "시작하기"). 이름이 `_test`로 끝나지 않으면 `conftest.py`가 테스트를 시작하지 않는다
 - **테스트 클라이언트는 `https://test`**: refresh 쿠키가 `Secure`라서 http로 부르면 쿠키가 실리지 않는다
-- **재발급 동시 요청 금지**: refresh는 rotation이라 동시에 두 번 보내면 재사용 감지가 정상 사용자를 로그아웃시킨다. 클라이언트는 재발급을 한 번만 보내고 나머지는 기다린다 (API_SPEC 3.2절)
-- **422 본문은 두 형태**: Pydantic이 만든 422는 `detail`이 배열, 서버가 직접 던진 422는 문자열이다. 500의 `detail`은 영문이다. 화면에는 `web/src/api/errors.ts`를 거쳐 보여 준다 (API_SPEC 4.4절)
-- **남의 기록은 403이 아니라 404**: "없는 것"과 "남의 것"의 응답 본문이 같아야 한다 (API_SPEC 4.3절)
+- **재발급 동시 요청 금지**: refresh는 rotation이라 동시에 두 번 보내면 재사용 감지가 정상 사용자를 로그아웃시킨다. 클라이언트는 재발급을 한 번만 보내고 나머지는 기다린다 (ARCHITECTURE 3.3절)
+- **422 본문은 두 형태**: Pydantic이 만든 422는 `detail`이 배열, 서버가 직접 던진 422는 문자열이다. 500의 `detail`은 영문이다. 화면에는 `web/src/api/errors.ts`를 거쳐 보여 준다 (ARCHITECTURE 3.9절)
+- **남의 기록은 403이 아니라 404**: "없는 것"과 "남의 것"의 응답 본문이 같아야 한다 (ARCHITECTURE 3.8절)
 - **날짜와 시각**: `created_at`은 UTC 시각(`...Z`), `purchased_at`은 날짜(`YYYY-MM-DD`)다. 날짜를 시각 파서로 읽으면 한국 시간으로 하루 전날이 된다
 - **async SQLAlchemy**: 응답에 쓰는 관계(`entry.game`, `game.genres`)는 `selectinload`로 미리 불러온다. lazy load가 안 된다
 - **반응형 기준은 `48rem`**: px이 아니라 루트 글꼴 크기에 따라 기기마다 전환 지점이 다르다
