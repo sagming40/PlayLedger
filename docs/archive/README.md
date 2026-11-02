@@ -21,7 +21,7 @@ v0 코드와 그때 문서는 git 태그 `v0-rn-django`에서 볼 수 있다.
 
 | 옛 이름 | 옛 파일 | 지금 |
 |---|---|---|
-| `REQUIREMENTS` | `01_requirements.md` | [REQUIREMENTS](../REQUIREMENTS.md) (4.4 · 5장 등 번호 그대로. 6장 → DATA_MODEL, 9 · 10장 → PLAN) |
+| `REQUIREMENTS` | `01_requirements.md` | [REQUIREMENTS](../REQUIREMENTS.md) (1 ~ 5장 번호 그대로. 6장 → DATA_MODEL, 7 · 8장 → 6 · 7장, 9장 → PLAN, 10장 → decisions · PLAN) |
 | `ARCHITECTURE` | `02_architecture.md` | [ARCHITECTURE](../ARCHITECTURE.md) (4 ~ 8장 번호 그대로. 3장 기술 선택 근거 → [decisions/0002](../decisions/0002-stack-switch.md)) |
 | `ERD` | `03_erd.md` (더 옛날엔 `ERD.md`) | [DATA_MODEL](../DATA_MODEL.md) (절 번호 그대로) |
 | `UI_DESIGN` | `04_ui_design.md` | [DESIGN](../DESIGN.md) (절 번호 그대로) |
