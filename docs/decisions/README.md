@@ -16,3 +16,6 @@
 | [0004](0004-password-argon2.md) | 비밀번호 해싱은 argon2-cffi (Argon2id) | 채택 |
 | [0005](0005-fixed-genres.md) | 장르는 Steam 공식 장르 8개 고정 목록 | 채택 |
 | [0006](0006-main-only-branch.md) | 브랜치를 파지 않고 `main`에서만 작업 | 채택 |
+| [0007](0007-steam-search-in-v1.md) | Steam 검색 등록과 커버 이미지를 v1.0에 넣는다 | 채택 |
+| [0008](0008-steam-app-mirror.md) | Steam 게임 목록을 키로 받아 미러링하고 영어 제목으로 검색 | 채택 |
+| [0009](0009-manual-steam-separate.md) | 수동 게임과 Steam 게임은 합치지 않고 별개 행 | 채택 |

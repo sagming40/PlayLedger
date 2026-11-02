@@ -81,6 +81,7 @@ erDiagram
 | `entries` | 사용자별 보유 기록 (구매일, 구매가, 상태, 평점, 플레이타임) |
 | `wishlist_items` | 사용자별 위시리스트 *(구현 전, M7)* |
 | `play_sessions` | 보유 기록별 날짜 단위 플레이 기록 *(구현 전, M10)* |
+| `steam_apps` | Steam 게임 목록 미러. 검색 전용이라 다른 테이블과 관계가 없다 (2.9절) |
 
 ### 관계 요약
 
@@ -223,7 +224,21 @@ rotation으로 폐기된 토큰이 다시 들어온다면, 누군가 옛 토큰�
 Steam 게임은 `steam_appid` UNIQUE로 이미 식별되고, appid가 다른데 정규화 제목이 같은 게임(리메이크 등)이 있을 수 있어 제외한다.
 `(title_norm, steam_appid)` 복합 UNIQUE로는 막을 수 없다. UNIQUE는 NULL끼리를 서로 다른 값으로 보므로, `steam_appid`가 NULL인 수동 게임끼리는 충돌하지 않는다.
 2단계의 조회 범위도 같은 이유로 수동 등록 게임으로 한정한다. 범위가 부분 UNIQUE와 같아 결과는 많아야 한 행이다.
-Steam 게임까지 포함하면 같은 제목이 여러 행일 수 있어 어느 것을 쓸지 정할 수 없다. 수동 게임과 Steam 게임의 연결은 M8 동기화에서 다룬다.
+Steam 게임까지 포함하면 같은 제목이 여러 행일 수 있어 어느 것을 쓸지 정할 수 없다. 수동 게임과 Steam 게임은 합치지 않고 별개 행으로 둔다 ([decisions/0009](decisions/0009-manual-steam-separate.md)).
+
+**Steam 게임이 받는 값** (M2.5, [decisions/0008](decisions/0008-steam-app-mirror.md))
+
+`appdetails`(`l=koreana`)에서 받아 게임을 처음 만들 때 채운다. 실패해도 등록은 성공한다.
+
+| 컬럼 | 값 | 받지 못하면 |
+|---|---|---|
+| `title` | 한국어 이름 | `steam_apps`의 영어 이름 |
+| `cover_url` | `header_image` 주소 | NULL. 다음 사람이 같은 게임을 등록할 때 채운다 |
+| `released_at` | `2017년 2월 24일` 형식만 날짜로 읽는다 | NULL. `coming_soon`, `Q1 2027` 같은 값도 NULL이고 등록은 성공한다 |
+
+**`cover_url`을 계산하지 않고 저장하는 이유**
+
+해시 없는 `header.jpg` 주소는 PEAK(3527290)처럼 404인 게임이 있다. 저장한 주소도 해시가 바뀌면 깨질 수 있어, 화면은 이미지 실패 시 제목 앞 두 글자로 대체한다.
 
 ### 2.5 `genres` / `game_genres`
 
@@ -295,6 +310,7 @@ F-11(장르별 통계)을 구현할 수 없다.
 | 기존 게임 · 장르 0개 | 입력한 장르를 연결 |
 | 기존 게임 · 장르 1개 이상 | 입력을 무시하고, 응답에는 실제 연결된 장르를 담는다 |
 
+- Steam 게임은 `appdetails`의 장르 id 중 고정 8개와 겹치는 것을 먼저 쓴다. 겹치는 것이 없으면(`인디` · `앞서 해보기`만 있는 경우 등) 사용자가 고른 값을 쓴다. 0개일 때만 채우는 규칙은 같다
 - 보유 기록 수정도 같은 규칙을 따른다. 등록 때 장르를 비워둔 게임에 나중에 장르를 붙이는 경로다
 - 두 요청이 동시에 "0개"를 보고 각자 채우지 않도록, 장르 수를 세기 전에 게임 행을 잠근다 (`SELECT ... FOR UPDATE`)
 - 이미 연결된 장르를 고치거나 빼는 것은 관리자 권한(F-23)에서 다룬다
@@ -404,6 +420,18 @@ API 응답이 덮어쓰면 안 된다. 동기화 규칙:
 둘 다 `entries`를 따라가면 알 수 있다. 같은 정보를 두 곳에 저장하면
 한쪽만 바뀌었을 때 서로 어긋난다. 세션의 출처는 항상 소속된 `entries.source`를 따른다.
 
+### 2.9 `steam_apps`
+
+컬럼은 `server/app/models/steam_app.py`. 검색 대상인 Steam 게임 목록의 사본이다 ([decisions/0008](decisions/0008-steam-app-mirror.md)).
+
+**`games`와 나누는 이유**
+
+`games`는 누군가 실제로 등록한 게임만 담는 공유 데이터다. 20만 행의 후보를 섞으면 "등록된 게임"을 구분할 수 없고, 동기화가 공유 데이터를 건드리게 된다. 그래서 외래키도 두지 않는다. 고르는 순간 `find_or_create_game`을 거쳐 `games`로 들어간다.
+
+**행을 지우지 않는 이유**
+
+목록에서 사라진 게임이 있어도 이미 등록된 기록과는 관계가 없고, 다음 동기화에서 돌아올 수도 있다. 동기화는 추가 · 갱신만 한다. 빈 이름은 고를 수 없으므로 넣지 않는다. 200자가 넘는 이름은 그대로 두고, 등록할 때 거절한다.
+
 ---
 
 ## 3. 주요 조회 패턴
@@ -500,6 +528,7 @@ DO UPDATE SET minutes = play_sessions.minutes + EXCLUDED.minutes;
 - `games.steam_appid` · `genres.steam_genre_id` UNIQUE — 동기화 시 조회
 - `game_genres.genre_id` — 구매 전 경고(3.4절)에서 장르로 게임 찾기
 - `refresh_tokens.user_id` — 사용자 토큰 전체 폐기
+- `steam_apps.name` GIN (`gin_trgm_ops`) — 20만 행에서 부분 일치 · 오타 허용 검색. 제목 어디든 걸리는 검색은 일반 B-tree로 빨라지지 않는다
 - `play_sessions (entry_id, played_on)` UNIQUE *(구현 전)* — upsert 충돌 판정 겸 히트맵 조회
 
 **PostgreSQL은 외래키에 인덱스를 자동으로 만들지 않는다.**
@@ -519,5 +548,4 @@ MariaDB(InnoDB)는 자동으로 만들어줬지만, PostgreSQL에서는 필요�
 - **게임 별칭** — 뜻이 같은 다른 표기(한글 · 영문, `7` / `VII`)를 같은 게임으로 묶는 `game_aliases` 테이블 (2.4절)
 - **비슷한 게임 후보 제시 (F-30)** — PostgreSQL `pg_trgm` 확장으로 제목 유사도를 계산해 등록 시 후보로 보여준다. 자동 병합은 하지 않는다
 - **관리자 권한 (F-23)** — `users`에 역할 컬럼 추가
-- **커버 아트 (F-22)** — `steam_appid`로 이미지 주소를 계산할 수 있어 컬럼 추가 불필요
 - **외부 로그인 추가** — `oauth_accounts.provider`의 허용값만 추가

@@ -32,7 +32,7 @@ flowchart TB
     API --> Redis
     Worker --> Redis
     Worker --> DB
-    API -->|"M8"| Steam
+    API -->|"M2.5"| Steam
     Worker -->|"M9"| Steam
     API -->|"M11"| Discord
 ```
@@ -133,7 +133,8 @@ v0에서 관리자 화면이 정규화를 거치지 않아 같은 게임이 2행
 
 | 서비스 | 역할 | 호출 주체 |
 |---|---|---|
-| Steam Web API | 보유 게임 목록과 누적 플레이타임 | **서버와 워커만** |
+| Steam Web API | 게임 목록 미러(M2.5), 보유 게임과 누적 플레이타임(M8) | **서버와 워커만** |
+| Steam 스토어 `appdetails` (비공식) | 고른 게임의 한국어 이름 · 커버 · 장르 · 출시일 (M2.5) | **서버만** |
 | Discord OAuth | 외부 로그인 | **서버만** |
 
 API 키와 클라이언트 시크릿은 서버 밖으로 나가지 않는다. 프론트엔드 코드는
@@ -505,6 +506,35 @@ sequenceDiagram
 그동안 들어오는 화면 요청이 밀린다. 할 일을 큐에 적어두고
 별도 워커가 하나씩 처리하면 API 서버는 요청 응답에만 집중할 수 있다.
 
+### 5.3 Steam 검색 등록 (M2.5)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant S as 스크립트
+    participant B as 브라우저 (S-03)
+    participant A as FastAPI
+    participant D as PostgreSQL
+    participant St as Steam
+
+    S->>St: IStoreService/GetAppList (키는 헤더로)
+    St-->>S: 게임 약 20만 건 (페이지 4개)
+    S->>D: steam_apps에 추가 · 갱신
+    B->>A: GET /api/steam/apps?q=hollow (입력 멈춤 후)
+    A->>D: pg_trgm 검색
+    D-->>B: 후보 (appid, 영어 이름)
+    B->>A: POST /api/entries (steam_appid, 제목 없음)
+    A->>D: steam_apps에 있는 appid인지 확인
+    A->>St: appdetails (타임아웃 짧게, 잠금 없이)
+    St-->>A: 한국어 이름 · 커버 · 장르 · 출시일 (실패해도 진행)
+    A->>D: find_or_create_game → 장르 연결 → 보유 기록 저장
+    A-->>B: 201
+```
+
+- **외부 호출은 DB 잠금을 잡기 전에 한다.** Steam이 느릴 때 게임 행을 잠근 채 기다리면 같은 게임을 등록하는 다른 사용자까지 멈춘다
+- **보유 기록의 `source`는 `MANUAL`이다.** `STEAM`이면 M8 동기화가 사용자가 입력한 플레이타임을 덮어쓴다(5.1절). 게임이 Steam에 있는지는 `games.steam_appid`가 말한다
+- 등록 요청은 `title` 또는 `steam_appid` 중 정확히 하나만 받는다
+
 ---
 
 ## 6. 프로젝트 구조
@@ -521,6 +551,7 @@ playledger/
 │   │   ├── routers/            # URL ↔ 함수 연결
 │   │   ├── services/           # 계산 · 중복 판별 · 병합
 │   │   ├── deps.py             # 현재 사용자, DB 세션
+│   │   ├── scripts/            # 손으로 돌리는 작업 (Steam 게임 목록 미러링)
 │   │   └── workers/            # 작업 큐 작업 (M9)
 │   ├── alembic/                # 마이그레이션 이력
 │   ├── tests/
@@ -563,7 +594,7 @@ playledger/
 | JWT 서명 키 | `server/.env` | X |
 | DB 접속 정보 | `server/.env` | X |
 | Redis 주소 | `server/.env` | X |
-| Steam API 키 | `server/.env` | X |
+| Steam API 키 (`STEAM_API_KEY`, 미러링 스크립트만 씀. 없어도 서버는 뜬다) | `server/.env` | X |
 | Discord Client Secret | `server/.env` | X |
 | 프론트 설정 | `web/.env` | 필요 시 |
 
