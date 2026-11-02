@@ -10,11 +10,11 @@ PlayLedger: 사놓고 안 한 게임을 구매일 · 구매가 · 플레이타�
 |---|---|
 | 지금 어디까지 왔고 바로 다음에 뭘 해? | [`docs/DEVLOG.md`](docs/DEVLOG.md) "현재 상태" |
 | 겪은 문제와 해결, 결정의 근거는? | [`docs/DEVLOG.md`](docs/DEVLOG.md) 세션 기록 (최신이 위) |
-| 무엇을 어떤 순서로 만들어? 완료 기준은? | [`docs/05_milestones.md`](docs/05_milestones.md) |
-| 기능 범위는? 하지 않을 것은? | [`docs/01_requirements.md`](docs/01_requirements.md) (범위는 3장, 나중 아이디어는 4.4절) |
-| 레이어 · 디렉터리 구조, 인증 흐름은? | [`docs/02_architecture.md`](docs/02_architecture.md) |
-| DB는 어떻게 생겼고 왜? | [`docs/03_erd.md`](docs/03_erd.md) |
-| 화면은 어떻게 생겼고 왜? 색 · 테마는? | [`docs/04_ui_design.md`](docs/04_ui_design.md) (색 · 테마는 4.4절), 그림은 [`docs/mockups/`](docs/mockups/README.md) |
+| 무엇을 어떤 순서로 만들어? 완료 기준은? | [`docs/PLAN.md`](docs/PLAN.md) |
+| 기능 범위는? 하지 않을 것은? | [`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md) (범위는 3장, 나중 아이디어는 4.4절) |
+| 레이어 · 디렉터리 구조, 인증 흐름은? | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) |
+| DB는 어떻게 생겼고 왜? | [`docs/DATA_MODEL.md`](docs/DATA_MODEL.md) |
+| 화면은 어떻게 생겼고 왜? 색 · 테마는? | [`docs/DESIGN.md`](docs/DESIGN.md) (색 · 테마는 4.4절), 그림은 [`docs/mockups/`](docs/mockups/README.md) |
 | 클라이언트가 지킬 인증 계약 · 에러 응답 규칙은? | [`docs/06_api_spec.md`](docs/06_api_spec.md) (엔드포인트 목록은 Swagger `/docs`) |
 | 이게 뭐고 어떻게 실행해? | [`README.md`](README.md) |
 | 작업할 때 항상 지킬 규칙은? | 이 파일 |
@@ -42,7 +42,7 @@ PlayLedger: 사놓고 안 한 게임을 구매일 · 구매가 · 플레이타�
   - 사전 검증에서 따라갈 시나리오에 **동시 실행**(토큰 재발급 · 같은 게임 · 장르 동시 생성)을 꼭 넣는다 — 이 저장소의 함정 · 테스트가 여기에 몰려 있다
   - 보고에는 설계한 진행 순서도 넣는다
 - **주석**: 기존 코드처럼 한국어로, "왜 이렇게 했나"와 비유를 곁들인다. 문서를 근거로 삼은 줄에는 `(ERD 2.4절)`처럼 출처를 단다
-- **범위**: 새 기능 아이디어가 떠오르면 바로 구현하지 않고 `01_requirements` 4.4절에 항목만 추가한다. 범위를 일부러 넓힐 때는 사유를 변경 이력에 남긴다
+- **범위**: 새 기능 아이디어가 떠오르면 바로 구현하지 않고 `REQUIREMENTS` 4.4절에 항목만 추가한다. 범위를 일부러 넓힐 때는 사유를 변경 이력에 남긴다
 - **검증**: 원칙(관찰값을 남긴다)은 전역 "작업 방식"을 따른다. PlayLedger에서는 네트워크 탭 기록도 관찰값으로 남긴다
   - 서버를 고쳤으면 `pytest`, 프론트를 고쳤으면 `vue-tsc -b --noEmit` · `npm test`를 돌린다
   - 응답 본문의 모양은 코드에 적혀 있지 않다. 문서에 JSON을 옮길 때는 Swagger `Execute`로 실제 응답을 받아 옮긴다
