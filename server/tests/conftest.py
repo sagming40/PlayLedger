@@ -1,6 +1,7 @@
 # server/tests/conftest.py
 from pathlib import Path
 
+import httpx
 import pytest
 import pytest_asyncio
 from alembic import command
@@ -10,14 +11,14 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from app.core.config import settings
-from app.deps import get_db
+from app.deps import get_db, get_http_client
 from app.main import app
 
 SERVER_DIR = Path(__file__).resolve().parents[1]  # tests/ 1칸 위 = server/
 
 # 매 test마다 비울 Table 목록
 # genres는 migration이 심어준 seed이기 때문에 일부러 뺀다 ─ 비우면 장르 test를 돌리지 못한다
-TABLES_TO_CLEAR = "users, refresh_tokens, games, game_genres, entries"
+TABLES_TO_CLEAR = "users, refresh_tokens, games, game_genres, entries, steam_apps"
 
 
 @pytest.fixture(scope="session")
@@ -73,8 +74,28 @@ async def clean_tables(engine):
     yield
 
 
+class FakeSteam:
+    """가짜 Steam. details[appid]에 appdetails의 data를 넣어 둔다. 없으면 HTTP 500으로 답한다"""
+
+    def __init__(self):
+        self.details: dict[int, dict] = {}
+        self.calls: list[int] = []
+
+    def handle(self, request: httpx.Request) -> httpx.Response:
+        appid = int(request.url.params["appids"])
+        self.calls.append(appid)
+        if appid not in self.details:
+            return httpx.Response(500)
+        return httpx.Response(200, json={str(appid): {"success": True, "data": self.details[appid]}})
+
+
+@pytest.fixture
+def fake_steam() -> FakeSteam:
+    return FakeSteam()
+
+
 @pytest_asyncio.fixture
-async def client(engine):
+async def client(engine, fake_steam):
     """API를 HTTP처럼 부르는 손님. 단, uvicorn을 띄우지 않고 App 객체에 직접 넣는다.
     전화로 주문하는 것이 아니라 주방에 직접 주문을 외치는 것 ─ port도 network도 사용하지 않는다"""
     TestSession = async_sessionmaker(engine, expire_on_commit=False)
@@ -87,6 +108,14 @@ async def client(engine):
     # router·service 코드는 단 한 글자도 수정하지 않는다 ─ Depends 주입을 해둔 대가를 받는 것
     app.dependency_overrides[get_db] = override_get_db
 
+    # 진짜 Steam을 부르지 않는다. 등록 test의 Steam 응답은 fake_steam fixture가 정한다
+    # 이 override가 없으면 키 없는 CI에서 테스트가 인터넷에 나간다
+    async def override_http():
+        async with httpx.AsyncClient(transport=httpx.MockTransport(fake_steam.handle)) as c:
+            yield c
+
+    app.dependency_overrides[get_http_client] = override_http
+
     # base_url이 http가 아니라 https인 이유:
     # refresh cookie에 Secure가 붙어 있어서, http로 부르면 cookie가 아예 실리지 않는다
     # 나중에 rotation TEST를 짤 때 쿠키를 찾지 못하는 문제로 몇 시간을 날리는 문제를 사전에 방지한다
@@ -96,6 +125,7 @@ async def client(engine):
         yield ac
 
     app.dependency_overrides.pop(get_db, None)
+    app.dependency_overrides.pop(get_http_client, None)
 
 
 @pytest.fixture
