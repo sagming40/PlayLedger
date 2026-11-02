@@ -21,6 +21,10 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 15
     refresh_token_expire_days: int = 14
 
+    # Steam Web API 키. 게임 목록 미러링 스크립트만 쓰므로 default는 빈 문자열이다
+    # 필수로 두면 키가 없는 CI · 다른 기기에서 서버와 테스트까지 뜨지 않는다 (스크립트가 비어 있으면 멈춘다)
+    steam_api_key: str = ""
+
     # 어느 파일을 읽을지 알려주는 설정표
     model_config = SettingsConfigDict(
         env_file=".env",

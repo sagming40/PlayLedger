@@ -4,7 +4,7 @@
 from datetime import date, datetime
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from app.core.normalize import normalize_title
 from app.schemas.game import GameRead
@@ -26,11 +26,14 @@ class EntryCreate(BaseModel):
     """
 
     # 정의되지 않은 field는 거부한다 (default = '조용히 무시')
-    # source · steam_appid를 보내도 통과하지 않는다 ─ 두 값은 서버가 정한다
+    # source를 보내도 통과하지 않는다 ─ 서버가 정한다
     # 조용히 무시하면 "보냈는데 반영이 되지 않는 이유"를 알 수 없다
     model_config = ConfigDict(extra="forbid")
 
-    title: str = Field(max_length=200)
+    # 둘 중 정확히 하나만 보낸다 (ARCHITECTURE 5.3절)
+    # steam_appid를 보내면 제목은 서버가 찾는다 ─ 둘을 같이 받으면 가짜 게임이 공유 테이블에 들어갈 수 있다
+    title: str | None = Field(default=None, max_length=200)
+    steam_appid: int | None = Field(default=None, ge=1, le=INT_MAX)
 
     # 등록 form의 default가 '시작 안 됨'이므로 생략하면 BACKLOG
     status: EntryStatus = "BACKLOG"
@@ -49,14 +52,23 @@ class EntryCreate(BaseModel):
 
     @field_validator("title")
     @classmethod
-    def check_title(cls, v: str) -> str:
+    def check_title(cls, v: str | None) -> str | None:
         """정규화했을 때 빈 값이거나 길이가 너무 길면 거부한다 (DATA_MODEL 2.4절 4단계)
 
         결과는 버리고 검사만 한다 ─ title_norm은 서비스가 다시 계산한다
         입구(schema)만 신뢰하지 않는 것이 find_or_create_game의 원칙이다
         """
+        if v is None:
+            return None
         normalize_title(v)   # 문제가 있으면 예외 → 422
         return v.strip()
+
+    @model_validator(mode="after")
+    def check_one_source(self) -> "EntryCreate":
+        """제목과 Steam 게임 중 정확히 하나여야 한다"""
+        if (self.title is None) == (self.steam_appid is None):
+            raise ValueError("title과 steam_appid 중 하나만 보내야 합니다")
+        return self
 
 
 class EntryRead(BaseModel):

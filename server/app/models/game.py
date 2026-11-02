@@ -78,6 +78,9 @@ class Game(Base):
 
     released_at: Mapped[date | None]
 
+    # Steam이 알려준 커버 주소. appid로 계산하지 않고 저장한다 ─ 계산한 주소가 404인 게임이 있다 (DATA_MODEL 2.4절)
+    cover_url: Mapped[str | None] = mapped_column(String(500))
+
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )

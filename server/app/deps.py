@@ -3,6 +3,7 @@
 
 from collections.abc import AsyncGenerator
 
+import httpx
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import select
@@ -23,6 +24,15 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
     """
     async with AsyncSessionLocal() as session:
         yield session
+
+
+async def get_http_client() -> AsyncGenerator[httpx.AsyncClient, None]:
+    """외부 API(Steam)를 부를 때 쓰는 전화기. 테스트는 이것만 바꿔치기해 진짜 Steam을 부르지 않는다
+
+    timeout을 짧게 둔다 ─ Steam이 느려도 등록을 오래 붙잡지 않고 커버 없이 진행한다 (decisions/0008)
+    """
+    async with httpx.AsyncClient(timeout=5) as client:
+        yield client
 
 
 # Authorization Header에서 "Bearer {토큰}"을 꺼내주는 도구

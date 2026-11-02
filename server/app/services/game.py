@@ -7,6 +7,8 @@
 '이미 서가에 있는 책'인지 확인된 이후에만 책을 꽂는다.
 """
 
+from datetime import date
+
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -36,8 +38,21 @@ async def _find_game(
     return await db.scalar(stmt)
 
 
+def _fill_blanks(game: Game, released_at: date | None, cover_url: str | None) -> None:
+    """비어 있는 칸만 채운다. 먼저 등록할 때 Steam이 실패했으면 다음 사람이 채운다 (DATA_MODEL 2.4절)"""
+    if game.released_at is None and released_at is not None:
+        game.released_at = released_at
+    if game.cover_url is None and cover_url is not None:
+        game.cover_url = cover_url
+
+
 async def find_or_create_game(
-    db: AsyncSession, title: str, steam_appid: int | None = None
+    db: AsyncSession,
+    title: str,
+    steam_appid: int | None = None,
+    *,
+    released_at: date | None = None,
+    cover_url: str | None = None,
 ) -> Game:
     """게임을 찾아서 돌려주고, 없다면 새로 생성하여 돌려준다. (DATA_MODEL 2.4절 판별 순서)
 
@@ -52,10 +67,18 @@ async def find_or_create_game(
 
     game = await _find_game(db, title_norm, steam_appid)
     if game is not None:
-        return game   # 이미 존재한다 → 먼저 등록한 사람이 적은 title이 그대로 유지된다
+        # 이미 존재한다 → 먼저 등록한 사람이 적은 title이 그대로 유지된다
+        _fill_blanks(game, released_at, cover_url)
+        return game
 
     # 3단계 · 없으면 새로 생성한다
-    game = Game(title=title, title_norm=title_norm, steam_appid=steam_appid)
+    game = Game(
+        title=title,
+        title_norm=title_norm,
+        steam_appid=steam_appid,
+        released_at=released_at,
+        cover_url=cover_url,
+    )
     try:
         # SAVEPOINT를 찍는다 ─ BOSS전 직전 SAVE
         # 이 block 내에서 실패하면 SAVE 지점까지만 되돌아가고, 외부 작업은 살아남는다.
@@ -72,4 +95,5 @@ async def find_or_create_game(
             # 충돌했으나 다시 찾아봐도 존재하지 않는다 = 설계상 일어날 수 없는 상황
             # 조용히 넘어가는 것이 아니라 원래 error를 그대로 터뜨린다
             raise
+        _fill_blanks(game, released_at, cover_url)
     return game

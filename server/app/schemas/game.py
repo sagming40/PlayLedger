@@ -17,4 +17,6 @@ class GameRead(BaseModel):
 
     id: int
     title: str                # title_norm은 내보내지 않는다 ─ 판별용 내부 값
+    steam_appid: int | None   # 수동 등록 게임은 없다
+    cover_url: str | None     # 없거나 깨지면 화면이 제목 앞 두 글자로 대체한다 (DESIGN 4.4절)
     genres: list[GenreRead]   # game.genres(relationship)를 GenreRead 형태로 변환

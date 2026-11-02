@@ -1,12 +1,14 @@
 # app/routers/entries.py
 # 보유 기록 API ─ 등록 · 목록 · 단건 · 수정 · 삭제
 
+import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.deps import get_current_user, get_db
+from app.deps import get_current_user, get_db, get_http_client
 from app.models.entry import Entry
+from app.models.game import Game
 from app.models.user import User
 from app.schemas.entry import (
     EntryCreate,
@@ -18,6 +20,13 @@ from app.schemas.entry import (
 from app.services.entry import MAX_LIMIT, entry_exists, get_entry, list_entries
 from app.services.game import find_or_create_game
 from app.services.genre import attach_genres_if_empty, genre_ids_exist
+from app.services.steam import (
+    fetch_app_details,
+    game_by_appid,
+    genre_ids_for_steam,
+    mirror_name,
+    usable_title,
+)
 
 router = APIRouter(prefix="/api/entries", tags=["entries"])
 
@@ -50,6 +59,67 @@ async def _ensure_genres_exist(db: AsyncSession, genre_ids: list[int]) -> None:
         )
 
 
+def _already_registered() -> HTTPException:
+    return HTTPException(
+        status_code=status.HTTP_409_CONFLICT,
+        detail="이미 등록된 게임입니다",
+    )
+
+
+def _steam_rejected(detail: str) -> HTTPException:
+    return HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=detail)
+
+
+async def _steam_game(
+    db: AsyncSession,
+    http: httpx.AsyncClient,
+    user_id: int,
+    appid: int,
+    genre_ids: list[int],
+) -> tuple[Game, list[int]]:
+    """Steam에서 고른 게임을 얻고, 연결할 장르를 정한다 (ARCHITECTURE 5.3절)
+
+    외부 호출은 잠금을 잡기 전인 여기서 끝낸다. 장르 잠금은 이 함수가 끝난 뒤에 걸린다
+    """
+    # 클라이언트가 보낸 번호를 믿지 않는다 ─ 미러에 없는 번호로 공유 테이블에 가짜 게임을 만들 수 없게
+    name = await mirror_name(db, appid)
+    if name is None:
+        raise _steam_rejected("Steam 게임 목록에 없는 게임입니다")
+
+    game = await game_by_appid(db, appid)
+
+    # 이미 내 것이면 Steam을 부를 필요도 없이 거절한다
+    if game is not None and await entry_exists(db, user_id=user_id, game_id=game.id):
+        raise _already_registered()
+
+    # 처음 들어오는 게임이거나, 지난번에 Steam이 실패해 커버가 빈 게임만 부른다
+    details = None
+    if game is None or game.cover_url is None:
+        details = await fetch_app_details(http, appid)
+
+    if details is not None and details.type != "game":
+        raise _steam_rejected("게임이 아닌 항목은 등록할 수 없습니다")
+
+    if game is None:
+        title = usable_title(details.name if details else None, name)
+        if title is None:
+            raise _steam_rejected("이 게임은 이름을 쓸 수 없어요. 제목을 직접 입력해 주세요")
+    else:
+        title = game.title   # 먼저 등록한 사람의 제목이 유지된다
+
+    game = await find_or_create_game(
+        db,
+        title,
+        appid,
+        released_at=details.released_at if details else None,
+        cover_url=details.cover_url if details else None,
+    )
+
+    # Steam 장르가 있으면 그것을, 고정 8개와 겹치지 않으면 사용자가 고른 값을 쓴다 (DATA_MODEL 2.5절)
+    steam_ids = await genre_ids_for_steam(db, details.steam_genre_ids) if details else []
+    return game, steam_ids or genre_ids
+
+
 # 장르 목록과 달리 라우터 전체에 거는 대신 매개변수로 받는다
 # Why? "로그인했는가"뿐만 아니라 "누구인가(user.id)"도 필요하기 때문
 # status_code=201 = "새로 만들어졌다" (상태 코드 200 응답은 "성공"이라는 뜻이다)
@@ -58,6 +128,7 @@ async def create_entry(
     data: EntryCreate,
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
+    http: httpx.AsyncClient = Depends(get_http_client),
 ) -> Entry:
     """보유 기록을 등록한다. (게임이 없으면 게임도 함께 등록)
 
@@ -68,26 +139,28 @@ async def create_entry(
     await _ensure_genres_exist(db, data.genre_ids)
 
     # ② 게임 찾기/만들기 ─ 판별은 서비스 한 곳에서만 (DATA_MODEL 2.4절)
-    game = await find_or_create_game(db, data.title)
+    genre_ids = data.genre_ids
+    if data.steam_appid is not None:
+        game, genre_ids = await _steam_game(db, http, user.id, data.steam_appid, data.genre_ids)
+    else:
+        game = await find_or_create_game(db, data.title)
 
     # ③ 이미 내 라이브러리에 있으면 거절 (DESIGN 3.3절 문구)
     if await entry_exists(db, user_id=user.id, game_id=game.id):
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="이미 등록된 게임입니다",
-        )
+        raise _already_registered()
 
     # ④ 장르가 빈 게임만 채운다 (DATA_MODEL 2.5절)
-    await attach_genres_if_empty(db, game.id, data.genre_ids)
+    await attach_genres_if_empty(db, game.id, genre_ids)
 
     # ⑤ 보유 기록 만들기
     # model_dump = schema를 Dictionary로 펼친다. title · genre_ids는 entries의 column이 아니라 제외
     # user_id · game_id · source는 요청이 아니라 server가 채운다 (client를 신뢰하지 않는다)
+    # Steam에서 고른 게임도 source는 MANUAL이다 ─ STEAM이면 M8 동기화가 입력한 플레이타임을 덮어쓴다 (ARCHITECTURE 5.3절)
     entry = Entry(
         user_id=user.id,
         game_id=game.id,
         source="MANUAL",
-        **data.model_dump(exclude={"title", "genre_ids"}),
+        **data.model_dump(exclude={"title", "steam_appid", "genre_ids"}),
     )
     db.add(entry)
 
@@ -98,10 +171,7 @@ async def create_entry(
         # 회원가입의 이메일 중복 처리와 같은 구조
         await db.rollback()
         if ENTRY_UNIQUE in str(e.orig):
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="이미 등록된 게임입니다",
-            )
+            raise _already_registered()
         raise   # 예상치 못 한 제약 위반은 숨기지 않고 그대로 터뜨린다
 
     # ⑥ 응답용 게임 · 장르까지 다시 불러온다
