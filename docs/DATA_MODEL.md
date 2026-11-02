@@ -66,7 +66,21 @@ erDiagram
   }
 ```
 
-> 다이어그램에는 관계 파악에 필요한 키만 표시한다. 전체 컬럼은 2장 표가 기준이다.
+> 다이어그램에는 관계 파악에 필요한 키만 표시한다. 전체 컬럼은 모델 · 마이그레이션이 기준이다 (구현 전 테이블은 2장 표).
+
+### 테이블 역할
+
+| 테이블 | 역할 |
+|---|---|
+| `users` | 사용자 계정. Discord로만 가입한 계정은 비밀번호가 없음 |
+| `refresh_tokens` | 발급한 refresh 토큰 (로그아웃 · 강제 만료용) |
+| `oauth_accounts` | 외부 로그인 연결 (provider, provider_user_id) *(구현 전, M11)* |
+| `games` | 게임 마스터 데이터 (제목, 정규화 제목, steam_appid) |
+| `genres` | 장르 |
+| `game_genres` | 게임-장르 다대다 연결 |
+| `entries` | 사용자별 보유 기록 (구매일, 구매가, 상태, 평점, 플레이타임) |
+| `wishlist_items` | 사용자별 위시리스트 *(구현 전, M7)* |
+| `play_sessions` | 보유 기록별 날짜 단위 플레이 기록 *(구현 전, M10)* |
 
 ### 관계 요약
 
@@ -83,6 +97,8 @@ erDiagram
 ---
 
 ## 2. 테이블 상세
+
+구현된 테이블의 컬럼 · 타입 · 제약은 `server/app/models/`와 `server/alembic/versions/`가 원본이라 옮기지 않는다. 여기에는 코드만 봐서는 알 수 없는 이유만 적는다. 구현 전 테이블(2.3 · 2.7 · 2.8절)은 이 문서가 원본이고, 모델이 생기면 컬럼 표를 뺀다.
 
 ### 2.0 공통 규칙
 
@@ -105,16 +121,8 @@ erDiagram
 
 ### 2.1 `users`
 
-| 컬럼 | 타입 | 제약 | 설명 |
-|---|---|---|---|
-| `id` | integer | PK | |
-| `email` | varchar(254) | UNIQUE, NULL | 로그인 ID. 저장 전 소문자로 정규화 |
-| `password_hash` | varchar(255) | NULL | 해싱된 비밀번호. Discord 전용 계정은 NULL |
-| `nickname` | varchar(30) | NOT NULL | 화면 표시 이름 |
-| `steam_id` | varchar(20) | UNIQUE, NULL | Steam 64비트 ID. 연결 안 한 사용자는 NULL |
-| `created_at` | timestamptz | NOT NULL | 가입 시각 |
+컬럼은 `server/app/models/user.py`.
 
-`CHECK (password_hash IS NULL OR email IS NOT NULL)`
 비밀번호로 로그인하는 계정은 반드시 이메일이 있어야 한다.
 
 **email을 소문자로 정규화하는 이유**
@@ -128,14 +136,7 @@ erDiagram
 
 ### 2.2 `refresh_tokens`
 
-| 컬럼 | 타입 | 제약 | 설명 |
-|---|---|---|---|
-| `id` | integer | PK | |
-| `user_id` | integer | FK → users.id, NOT NULL | |
-| `token_hash` | char(64) | UNIQUE, NOT NULL | 토큰 원문의 SHA-256 해시 |
-| `expires_at` | timestamptz | NOT NULL | 만료 시각 |
-| `revoked_at` | timestamptz | NULL | 폐기 시각. NULL이면 유효 |
-| `created_at` | timestamptz | NOT NULL | |
+컬럼은 `server/app/models/user.py`.
 
 **원문이 아니라 해시를 저장하는 이유**
 
@@ -147,7 +148,7 @@ erDiagram
 rotation으로 폐기된 토큰이 다시 들어온다면, 누군가 옛 토큰을 훔쳐 쓰고 있다는 신호다.
 폐기 기록이 남아 있어야 이를 알아채고 해당 사용자의 토큰을 전부 폐기할 수 있다.
 
-### 2.3 `oauth_accounts`
+### 2.3 `oauth_accounts` *(구현 전, M11)*
 
 | 컬럼 | 타입 | 제약 | 설명 |
 |---|---|---|---|
@@ -165,16 +166,9 @@ rotation으로 폐기된 토큰이 다시 들어온다면, 누군가 옛 토큰�
 게임 자체의 정보. **모든 사용자가 공유하는 마스터 데이터**다.
 사용자가 몇 명이든 사이버펑크 2077은 이 테이블에 한 행만 존재한다.
 
-| 컬럼 | 타입 | 제약 | 설명 |
-|---|---|---|---|
-| `id` | integer | PK | |
-| `title` | varchar(200) | NOT NULL | 화면에 표시할 제목 |
-| `title_norm` | varchar(200) | NOT NULL, INDEX | 정규화된 제목 (중복 판별용, 서버가 항상 계산) |
-| `steam_appid` | integer | UNIQUE, NULL | Steam 고유 ID. 수동 등록 게임은 NULL |
-| `released_at` | date | NULL | 출시일 |
-| `created_at` | timestamptz | NOT NULL | 등록 시각 |
+컬럼은 `server/app/models/game.py`. `title`은 화면에 표시할 제목, `title_norm`은 서버가 항상 계산하는 중복 판별용 값이다.
 
-`UNIQUE (title_norm) WHERE steam_appid IS NULL` (부분 UNIQUE)
+`title_norm`에는 수동 등록 게임(`steam_appid IS NULL`)끼리만 부분 UNIQUE가 걸려 있다.
 수동 등록 게임끼리는 정규화된 제목이 겹칠 수 없다. 이유는 아래 "수동 등록 게임에만 UNIQUE를 거는 이유" 참고.
 
 **`title`과 `title_norm`을 나누는 이유**
@@ -237,24 +231,11 @@ Steam 게임까지 포함하면 같은 제목이 여러 행일 수 있어 어느
 
 **`genres`**
 
-| 컬럼 | 타입 | 제약 | 설명 |
-|---|---|---|---|
-| `id` | integer | PK | |
-| `name` | varchar(50) | UNIQUE, NOT NULL | 장르명 (Steam 한국어 표기) |
-| `steam_genre_id` | varchar(10) | UNIQUE, NOT NULL | Steam 공식 장르 ID |
+컬럼은 `server/app/models/game.py`.
 
 **장르 목록 (고정)**
 
-| `steam_genre_id` | `name` |
-|:---:|---|
-| 1 | 액션 |
-| 2 | 전략 |
-| 3 | RPG |
-| 4 | 캐주얼 |
-| 9 | 레이싱 |
-| 18 | 스포츠 |
-| 25 | 어드벤처 |
-| 28 | 시뮬레이션 |
+목록의 원본은 시드 마이그레이션 `server/alembic/versions/20260921_1619_seed_genres.py`다. 8개: 액션 · 전략 · RPG · 캐주얼 · 레이싱 · 스포츠 · 어드벤처 · 시뮬레이션.
 
 > ID와 표기는 Steam 스토어 API(`appdetails`, `l=koreana`)의 응답으로 확인했다 (2026-09-21).
 
@@ -291,10 +272,7 @@ M4의 테스트용 게임 데이터는 앱 동작에 필수가 아니므로 별�
 
 **`game_genres`** (연결 테이블)
 
-| 컬럼 | 타입 | 제약 | 설명 |
-|---|---|---|---|
-| `game_id` | integer | PK, FK → games.id | |
-| `genre_id` | integer | PK, FK → genres.id | |
+컬럼은 `server/app/models/game.py`.
 
 `(game_id, genre_id)`를 복합 기본키로 쓴다. 같은 짝이 두 번 들어갈 수 없고,
 연결 테이블에 따로 `id`를 둘 이유가 없다.
@@ -325,20 +303,14 @@ F-11(장르별 통계)을 구현할 수 없다.
 
 특정 사용자가 특정 게임을 보유한 기록. **이 프로젝트의 중심 테이블**이다.
 
-| 컬럼 | 타입 | 제약 | 설명 |
-|---|---|---|---|
-| `id` | integer | PK | |
-| `user_id` | integer | FK → users.id, NOT NULL | |
-| `game_id` | integer | FK → games.id, NOT NULL | |
-| `status` | varchar(10) | NOT NULL, CHECK | 진행 상태 (아래 참조) |
-| `purchased_at` | date | NULL | 구매일 |
-| `purchase_price` | integer | NULL, CHECK ≥ 0 | 구매가 (원) |
-| `playtime_minutes` | integer | NOT NULL, 기본 0, CHECK ≥ 0 | 총 플레이타임 (분) |
-| `rating` | smallint | NULL, CHECK 1~5 | 평점 |
-| `review` | varchar(200) | NULL | 한줄평 |
-| `source` | varchar(10) | NOT NULL, CHECK | `MANUAL` / `STEAM` |
-| `created_at` | timestamptz | NOT NULL | |
-| `updated_at` | timestamptz | NOT NULL | 최종 수정 시각 |
+컬럼은 `server/app/models/entry.py`.
+
+**`games`와 `entries`를 나누는 이유**
+
+같은 게임을 여러 사용자가 보유할 수 있다. 게임 제목과 장르를 사용자마다
+중복 저장하면 데이터가 낭비되고, 게임 정보를 고칠 때 모든 행을 고쳐야 한다.
+게임 자체의 정보(`games`)와 "내가 언제 얼마에 샀고 얼마나 했는지"(`entries`)를
+분리하면 이 문제가 사라진다.
 
 `(user_id, game_id)` 복합 UNIQUE. 같은 사용자가 같은 게임을 두 번 등록할 수 없다.
 
@@ -385,7 +357,7 @@ API 응답이 덮어쓰면 안 된다. 동기화 규칙:
 > v0에서는 `playtime_hours decimal(6,1)`이었다. 세션 기록(F-20)이 생기면서
 > 증가분 계산의 정확도가 중요해져 분 단위 정수로 변경했다.
 
-### 2.7 `wishlist_items`
+### 2.7 `wishlist_items` *(구현 전, M7)*
 
 | 컬럼 | 타입 | 제약 | 설명 |
 |---|---|---|---|
@@ -397,6 +369,13 @@ API 응답이 덮어쓰면 안 된다. 동기화 규칙:
 
 `(user_id, game_id)` 복합 UNIQUE.
 
+**`entries`와 테이블을 나누는 이유**
+
+`entries.status`에 `WISHLIST`를 추가하면 사장률 · 완주율 · 방치 게임 등
+모든 통계 쿼리에 "위시리스트 제외" 조건을 붙여야 한다. 하나라도 빠뜨리면
+통계가 오류 없이 조용히 틀린다. 실수할 여지를 조건문이 아니라
+테이블 구조로 없앤다. 구매하면 `wishlist_items`에서 `entries`로 옮긴다.
+
 **`games`를 참조하는 이유**
 
 위시리스트 게임도 장르 정보가 있어야 구매 전 경고(F-18)를 계산할 수 있다.
@@ -407,7 +386,7 @@ API 응답이 덮어쓰면 안 된다. 동기화 규칙:
 `entries`에 추가하는 것과 `wishlist_items`에서 삭제하는 것은 반드시 함께 일어나야 한다.
 하나만 성공하면 같은 게임이 양쪽에 동시에 존재하게 된다.
 
-### 2.8 `play_sessions`
+### 2.8 `play_sessions` *(구현 전, M10)*
 
 | 컬럼 | 타입 | 제약 | 설명 |
 |---|---|---|---|
@@ -429,15 +408,11 @@ API 응답이 덮어쓰면 안 된다. 동기화 규칙:
 
 ## 3. 주요 조회 패턴
 
+구현 전 쿼리의 설계다. 구현되면 코드가 원본이 되므로 여기서 뺀다.
+
 ### 3.1 목록 조회 (F-03)
 
-```sql
-SELECT g.title, e.status, e.playtime_minutes, e.purchase_price
-FROM entries e
-JOIN games g ON g.id = e.game_id
-WHERE e.user_id = :user_id
-ORDER BY e.updated_at DESC;
-```
+구현됨. `server/app/services/entry.py`의 `list_entries`가 원본이다.
 
 ### 3.2 방치 게임 추출 (F-09)
 
@@ -517,17 +492,15 @@ DO UPDATE SET minutes = play_sessions.minutes + EXCLUDED.minutes;
 
 ## 4. 인덱스 계획
 
-| 테이블 | 컬럼 | 목적 |
-|---|---|---|
-| `entries` | `(user_id, status)` | 상태별 필터링이 가장 잦은 조회 |
-| `entries` | `(user_id, game_id)` UNIQUE | 중복 등록 방지 겸 사용자별 조회 |
-| `games` | `title_norm` | 중복 판별 시 매번 조회 |
-| `games` | `title_norm` UNIQUE (`steam_appid IS NULL`인 행만) | 수동 등록 게임의 동시 등록 중복 방지 (2.4절) |
-| `games` | `steam_appid` UNIQUE | 동기화 시 조회 |
-| `genres` | `steam_genre_id` UNIQUE | 동기화 시 Steam 장르 ID로 조회 |
-| `game_genres` | `genre_id` | 구매 전 경고(3.4절)에서 장르로 게임 찾기 |
-| `refresh_tokens` | `user_id` | 사용자 토큰 전체 폐기 |
-| `play_sessions` | `(entry_id, played_on)` UNIQUE | upsert 충돌 판정 겸 히트맵 조회 |
+인덱스 정의는 모델 · 마이그레이션이 원본이다. 여기에는 왜 걸었는지만 적는다.
+
+- `entries (user_id, status)` — 상태별 필터링이 가장 잦은 조회
+- `entries (user_id, game_id)` UNIQUE — 중복 등록 방지 겸 사용자별 조회
+- `games.title_norm` — 중복 판별 시 매번 조회. 부분 UNIQUE 인덱스(2.4절)는 수동 등록 게임 행만 담으므로, Steam 게임까지 포함한 제목 조회를 위해 일반 인덱스도 둔다
+- `games.steam_appid` · `genres.steam_genre_id` UNIQUE — 동기화 시 조회
+- `game_genres.genre_id` — 구매 전 경고(3.4절)에서 장르로 게임 찾기
+- `refresh_tokens.user_id` — 사용자 토큰 전체 폐기
+- `play_sessions (entry_id, played_on)` UNIQUE *(구현 전)* — upsert 충돌 판정 겸 히트맵 조회
 
 **PostgreSQL은 외래키에 인덱스를 자동으로 만들지 않는다.**
 MariaDB(InnoDB)는 자동으로 만들어줬지만, PostgreSQL에서는 필요한 곳에 직접 만들어야 한다.
