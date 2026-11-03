@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Gamepad2, Plus } from '@lucide/vue'
 import type { EntryStatus } from '@/api/entries'
@@ -43,6 +43,18 @@ function withoutStatus() {
   delete rest.status
   return rest
 }
+// 모바일 칩 줄은 가로 스크롤이라, 주소로 ?status=DROPPED처럼 끝쪽 칩이 골라진 채 들어오면 눌린 칩이 화면 밖에 있다
+// 고른 칩이 바뀔 때마다 보이는 곳으로 당긴다. block: 'nearest' ─ 페이지가 위아래로 움직이지 않게
+const chipRow = ref<HTMLElement | null>(null)
+watch(
+  [() => list.status.value, chipRow],
+  async () => {
+    await nextTick()
+    chipRow.value?.querySelector('[aria-pressed="true"]')?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+  },
+  { flush: 'post' },
+)
+
 const CHIPS: { key: EntryStatus | null; label: string }[] = [
   { key: null, label: '전체' },
   ...STATUSES.map((s) => ({ key: s, label: STATUS_LABEL[s] })),
@@ -141,11 +153,13 @@ onBeforeUnmount(() => {
     <!-- 상태 필터 ─ 전체 + 5상태 (DESIGN 3.2절). 라이브러리가 통째로 비었으면 거를 것이 없어 숨긴다
          선택된 칩은 무채색 ─ 활성 메뉴의 빨강과 겹치지 않게 (DESIGN 4.4절, decisions/0010)
          모바일은 한 줄 가로 스크롤 ─ 본문 여백만큼 양옆으로 넓혀 칩이 화면 끝에서 잘려 보이게 한다 (목업 LibraryMobile) -->
+    <!-- 스크롤 막대는 숨긴다 ─ 칩이 화면 끝에서 잘려 보이는 것으로 더 있다는 걸 알 수 있다 -->
     <div
       v-if="!list.isEmpty.value"
+      ref="chipRow"
       role="group"
       aria-label="상태 필터"
-      class="-mx-5 -mb-1 flex gap-2 overflow-x-auto px-5 whitespace-nowrap md:mx-0 md:mb-0 md:flex-wrap md:overflow-visible md:px-0"
+      class="-mx-5 -mb-1 flex scroll-px-5 gap-2 overflow-x-auto px-5 whitespace-nowrap [scrollbar-width:none] md:mx-0 md:mb-0 md:flex-wrap md:overflow-visible md:px-0 [&::-webkit-scrollbar]:hidden"
     >
       <button
         v-for="chip in CHIPS"
