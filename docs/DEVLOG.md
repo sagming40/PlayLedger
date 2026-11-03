@@ -9,8 +9,11 @@
 |---|---|
 | 단계 | **M2** ✅ 2026-11-03. 다음은 **M3** ⬜ (`PLAN` M3) |
 | 진행 중 | 없음 |
-| 다음에 할 일 | **M3** 시작. S-02 상태 필터 칩의 선택 칩은 무채색 (`DESIGN` 4.4절), 그때 눌림 칩 컴포넌트를 다시 본다. 모바일 첫 줄이 요약 줄 도착 때 24px 밀리는 것 · `가장 오래 방치` 요약도 M3에서 본다. 라우터 `onError` 없음(화면 모듈 실패 시 빈 화면)은 M5 전에 처리 ([DEVLOG_M2](archive/DEVLOG_M2.md) 2026-11-03 (7)) |
-| 기기별로 할 일 | **집 PC · 노트북**: `git pull` → `alembic upgrade head` → `server/.env`에 `STEAM_API_KEY` → `python -m app.scripts.sync_steam_apps` → `web/`에서 `npm ci`. 전역 설정(`~/.claude/CLAUDE.md`)에 "작업 방식" · "문서 체계" 절 추가 (원본은 회사 PC `~/.claude/CLAUDE.md`, 사본 `G:\내 드라이브\_private\.claude\desktop_cm_CLAUDE.md`) |
+| 다음에 할 일 | **M3** 첫 작업은 S-04 상세 화면 (`PLAN` M3 작업 목록 순서). 코드 쓰기 전에 "자동으로 할까, 직접 칠래?"를 먼저 묻는다(M3는 아직 안 정함). `PLAN` M3의 Motion은 아직 설치 전이라 의존성 목록을 먼저 보여 주고 사용자가 설치한다 |
+| M3에서 같이 볼 것 | S-02 필터의 선택 칩은 무채색 (`DESIGN` 4.4절), 그때 눌림 칩 컴포넌트를 다시 본다. 모바일 첫 줄이 요약 줄 도착 때 24px 밀리는 것 · `가장 오래 방치` 요약은 `PLAN` 항목이 없어 판단이 필요하다 |
+| M5 전에 | 라우터 `onError` 없음 ─ 화면 모듈을 못 받으면 안내 없이 빈 화면 ([DEVLOG_M2](archive/DEVLOG_M2.md) 2026-11-03 (7)) |
+| 기기별로 할 일 | **집 PC · 노트북**: `git pull` → `docker compose up -d` → `server/`에서 `pip install -r requirements.txt` · `alembic upgrade head` → `server/.env`에 `STEAM_API_KEY` → `python -m app.scripts.sync_steam_apps` → `web/`에서 `npm ci` → 전역 설정(`~/.claude/CLAUDE.md`)에 "작업 방식" · "문서 체계" 절 추가 (원본은 회사 PC `~/.claude/CLAUDE.md`, 사본 `G:\내 드라이브\_private\.claude\desktop_cm_CLAUDE.md`). 선택: `git config blame.ignoreRevsFile .git-blame-ignore-revs` |
+| 회사 PC에만 있는 것 | 화면 전후 픽셀 비교 스크립트는 저장소에 없다(세션 임시 폴더). 다른 기기에서 필요하면 방법을 보고 새로 만든다 ([DEVLOG_M2](archive/DEVLOG_M2.md) 2026-11-03 (6) · (7)) |
 
 ## 작성 규칙
 
@@ -20,7 +23,6 @@
 - 환경 버전은 여기 적지 않는다. `requirements.txt` · `package.json` · `ci.yml`이 원본이고, 기기별 런타임은 `README`에 있다
 
 ---
-
 
 ## 끝난 단계
 
