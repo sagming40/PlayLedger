@@ -18,7 +18,7 @@ declare module 'vue-router' {
 
 // 주소 1개당 화면 1개 ─ 건물 1층 로비의 "층별 안내판"
 const routes: RouteRecordRaw[] = [
-  // 레이아웃 바깥 ─ 사이드바/하단 탭이 없는 전체 화면
+  // 레이아웃 바깥 ─ 메뉴 띠/하단 탭이 없는 전체 화면
   {
     path: '/login',
     name: 'login',

@@ -55,8 +55,8 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="flex flex-col gap-5">
-    <!-- 포스터 벽 + 제목 ─ 레이아웃의 본문 여백을 거슬러(-mx) 화면 끝까지 깐다 -->
-    <section class="relative -mx-5 -mt-5 flex h-[240px] flex-col justify-end overflow-hidden md:-mx-10 md:h-[280px]">
+    <!-- 포스터 벽 + 제목 ─ 레이아웃의 본문 폭 제한을 거슬러 화면 끝까지 깐다 (wall-bleed) -->
+    <section class="wall-bleed relative -mt-5 flex h-[240px] flex-col justify-end overflow-hidden md:h-[280px]">
       <div
         aria-hidden="true"
         class="absolute -top-6 right-0 left-0 grid grid-cols-6 gap-2 px-2 md:grid-cols-12"
@@ -80,7 +80,8 @@ onBeforeUnmount(() => {
       <!-- 아래로 갈수록 배경색으로 사라진다 -->
       <div aria-hidden="true" class="wall-fade absolute inset-0" />
 
-      <div class="relative flex flex-wrap items-end justify-between gap-3 px-5 pb-2 md:px-10">
+      <!-- 벽은 끝까지 깔려도 제목은 본문 왼쪽 끝에 맞춘다 -->
+      <div class="relative mx-auto flex w-full max-w-[1280px] flex-wrap items-end justify-between gap-3 px-5 pb-2 md:px-10">
         <div class="flex flex-col gap-1.5">
           <h1 class="text-[32px] font-extrabold tracking-tight md:text-[40px]">라이브러리</h1>
           <p v-if="list.total.value" class="text-[15px] text-muted-foreground">
@@ -90,7 +91,8 @@ onBeforeUnmount(() => {
             </template>
           </p>
         </div>
-        <Button as-child class="h-11 rounded-[10px] px-4.5 text-[15px] font-semibold">
+        <!-- 48rem부터는 메뉴 띠에 같은 버튼이 있다 (DESIGN 2.2절) -->
+        <Button as-child class="h-11 rounded-[10px] px-4.5 text-[15px] font-semibold md:hidden">
           <RouterLink :to="{ name: 'entry-new' }">
             <Plus class="size-[18px]" aria-hidden="true" />
             게임 등록
@@ -207,6 +209,12 @@ onBeforeUnmount(() => {
     grid-template-columns: repeat(auto-fill, minmax(232px, 1fr));
     gap: 22px 20px;
   }
+}
+
+/* 본문 폭(50%)의 절반과 화면 폭(50cqw)의 절반 차이만큼 양쪽으로 넓힌다
+   cqw는 AppLayout의 @container 상자 기준이라 스크롤 막대 폭이 끼지 않는다 */
+.wall-bleed {
+  margin-inline: calc(50% - 50cqw);
 }
 
 /* 포스터 벽이 아래로 갈수록 배경색으로 사라진다 ─ 다크 · 라이트 모두 배경 토큰을 섞는다 */
