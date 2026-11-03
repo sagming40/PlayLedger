@@ -8,8 +8,8 @@
 | 항목 | 내용 |
 |---|---|
 | 단계 | **M3** 🔄 (`PLAN` M3) |
-| 진행 중 | 상태별 필터 · 주소 쿼리 구현 · 커밋 끝, **화면 확인 일부 남음**: 칩 눌러 바꾸기 · "해당 상태의 게임이 없습니다" · `?status=abc` 고쳐 쓰기 (2026-11-03 (4)) |
-| 다음에 할 일 | 남은 화면 확인 → `PLAN` M3 순서대로 **카드 두 번째 줄 상태별 분기** → 수정 화면 → 삭제 → 저장 알림. 수정 화면은 `entryToEditForm` · `buildUpdateBody`를 쓴다(장르 처리는 그때 정함). 작업마다 "자동으로 할까, 직접 칠래?"를 먼저 묻는다. Motion은 저장 알림 때 쓰니 그 전에 의존성 목록을 보여 주고 사용자가 설치한다 |
+| 진행 중 | 없음. 상태별 필터 · 주소 쿼리 화면 확인까지 끝 (2026-11-03 (5)) |
+| 다음에 할 일 | `PLAN` M3 순서대로 **카드 두 번째 줄 상태별 분기** → 수정 화면 → 삭제 → 저장 알림. 수정 화면은 `entryToEditForm` · `buildUpdateBody`를 쓴다(장르 처리는 그때 정함). 작업마다 "자동으로 할까, 직접 칠래?"를 먼저 묻는다. Motion은 저장 알림 때 쓰니 그 전에 의존성 목록을 보여 주고 사용자가 설치한다 |
 | M3에서 같이 볼 것 | 눌림 칩이 세 군데(S-02 상태 필터 · S-03 상태 버튼 · S-03 장르 칩)에 모양이 다르게 있다 ─ 수정 화면 작업 때 공용 컴포넌트로 묶을지 본다. 모바일 첫 줄이 요약 줄 도착 때 24px 밀리는 것 · `가장 오래 방치` 요약은 `PLAN` 항목이 없어 판단이 필요하다 |
 | M5 전에 | 라우터 `onError` 없음 ─ 화면 모듈을 못 받으면 안내 없이 빈 화면 ([DEVLOG_M2](archive/DEVLOG_M2.md) 2026-11-03 (7)) |
 | 기기별로 할 일 | **노트북**: `git pull` → `docker compose up -d` → `server/`에서 `pip install -r requirements.txt` · `alembic upgrade head` → `server/.env`에 `STEAM_API_KEY` → `python -m app.scripts.sync_steam_apps` → `web/`에서 `npm ci` → 전역 설정(`~/.claude/CLAUDE.md`)에 "작업 방식" · "문서 체계" 절 추가 (원본은 회사 PC `~/.claude/CLAUDE.md`, 사본 `G:\내 드라이브\_private\.claude\desktop_cm_CLAUDE.md`). 선택: `git config blame.ignoreRevsFile .git-blame-ignore-revs`. 집 PC(데스크톱 A)는 2026-11-03에 끝냄 |
@@ -21,6 +21,33 @@
 - 기기 표기는 `README` 개발 환경 표를 따른다 (데스크톱 A · 데스크톱 B · 노트북)
 - **막혔던 점은 해결됐어도 반드시 남긴다.** 같은 실수를 반복하지 않기 위한 기록이고, 나중에 이 프로젝트를 설명할 때 "어떤 문제를 어떻게 해결했는가"가 결과물보다 더 중요한 이야기가 된다
 - 환경 버전은 여기 적지 않는다. `requirements.txt` · `package.json` · `ci.yml`이 원본이고, 기기별 런타임은 `README`에 있다
+
+---
+
+## 2026-11-03 (5) · 상태 필터 남은 화면 확인, 모바일 칩 줄 다듬기 (데스크톱 A, 자동 작업)
+
+### 한 일
+- (4)에서 못 본 화면을 확인했다 (사용자 요청)
+  - 칩: 전체(3개) → `미시작` 1개 `?status=BACKLOG` → `보류` "해당 상태의 게임이 없습니다" `?status=ON_HOLD` → `전체` 3개. 요약 줄은 내내 `총 3개 · 미시작 1개`. 칩 세 번 눌러도 `history.length` 증가 0
+  - 주소: `?status=abc` · `?status=toString` → `/library`로 고쳐 쓰고 전체 3개. 네트워크에 `status=abc` · `status=toString` 요청 없음
+  - `?status=CLEARED`에서 카드 → `/library/37` → 뒤로 → `?status=CLEARED`, `클리어` 칩 눌림 · 2개
+  - 모바일 375 라이트 · 데스크톱 라이트 화면
+- 모바일에서 찾은 두 가지를 고쳤다 (아래 막힌 것)
+- 검증: `npm test` 119 passed, `lint` · `format:check` · `vue-tsc` 통과
+- (4)에서 브라우저 창에 들어온 클릭은 사용자가 한 것인지 아직 답을 못 받았다. 기록 37 · 38의 상태는 둘 다 `클리어`로 보였다
+
+### 막힌 것
+- 증상: 모바일 칩 줄 아래 회색 스크롤 막대가 보인다 (목업에는 없음)
+  - 해결: 막대 숨김. 칩이 화면 끝에서 잘려 보여서 옆으로 더 있다는 건 알 수 있다
+- 증상: `?status=ON_HOLD`로 들어오면 눌린 `보류` 칩이 오른쪽 화면 밖에 반쯤 잘린다
+  - 해결: 고른 칩이 바뀔 때 `scrollIntoView({ block: 'nearest', inline: 'nearest' })` + `scroll-px-5`. `포기` 칩 320~375 → 300~355
+  - 배운 것: `scrollIntoView`는 스크롤 상자의 안쪽 여백(padding)이 아니라 `scroll-padding`을 본다
+
+### 이번 세션 커밋
+- `fix(M3): 모바일 필터 칩 줄 다듬기`, `docs(M3): 상태 필터 화면 확인 반영`
+
+### 다음에 할 일
+- 카드 두 번째 줄 상태별 분기
 
 ---
 
