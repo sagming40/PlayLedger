@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { Gamepad2, Plus } from '@lucide/vue'
+import type { EntryStatus } from '@/api/entries'
 import { useEntryList } from '@/composables/useEntryList'
-import { STATUS_LABEL, cardMetric } from '@/lib/entry-display'
+import { STATUS_LABEL, cardMetric, parseStatusFilter } from '@/lib/entry-display'
+import { STATUSES } from '@/lib/entry-form'
 import EntrySummary from '@/components/EntrySummary.vue'
 import GameCover from '@/components/GameCover.vue'
 import StatusDot from '@/components/StatusDot.vue'
@@ -10,6 +13,40 @@ import { Button } from '@/components/ui/button'
 
 // S-02 라이브러리 (DESIGN 3.2절, 그림은 docs/mockups/Library · LibraryMobile · LibraryEmpty)
 const list = useEntryList()
+const route = useRoute()
+const router = useRouter()
+
+// 상태 필터는 주소가 원본이다 (DESIGN 2.1절) ─ 새로고침 · 뒤로가기 · 즐겨찾기로 들어와도 같은 목록
+// 칩은 주소만 바꾸고, 목록은 주소를 지켜보다 다시 부른다. 두 곳에서 따로 부르면 한 번 바꿀 때 두 번 불린다
+watch(
+  () => route.query.status,
+  (value) => {
+    const filter = parseStatusFilter(value)
+    if (filter === undefined) {
+      // 모르는 값(?status=abc) ─ 전체 보기로 고쳐 쓴다. 고친 주소가 다시 이 watch를 부른다
+      router.replace({ query: withoutStatus() })
+      return
+    }
+    list.setStatus(filter)
+  },
+  { immediate: true },
+)
+
+// 칩 ─ null이 전체. replace: 칩을 누를 때마다 방문 기록이 쌓이면 뒤로가기로 라이브러리를 못 빠져나간다
+function selectStatus(next: EntryStatus | null) {
+  router.replace({ query: next ? { ...withoutStatus(), status: next } : withoutStatus() })
+}
+
+// 주소의 다른 값(나중에 붙을 ?sort= 등)은 그대로 두고 status만 뺀다
+function withoutStatus() {
+  const rest = { ...route.query }
+  delete rest.status
+  return rest
+}
+const CHIPS: { key: EntryStatus | null; label: string }[] = [
+  { key: null, label: '전체' },
+  ...STATUSES.map((s) => ({ key: s, label: STATUS_LABEL[s] })),
+]
 
 // "오늘"은 화면을 연 시점으로 고정한다 ─ 카드마다 new Date()를 부르면 자정에 걸쳐 그릴 때 날짜가 섞인다
 const today = new Date()
@@ -32,7 +69,6 @@ const sentinel = ref<HTMLElement | null>(null)
 let observer: IntersectionObserver | null = null
 
 onMounted(() => {
-  list.loadFirst()
   observer = new IntersectionObserver(
     (entries) => {
       if (entries.some((e) => e.isIntersecting)) list.loadMore()
@@ -69,7 +105,7 @@ onBeforeUnmount(() => {
           </RouterLink>
         </Button>
       </div>
-      <EntrySummary :total="list.total.value" :backlog="list.backlogTotal.value" class="mt-1 text-[13px]" />
+      <EntrySummary :total="list.libraryTotal.value" :backlog="list.backlogTotal.value" class="mt-1 text-[13px]" />
     </div>
 
     <!-- 포스터 벽 + 제목 ─ 48rem부터. 레이아웃의 본문 폭 제한을 거슬러 화면 끝까지 깐다 (wall-bleed) -->
@@ -98,9 +134,37 @@ onBeforeUnmount(() => {
       <!-- 등록 버튼은 메뉴 띠에 있다 (DESIGN 2.2절) -->
       <div class="relative mx-auto flex w-full max-w-[1280px] flex-col gap-1.5 px-10 pb-2">
         <h1 class="text-[40px] font-extrabold tracking-tight">라이브러리</h1>
-        <EntrySummary :total="list.total.value" :backlog="list.backlogTotal.value" class="text-[15px]" />
+        <EntrySummary :total="list.libraryTotal.value" :backlog="list.backlogTotal.value" class="text-[15px]" />
       </div>
     </section>
+
+    <!-- 상태 필터 ─ 전체 + 5상태 (DESIGN 3.2절). 라이브러리가 통째로 비었으면 거를 것이 없어 숨긴다
+         선택된 칩은 무채색 ─ 활성 메뉴의 빨강과 겹치지 않게 (DESIGN 4.4절, decisions/0010)
+         모바일은 한 줄 가로 스크롤 ─ 본문 여백만큼 양옆으로 넓혀 칩이 화면 끝에서 잘려 보이게 한다 (목업 LibraryMobile) -->
+    <div
+      v-if="!list.isEmpty.value"
+      role="group"
+      aria-label="상태 필터"
+      class="-mx-5 -mb-1 flex gap-2 overflow-x-auto px-5 whitespace-nowrap md:mx-0 md:mb-0 md:flex-wrap md:overflow-visible md:px-0"
+    >
+      <button
+        v-for="chip in CHIPS"
+        :key="chip.key ?? 'all'"
+        type="button"
+        :aria-pressed="list.status.value === chip.key"
+        class="inline-flex h-9 shrink-0 items-center gap-[7px] rounded-full border px-3.5 text-sm transition-colors"
+        :class="
+          list.status.value === chip.key
+            ? 'border-muted-foreground bg-secondary font-semibold text-foreground'
+            : 'border-border font-medium text-muted-foreground hover:text-foreground'
+        "
+        @click="selectStatus(chip.key)"
+      >
+        <!-- 점은 48rem부터 ─ 모바일 칩은 글자만 (목업 LibraryMobile) -->
+        <StatusDot v-if="chip.key" :status="chip.key" class="hidden size-[7px] md:inline-block" />
+        {{ chip.label }}
+      </button>
+    </div>
 
     <!-- 첫 로딩 ─ 뼈대 -->
     <div v-if="list.firstLoading.value && !list.items.value.length" class="card-grid" role="status" aria-label="목록을 불러오는 중">
@@ -136,6 +200,9 @@ onBeforeUnmount(() => {
         </RouterLink>
       </Button>
     </div>
+
+    <!-- 이 상태의 게임만 없다 ─ 필터를 바꾸면 되니 안내만 (DESIGN 5장) -->
+    <p v-else-if="list.isFilterEmpty.value" class="py-16 text-center text-[15px] text-muted-foreground">해당 상태의 게임이 없습니다</p>
 
     <!-- 목록 -->
     <template v-else>

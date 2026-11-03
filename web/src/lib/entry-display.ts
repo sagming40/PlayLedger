@@ -69,6 +69,18 @@ export function cardMetric(entry: Pick<Entry, 'status' | 'purchased_at' | 'playt
   return { text: formatPlaytime(entry.playtime_minutes), loud: false }
 }
 
+/**
+ * 주소의 ?status= → 상태 필터 (DESIGN 2.1절 "화면 상태를 주소에 담는다")
+ * 없으면 null(전체). 모르는 값이면 undefined ─ 화면이 주소를 전체 보기로 고쳐 쓴다
+ * 주소창은 누구나 고칠 수 있어서 ?status=PLAYING&status=CLEARED처럼 여러 개가 올 수도 있다 ─ 첫 값만 본다
+ */
+export function parseStatusFilter(value: unknown): EntryStatus | null | undefined {
+  const raw = Array.isArray(value) ? value[0] : value
+  if (raw === undefined || raw === null || raw === '') return null
+  // in이 아니라 hasOwn ─ in은 'toString' 같은 객체 기본 속성까지 '있다'고 답한다
+  return typeof raw === 'string' && Object.hasOwn(STATUS_LABEL, raw) ? (raw as EntryStatus) : undefined
+}
+
 // S-04 출처 표시 (DESIGN 3.4절)
 export const SOURCE_LABEL: Record<Entry['source'], string> = {
   MANUAL: '직접 입력',

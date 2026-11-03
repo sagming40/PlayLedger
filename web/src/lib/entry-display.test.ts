@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { cardMetric, formatPlaytime, formatWon, idleDays, titleInitials } from './entry-display'
+import { cardMetric, formatPlaytime, formatWon, idleDays, parseStatusFilter, titleInitials } from './entry-display'
 
 // 카드에 보이는 글자 (DESIGN 3.2 · 4.2절)
 // "오늘"을 고정해서 날짜가 바뀌어도 결과가 같게 한다
@@ -86,5 +86,23 @@ describe('S-04 상세 표시', () => {
     expect(formatWon(66000)).toBe('66,000')
     expect(formatWon(1058)).toBe('1,058')
     expect(formatWon(0)).toBe('0')
+  })
+})
+
+describe('주소의 상태 필터 (DESIGN 2.1절)', () => {
+  it('없거나 비었으면 전체(null)', () => {
+    expect(parseStatusFilter(undefined)).toBeNull()
+    expect(parseStatusFilter('')).toBeNull()
+    expect(parseStatusFilter(null)).toBeNull()
+  })
+
+  it('아는 상태만 받고, 모르는 값은 undefined ─ 화면이 주소를 고쳐 쓴다', () => {
+    expect(parseStatusFilter('BACKLOG')).toBe('BACKLOG')
+    expect(parseStatusFilter('backlog')).toBeUndefined()
+    expect(parseStatusFilter('toString')).toBeUndefined() // 객체 기본 속성 이름도 상태가 아니다
+  })
+
+  it('여러 개가 오면 첫 값만 본다', () => {
+    expect(parseStatusFilter(['PLAYING', 'CLEARED'])).toBe('PLAYING')
   })
 })

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { PAGE_SIZE, useEntryList } from './useEntryList'
 import { setAccessToken } from '@/api/client'
-import type { Entry } from '@/api/entries'
+import type { Entry, EntryStatus } from '@/api/entries'
 
 // S-02 목록 불러오기 (DESIGN 3.2 · 6장)
 // 20개씩 추가 로드 · 겹친 요청 · 중복 기록 · 실패를 가짜 SERVER로 만든다
@@ -169,5 +169,128 @@ describe('실패', () => {
     expect(list.items.value).toHaveLength(3)
     expect(list.backlogTotal.value).toBeNull()
     expect(list.firstError.value).toBeNull()
+  })
+})
+
+// 상태가 섞인 가짜 SERVER ─ status · limit · offset을 실제처럼 거른다
+function statusServer(statuses: EntryStatus[]) {
+  const all = statuses.map((status, i) => ({ ...entry(i + 1), status }))
+  const calls: string[] = []
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async (url: string) => {
+      calls.push(url)
+      const q = new URL(url, 'http://x').searchParams
+      const rows = q.get('status') ? all.filter((e) => e.status === q.get('status')) : all
+      const offset = Number(q.get('offset'))
+      return json(200, { items: rows.slice(offset, offset + Number(q.get('limit'))), total: rows.length })
+    }),
+  )
+  return calls
+}
+
+describe('상태 필터 (DESIGN 3.2 · 5장)', () => {
+  it('고른 상태만 받고, 요약 줄은 라이브러리 전체 기준', async () => {
+    statusServer(['BACKLOG', 'PLAYING', 'CLEARED', 'CLEARED', 'BACKLOG'])
+    const list = useEntryList()
+
+    await list.setStatus('CLEARED')
+
+    expect(list.items.value.map((e) => e.status)).toEqual(['CLEARED', 'CLEARED'])
+    expect(list.total.value).toBe(2)
+    expect(list.libraryTotal.value).toBe(5)
+    expect(list.backlogTotal.value).toBe(2)
+  })
+
+  it('목록 응답으로 알 수 있는 개수는 다시 묻지 않는다', async () => {
+    const calls = statusServer(['BACKLOG', 'PLAYING'])
+    const list = useEntryList()
+
+    await list.setStatus(null)
+    // 전체 목록 + 미시작 개수 = 2번 (전체 개수는 목록 total)
+    expect(calls).toHaveLength(2)
+
+    calls.length = 0
+    await list.setStatus('BACKLOG')
+    // 미시작 목록 + 전체 개수 = 2번 (미시작 개수는 목록 total)
+    expect(calls).toHaveLength(2)
+    expect(calls.every((c) => c.includes('limit=1') || c.includes('status=BACKLOG'))).toBe(true)
+  })
+
+  it('이 상태만 없으면 "필터 결과 없음", 라이브러리가 비었으면 "빈 상태"', async () => {
+    statusServer(['BACKLOG'])
+    const list = useEntryList()
+    await list.setStatus('DROPPED')
+    expect(list.isFilterEmpty.value).toBe(true)
+    expect(list.isEmpty.value).toBe(false)
+
+    statusServer([])
+    const fresh = useEntryList()
+    // 새 계정이 ?status=CLEARED 주소로 들어와도 등록을 권한다
+    await fresh.setStatus('CLEARED')
+    expect(fresh.isEmpty.value).toBe(true)
+    expect(fresh.isFilterEmpty.value).toBe(false)
+  })
+
+  it('필터를 빠르게 바꾸면 늦게 온 앞 필터의 답은 버린다', async () => {
+    const held: { url: string; reply: (r: Response) => void }[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((url: string) => new Promise<Response>((reply) => held.push({ url, reply }))),
+    )
+    const list = useEntryList()
+
+    const first = list.setStatus('PLAYING')
+    const second = list.setStatus('CLEARED')
+    // 뒤 필터(CLEARED)의 답이 먼저, 앞 필터(PLAYING)의 답이 나중에 온다
+    for (const h of held.filter((h) => !h.url.includes('PLAYING'))) {
+      const cleared = h.url.includes('status=CLEARED')
+      h.reply(json(200, { items: cleared ? [{ ...entry(2), status: 'CLEARED' }] : [], total: cleared ? 1 : 3 }))
+    }
+    await second
+    for (const h of held.filter((h) => h.url.includes('PLAYING')))
+      h.reply(json(200, { items: [{ ...entry(1), status: 'PLAYING' }], total: 1 }))
+    await first
+
+    expect(list.status.value).toBe('CLEARED')
+    expect(list.items.value.map((e) => e.id)).toEqual([2])
+    expect(list.firstLoading.value).toBe(false)
+  })
+
+  it('추가로 불러오는 중에 필터를 바꾸면 그 페이지를 새 목록에 붙이지 않는다', async () => {
+    statusServer(Array.from({ length: 25 }, () => 'BACKLOG' as EntryStatus))
+    const list = useEntryList()
+    await list.setStatus(null)
+
+    // 추가 페이지 요청만 붙잡아 둔다
+    const realFetch = globalThis.fetch
+    let releaseMore: (() => void) | null = null
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((url: string, init?: RequestInit) =>
+        url.includes('offset=20')
+          ? new Promise<Response>((resolve) => (releaseMore = () => resolve(realFetch(url, init) as unknown as Response)))
+          : realFetch(url, init),
+      ),
+    )
+    const more = list.loadMore()
+    await list.setStatus('PLAYING')
+    releaseMore!()
+    await more
+
+    expect(list.items.value).toEqual([])
+    expect(list.total.value).toBe(0)
+    expect(list.loadingMore.value).toBe(false)
+  })
+
+  it('같은 필터를 다시 고르면 다시 부르지 않는다', async () => {
+    const calls = statusServer(['BACKLOG'])
+    const list = useEntryList()
+    await list.setStatus('BACKLOG')
+    calls.length = 0
+
+    await list.setStatus('BACKLOG')
+
+    expect(calls).toHaveLength(0)
   })
 })
