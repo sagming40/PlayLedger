@@ -27,7 +27,6 @@ function isActive(name: string) {
        rem이라 루트 글꼴 크기에 따라 실제 px이 달라진다 (기본 16px이면 768px)
        색은 전부 style.css 토큰 ─ 다크 · 라이트가 .dark 하나로 같이 바뀐다 (DESIGN 4.4절) -->
   <div class="min-h-screen bg-background text-foreground">
-
     <!-- 메뉴 띠 ─ hidden(기본 숨김) + md:block(48rem부터 보임) (DESIGN 2.2절)
          sticky: 내려도 맨 위에 붙어 있다. 건물 층별 안내판처럼 어디서든 보이게 -->
     <header class="sticky top-0 z-30 hidden h-[72px] border-b border-border bg-background md:block">
@@ -47,18 +46,18 @@ function isActive(name: string) {
             :key="item.name"
             :to="{ name: item.name }"
             class="flex h-9 items-center gap-[7px] rounded-full px-4 text-sm whitespace-nowrap transition-colors"
-            :class="isActive(item.name) ? 'bg-primary font-bold text-primary-foreground' : 'font-medium text-muted-foreground hover:text-foreground'"
+            :class="
+              isActive(item.name)
+                ? 'bg-primary font-bold text-primary-foreground'
+                : 'font-medium text-muted-foreground hover:text-foreground'
+            "
           >
             <component :is="item.icon" class="size-4" aria-hidden="true" />
             {{ item.label }}
           </RouterLink>
         </nav>
         <!-- 등록 화면에서 또 등록 버튼을 보여 줄 이유가 없다 -->
-        <Button
-          v-if="route.name !== 'entry-new'"
-          as-child
-          class="ml-auto h-10 shrink-0 px-4 text-sm font-semibold"
-        >
+        <Button v-if="route.name !== 'entry-new'" as-child class="ml-auto h-10 shrink-0 px-4 text-sm font-semibold">
           <RouterLink :to="{ name: 'entry-new' }">
             <Plus class="size-4" aria-hidden="true" />
             게임 등록
@@ -86,10 +85,7 @@ function isActive(name: string) {
     </div>
 
     <!-- 하단 탭 ─ md:hidden(48rem부터 숨김) 화면 아래에 고정 -->
-    <nav
-      aria-label="주 메뉴"
-      class="fixed inset-x-0 bottom-0 flex h-16 border-t border-border bg-background md:hidden"
-    >
+    <nav aria-label="주 메뉴" class="fixed inset-x-0 bottom-0 flex h-16 border-t border-border bg-background md:hidden">
       <RouterLink
         v-for="item in menu"
         :key="item.name"

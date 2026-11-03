@@ -91,7 +91,12 @@ async function onLogout() {
             class="h-[46px] min-w-0 flex-[1_1_260px] rounded-[10px] border border-border bg-background px-3.5 text-[15px] opacity-60"
           />
           <!-- 곧 생길 기능이라 흐리게 지우지 않고 글자색만 낮춘다 (목업 Settings) -->
-          <Button variant="secondary" disabled class="h-[46px] border-border px-4.5 font-semibold text-muted-foreground disabled:opacity-100">지금 동기화</Button>
+          <Button
+            variant="secondary"
+            disabled
+            class="h-[46px] border-border px-4.5 font-semibold text-muted-foreground disabled:opacity-100"
+            >지금 동기화</Button
+          >
         </div>
         <span id="steam-help" class="text-[13px] text-muted-foreground">Steam 프로필의 게임 세부 정보가 공개여야 동기화됩니다</span>
       </div>
@@ -103,7 +108,9 @@ async function onLogout() {
         <h2 class="text-base font-bold">Discord 연결</h2>
         <span class="rounded-md bg-secondary px-2 py-0.5 text-[11px] font-bold text-muted-foreground">M11 예정</span>
       </div>
-      <Button variant="secondary" disabled class="h-11 border-border px-4 font-semibold text-muted-foreground disabled:opacity-100">Discord 계정 연결</Button>
+      <Button variant="secondary" disabled class="h-11 border-border px-4 font-semibold text-muted-foreground disabled:opacity-100"
+        >Discord 계정 연결</Button
+      >
     </SurfacePanel>
 
     <div class="pt-1">

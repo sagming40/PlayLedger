@@ -11,7 +11,10 @@ const props = defineProps<{
 
 const broken = ref(false)
 // 목록이 다시 그려져 다른 게임을 받으면 실패 표시를 지운다
-watch(() => props.coverUrl, () => (broken.value = false))
+watch(
+  () => props.coverUrl,
+  () => (broken.value = false),
+)
 
 const showImage = computed(() => props.coverUrl !== null && !broken.value)
 </script>

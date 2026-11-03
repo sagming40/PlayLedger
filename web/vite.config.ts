@@ -24,7 +24,7 @@ export default defineConfig({
         target: 'http://127.0.0.1:8001',
         // 전달할 때 8001에서 온 요청이라는 꼬리표로 바꿔 달아준다.
         changeOrigin: true,
-      }
-    }
-  }
+      },
+    },
+  },
 })

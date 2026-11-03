@@ -1,12 +1,6 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
-import {
-  applyTheme,
-  readPreference,
-  resolveTheme,
-  writePreference,
-  type ThemePreference,
-} from '@/lib/theme'
+import { applyTheme, readPreference, resolveTheme, writePreference, type ThemePreference } from '@/lib/theme'
 
 // 테마 선택 (S-06 화면 테마, F-24)
 // 판정 규칙은 lib/theme.ts, 이 스토어는 "지금 무엇을 골랐고 OS가 어떤 상태인가"만 들고 있다

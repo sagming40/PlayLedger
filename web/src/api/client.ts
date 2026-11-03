@@ -120,8 +120,7 @@ async function send<T>(path: string, options: RequestOptions, retried: boolean):
     if (!retried) {
       // 다른 요청이 그 사이 새 TOKEN을 받아왔다면 재발급 없이 바로 다시 보낸다
       // 이미 쓴 refresh COOKIE를 또 쓰지 않기 위해서다
-      const renewed =
-        accessToken !== null && accessToken !== sentToken ? true : await refreshAccessToken()
+      const renewed = accessToken !== null && accessToken !== sentToken ? true : await refreshAccessToken()
       // 재시도는 딱 1번 (①원칙) ─ retried=true로 넘겨 두 번째 401에서는 여기로 다시 들어오지 않는다
       if (renewed) return send<T>(path, options, true)
     }

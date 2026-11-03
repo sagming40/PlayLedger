@@ -1,8 +1,8 @@
 // 422 Array의 한 항목에서 사용할 것들만 추려낸 모양 (ARCHITECTURE 3.9절)
 export interface FieldIssue {
-  field: string                   // 어느 입력칸인지 ('email', 'password')
-  rule: string                    // 무슨 규칙을 어겼는지 ('string_too_short')
-  ctx?: Record<string, unknown>   // 규칙의 기준값. 존재하지 않는 오류도 있다
+  field: string // 어느 입력칸인지 ('email', 'password')
+  rule: string // 무슨 규칙을 어겼는지 ('string_too_short')
+  ctx?: Record<string, unknown> // 규칙의 기준값. 존재하지 않는 오류도 있다
 }
 
 // SERVER 4xx · 5xx로 답했을 때 던지는 오류

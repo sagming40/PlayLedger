@@ -9,9 +9,11 @@ defineProps<{
 
 <template>
   <p v-if="total" class="text-muted-foreground">
-    총 <strong class="text-foreground">{{ total }}</strong>개
+    총 <strong class="text-foreground">{{ total }}</strong
+    >개
     <template v-if="backlog !== null">
-      · 미시작 <strong class="text-brand-text">{{ backlog }}</strong>개
+      · 미시작 <strong class="text-brand-text">{{ backlog }}</strong
+      >개
     </template>
   </p>
 </template>

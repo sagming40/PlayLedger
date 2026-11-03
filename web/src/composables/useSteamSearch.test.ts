@@ -82,7 +82,10 @@ describe('useSteamSearch', () => {
   })
 
   it('실패하면 failed만 켠다 ─ 예외를 내보내지 않는다', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => json(500, { detail: 'Internal Server Error' })))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => json(500, { detail: 'Internal Server Error' })),
+    )
     const s = useSteamSearch()
 
     s.search('hollow')

@@ -24,7 +24,7 @@ const password = ref('')
 const nickname = ref('')
 
 const errorMessage = ref('')
-const submitting = ref(false)   // 서버 응답을 기다리는 중인지
+const submitting = ref(false) // 서버 응답을 기다리는 중인지
 
 // ─── 계산되는 값 ───────────────────────────────────────
 // computed = "재료가 바뀌면 자동으로 다시 계산되는 값"
@@ -40,9 +40,9 @@ const tiles = Array.from({ length: 98 }, (_, i) => TILE_HUES[(i * 7 + Math.floor
 
 // 버튼을 누를 수 있는 상태인가 (DESIGN 3.1절 ─ 빈 값이면 비활성화, 중복 제출 차단)
 const canSubmit = computed(() => {
-  if (submitting.value) return false                      // 이미 보내는 중이면 잠금
+  if (submitting.value) return false // 이미 보내는 중이면 잠금
   if (!email.value || !password.value) return false
-  if (isRegister.value && !nickname.value) return false   // 가입일 때만 닉네임도 필수
+  if (isRegister.value && !nickname.value) return false // 가입일 때만 닉네임도 필수
   return true
 })
 
@@ -58,7 +58,7 @@ function switchMode() {
 }
 
 async function onSubmit() {
-  if (!canSubmit.value) return   // 버튼이 비활성이어도 엔터로 들어올 수 있어서 한 번 더 막는다
+  if (!canSubmit.value) return // 버튼이 비활성이어도 엔터로 들어올 수 있어서 한 번 더 막는다
 
   submitting.value = true
   errorMessage.value = ''
@@ -77,8 +77,7 @@ async function onSubmit() {
   } catch (e) {
     // SERVER가 준 detail은 그대로 보여줄 수 있는 한국어 문장이다 (ARCHITECTURE 3.1절)
     // ApiError가 아닌 것(코드 버그 등)까지 사용자에게 날것으로 보이면 안 되므로 갈라둔다
-    errorMessage.value =
-      e instanceof ApiError ? e.message : '알 수 없는 오류가 발생했습니다'
+    errorMessage.value = e instanceof ApiError ? e.message : '알 수 없는 오류가 발생했습니다'
   } finally {
     // 성공이든 실패든 잠금은 반드시 푼다 ─ 스토어 logout의 finally와 같은 이유
     submitting.value = false
@@ -89,10 +88,7 @@ async function onSubmit() {
 <template>
   <div class="relative flex min-h-screen items-center justify-center overflow-hidden bg-background text-foreground">
     <!-- 포스터 벽 ─ 장식이라 화면 읽기 프로그램에는 숨긴다 -->
-    <div
-      aria-hidden="true"
-      class="absolute -top-10 -right-5 -left-5 grid grid-cols-7 gap-2.5 opacity-35 md:grid-cols-14 dark:opacity-75"
-    >
+    <div aria-hidden="true" class="absolute -top-10 -right-5 -left-5 grid grid-cols-7 gap-2.5 opacity-35 md:grid-cols-14 dark:opacity-75">
       <div v-for="(hue, i) in tiles" :key="i" class="aspect-[2/3] rounded-md" :style="{ background: hue }" />
     </div>
     <!-- 가운데만 진하게 덮는다 ─ 폼이 타일 위에서도 읽히게 -->
@@ -162,11 +158,7 @@ async function onSubmit() {
 
       <p class="text-center text-sm text-muted-foreground">
         {{ isRegister ? '이미 계정이 있으신가요?' : '계정이 없으신가요?' }}
-        <button
-          type="button"
-          class="h-11 px-1 font-semibold text-brand-text hover:underline"
-          @click="switchMode"
-        >
+        <button type="button" class="h-11 px-1 font-semibold text-brand-text hover:underline" @click="switchMode">
           {{ isRegister ? '로그인' : '가입' }}
         </button>
       </p>

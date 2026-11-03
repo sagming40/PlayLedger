@@ -67,9 +67,7 @@ describe('request', () => {
   })
 
   it('4xx는 상태 코드와 서버 문구를 담은 ApiError가 된다', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(
-      mockResponse(404, { detail: '기록을 찾을 수 없습니다' }),
-    ))
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(mockResponse(404, { detail: '기록을 찾을 수 없습니다' })))
 
     await expect(request('/entries/999')).rejects.toMatchObject({
       status: 404,

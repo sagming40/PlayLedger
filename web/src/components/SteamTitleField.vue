@@ -13,9 +13,7 @@ const search = useSteamSearch()
 const open = ref(false)
 const active = ref(-1) // 키보드로 가리키는 후보. -1이면 없음
 
-const showList = computed(
-  () => open.value && (search.results.value.length > 0 || search.searched.value || search.failed.value),
-)
+const showList = computed(() => open.value && (search.results.value.length > 0 || search.searched.value || search.failed.value))
 
 function onInput(e: Event) {
   open.value = true
@@ -120,9 +118,7 @@ function onKeydown(e: KeyboardEvent) {
       <p v-else-if="search.failed.value" class="px-3.5 py-3 text-sm text-muted-foreground">
         지금은 검색할 수 없어요. 제목을 적어 직접 등록할 수 있어요
       </p>
-      <p v-else class="px-3.5 py-3 text-sm text-muted-foreground">
-        찾는 게임이 없어요. 이 제목 그대로 직접 등록할 수 있어요
-      </p>
+      <p v-else class="px-3.5 py-3 text-sm text-muted-foreground">찾는 게임이 없어요. 이 제목 그대로 직접 등록할 수 있어요</p>
     </div>
   </div>
 

@@ -65,9 +65,7 @@ async function loadGenres() {
 onMounted(loadGenres)
 
 function toggleGenre(id: number) {
-  genreIds.value = genreIds.value.includes(id)
-    ? genreIds.value.filter((g) => g !== id)
-    : [...genreIds.value, id]
+  genreIds.value = genreIds.value.includes(id) ? genreIds.value.filter((g) => g !== id) : [...genreIds.value, id]
 }
 
 async function onSubmit() {
@@ -128,9 +126,7 @@ async function onSubmit() {
       </fieldset>
 
       <fieldset class="flex flex-col gap-2.5">
-        <legend class="mb-2.5 text-sm font-semibold">
-          장르 <span class="font-normal text-muted-foreground">· 여러 개 선택</span>
-        </legend>
+        <legend class="mb-2.5 text-sm font-semibold">장르 <span class="font-normal text-muted-foreground">· 여러 개 선택</span></legend>
         <div v-if="genresFailed" class="flex items-center gap-3 text-sm text-muted-foreground">
           장르를 불러오지 못했어요
           <Button type="button" variant="outline" class="h-9" @click="loadGenres">다시 시도</Button>
@@ -142,7 +138,11 @@ async function onSubmit() {
             type="button"
             :aria-pressed="genreIds.includes(g.id)"
             class="h-10 rounded-full border px-3.5 text-sm"
-            :class="genreIds.includes(g.id) ? 'border-brand-line bg-brand-tint font-semibold text-brand-text' : 'border-border bg-card text-muted-foreground'"
+            :class="
+              genreIds.includes(g.id)
+                ? 'border-brand-line bg-brand-tint font-semibold text-brand-text'
+                : 'border-border bg-card text-muted-foreground'
+            "
             @click="toggleGenre(g.id)"
           >
             {{ g.name }}

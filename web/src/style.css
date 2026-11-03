@@ -1,10 +1,9 @@
-
 /* 글꼴 ─ Inter(영문 · 숫자) + Noto Sans KR(한글) (DESIGN 4.4절)
    지금은 구글 서버에서 받는다. 내장 여부는 M5에서 검토 */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+KR:wght@400;500;700;800&display=swap');
 
-@import "tailwindcss";
-@import "tw-animate-css";
+@import 'tailwindcss';
+@import 'tw-animate-css';
 
 @custom-variant dark (&:is(.dark *));
 
@@ -65,88 +64,88 @@
    :root = 라이트, .dark = 다크. <html>에 .dark를 붙이고 떼는 일은 stores/theme.ts가 한다 */
 :root {
   --radius: 0.625rem;
-  --background: #F6F6F8;
-  --foreground: #17171B;
-  --card: #FFFFFF;
-  --card-foreground: #17171B;
-  --popover: #FFFFFF;
-  --popover-foreground: #17171B;
+  --background: #f6f6f8;
+  --foreground: #17171b;
+  --card: #ffffff;
+  --card-foreground: #17171b;
+  --popover: #ffffff;
+  --popover-foreground: #17171b;
   /* 포인트 색 하나 ─ A · 심야 극장. 주 버튼 · 활성 메뉴 · 로고 타일 · 막대그래프 */
-  --primary: #D12E34;
-  --primary-foreground: #FFFFFF;
-  --secondary: #EEEEF2;
-  --secondary-foreground: #17171B;
-  --muted: #EEEEF2;
-  --muted-foreground: #5C5C68;
-  --accent: #EEEEF2;
-  --accent-foreground: #17171B;
+  --primary: #d12e34;
+  --primary-foreground: #ffffff;
+  --secondary: #eeeef2;
+  --secondary-foreground: #17171b;
+  --muted: #eeeef2;
+  --muted-foreground: #5c5c68;
+  --accent: #eeeef2;
+  --accent-foreground: #17171b;
   /* 오류 글자 = 포인트 글자색. 화면에 빨강을 하나만 두기 위해서다 */
-  --destructive: #B4232A;
-  --border: #E2E2E8;
-  --input: #D6D6DE;
+  --destructive: #b4232a;
+  --border: #e2e2e8;
+  --input: #d6d6de;
   --ring: rgb(209 46 52 / 0.4);
-  --brand-text: #B4232A;
+  --brand-text: #b4232a;
   --brand-tint: rgb(209 46 52 / 0.08);
   --brand-line: rgb(209 46 52 / 0.4);
-  --status-backlog: #7A7A86;
-  --status-playing: #2563EB;
-  --status-cleared: #16A34A;
-  --status-on-hold: #CA8A04;
-  --status-dropped: #B4B4BE;
-  --chart-1: #D12E34;
-  --chart-2: #2563EB;
-  --chart-3: #16A34A;
-  --chart-4: #CA8A04;
-  --chart-5: #7A7A86;
-  --sidebar: #F6F6F8;
-  --sidebar-foreground: #17171B;
-  --sidebar-primary: #D12E34;
-  --sidebar-primary-foreground: #FFFFFF;
+  --status-backlog: #7a7a86;
+  --status-playing: #2563eb;
+  --status-cleared: #16a34a;
+  --status-on-hold: #ca8a04;
+  --status-dropped: #b4b4be;
+  --chart-1: #d12e34;
+  --chart-2: #2563eb;
+  --chart-3: #16a34a;
+  --chart-4: #ca8a04;
+  --chart-5: #7a7a86;
+  --sidebar: #f6f6f8;
+  --sidebar-foreground: #17171b;
+  --sidebar-primary: #d12e34;
+  --sidebar-primary-foreground: #ffffff;
   --sidebar-accent: rgb(209 46 52 / 0.08);
-  --sidebar-accent-foreground: #B4232A;
-  --sidebar-border: #E2E2E8;
+  --sidebar-accent-foreground: #b4232a;
+  --sidebar-border: #e2e2e8;
   --sidebar-ring: rgb(209 46 52 / 0.4);
 }
 
 .dark {
-  --background: #0E0E11;
-  --foreground: #F2F2F5;
-  --card: #17171C;
-  --card-foreground: #F2F2F5;
-  --popover: #17171C;
-  --popover-foreground: #F2F2F5;
-  --primary: #D12E34;
-  --primary-foreground: #FFFFFF;
-  --secondary: #22222A;
-  --secondary-foreground: #F2F2F5;
-  --muted: #22222A;
-  --muted-foreground: #A1A1AC;
-  --accent: #22222A;
-  --accent-foreground: #F2F2F5;
-  --destructive: #FF7276;
-  --border: #2C2C35;
-  --input: #34343E;
+  --background: #0e0e11;
+  --foreground: #f2f2f5;
+  --card: #17171c;
+  --card-foreground: #f2f2f5;
+  --popover: #17171c;
+  --popover-foreground: #f2f2f5;
+  --primary: #d12e34;
+  --primary-foreground: #ffffff;
+  --secondary: #22222a;
+  --secondary-foreground: #f2f2f5;
+  --muted: #22222a;
+  --muted-foreground: #a1a1ac;
+  --accent: #22222a;
+  --accent-foreground: #f2f2f5;
+  --destructive: #ff7276;
+  --border: #2c2c35;
+  --input: #34343e;
   --ring: rgb(209 46 52 / 0.55);
-  --brand-text: #FF7276;
+  --brand-text: #ff7276;
   --brand-tint: rgb(209 46 52 / 0.14);
   --brand-line: rgb(209 46 52 / 0.55);
-  --status-backlog: #9A9AA6;
-  --status-playing: #3B82F6;
-  --status-cleared: #22C55E;
-  --status-on-hold: #EAB308;
-  --status-dropped: #5E5E68;
-  --chart-1: #D12E34;
-  --chart-2: #3B82F6;
-  --chart-3: #22C55E;
-  --chart-4: #EAB308;
-  --chart-5: #9A9AA6;
-  --sidebar: #0E0E11;
-  --sidebar-foreground: #F2F2F5;
-  --sidebar-primary: #D12E34;
-  --sidebar-primary-foreground: #FFFFFF;
+  --status-backlog: #9a9aa6;
+  --status-playing: #3b82f6;
+  --status-cleared: #22c55e;
+  --status-on-hold: #eab308;
+  --status-dropped: #5e5e68;
+  --chart-1: #d12e34;
+  --chart-2: #3b82f6;
+  --chart-3: #22c55e;
+  --chart-4: #eab308;
+  --chart-5: #9a9aa6;
+  --sidebar: #0e0e11;
+  --sidebar-foreground: #f2f2f5;
+  --sidebar-primary: #d12e34;
+  --sidebar-primary-foreground: #ffffff;
   --sidebar-accent: rgb(209 46 52 / 0.14);
-  --sidebar-accent-foreground: #FF7276;
-  --sidebar-border: #2C2C35;
+  --sidebar-accent-foreground: #ff7276;
+  --sidebar-border: #2c2c35;
   --sidebar-ring: rgb(209 46 52 / 0.55);
 }
 

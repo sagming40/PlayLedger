@@ -27,9 +27,7 @@ describe('toApiError', () => {
         },
       ],
     })
-    expect(err.issues).toEqual([
-      { field: 'password', rule: 'string_too_short', ctx: { min_length: 8 } },
-    ])
+    expect(err.issues).toEqual([{ field: 'password', rule: 'string_too_short', ctx: { min_length: 8 } }])
     // 배열을 그대로 문장에 넣으면 화면에 [object Object]가 뜬다
     expect(err.message).not.toContain('object')
   })

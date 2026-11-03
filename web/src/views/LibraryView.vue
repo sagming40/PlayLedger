@@ -74,10 +74,7 @@ onBeforeUnmount(() => {
 
     <!-- 포스터 벽 + 제목 ─ 48rem부터. 레이아웃의 본문 폭 제한을 거슬러 화면 끝까지 깐다 (wall-bleed) -->
     <section class="wall-bleed relative -mt-5 hidden h-[280px] flex-col justify-end overflow-hidden md:flex">
-      <div
-        aria-hidden="true"
-        class="absolute -top-6 right-0 left-0 grid grid-cols-12 gap-2 px-2"
-      >
+      <div aria-hidden="true" class="absolute -top-6 right-0 left-0 grid grid-cols-12 gap-2 px-2">
         <template v-if="wall.length">
           <div
             v-for="(game, i) in wall"
@@ -106,12 +103,7 @@ onBeforeUnmount(() => {
     </section>
 
     <!-- 첫 로딩 ─ 뼈대 -->
-    <div
-      v-if="list.firstLoading.value && !list.items.value.length"
-      class="card-grid"
-      role="status"
-      aria-label="목록을 불러오는 중"
-    >
+    <div v-if="list.firstLoading.value && !list.items.value.length" class="card-grid" role="status" aria-label="목록을 불러오는 중">
       <!-- 모양을 아래 목록 카드와 같게 ─ 모바일에서도 큰 카드로 그리면 데이터가 올 때 화면이 튄다 -->
       <div
         v-for="i in SKELETON_COUNT"
@@ -155,7 +147,9 @@ onBeforeUnmount(() => {
             class="flex h-full items-center gap-3.5 border-b border-border py-2.5 md:flex-col md:items-stretch md:gap-0 md:overflow-hidden md:rounded-xl md:border md:bg-card md:py-0 md:transition-colors md:hover:border-brand-line"
           >
             <!-- 커버 자리 ─ 비율은 Steam header 이미지(460×215)와 같다 -->
-            <div class="flex aspect-[460/215] w-28 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-secondary md:w-auto md:rounded-none">
+            <div
+              class="flex aspect-[460/215] w-28 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-secondary md:w-auto md:rounded-none"
+            >
               <GameCover v-slot="{ initials }" :title="entry.game.title" :cover-url="entry.game.cover_url">
                 <span class="text-lg font-extrabold tracking-tight text-muted-foreground/40 md:text-[34px]" aria-hidden="true">
                   {{ initials }}
@@ -190,12 +184,7 @@ onBeforeUnmount(() => {
           <p role="alert" class="text-sm">{{ list.moreError.value }}</p>
           <Button variant="outline" class="h-10" @click="list.loadMore()">다시 시도</Button>
         </template>
-        <Button
-          v-else-if="list.hasMore.value"
-          variant="ghost"
-          class="h-10 text-muted-foreground"
-          @click="list.loadMore()"
-        >
+        <Button v-else-if="list.hasMore.value" variant="ghost" class="h-10 text-muted-foreground" @click="list.loadMore()">
           더 불러오기
         </Button>
         <div v-if="list.hasMore.value" ref="sentinel" aria-hidden="true" class="h-px w-full" />
