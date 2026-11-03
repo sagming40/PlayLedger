@@ -55,11 +55,31 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="flex flex-col gap-5">
-    <!-- 포스터 벽 + 제목 ─ 레이아웃의 본문 폭 제한을 거슬러 화면 끝까지 깐다 (wall-bleed) -->
-    <section class="wall-bleed relative -mt-5 flex h-[240px] flex-col justify-end overflow-hidden md:h-[280px]">
+    <!-- 모바일 헤더 ─ 48rem 미만은 벽 없이 작게. 자주 여는 화면이라 목록이 한 줄이라도 더 보이게 한다 (DESIGN 3.2절, 목업 LibraryMobile)
+         -mr-2: 44px 버튼이 본문 오른쪽 끝보다 살짝 나가 목업의 오른쪽 여백 12px에 맞는다
+         -mb-3.5: 목록과의 간격을 목업처럼 좁힌다 (바깥 gap 20 - 14 = 6) -->
+    <div class="-mt-5 -mb-3.5 md:hidden">
+      <div class="-mr-2 flex h-[60px] items-center justify-between">
+        <h1 class="text-[22px] font-extrabold tracking-[-0.02em]">라이브러리</h1>
+        <Button as-child size="icon" class="size-11 rounded-[10px]">
+          <RouterLink :to="{ name: 'entry-new' }" aria-label="게임 등록">
+            <Plus class="size-[22px]" aria-hidden="true" />
+          </RouterLink>
+        </Button>
+      </div>
+      <p v-if="list.total.value" class="mt-1 text-[13px] text-muted-foreground">
+        총 <strong class="text-foreground">{{ list.total.value }}</strong>개
+        <template v-if="list.backlogTotal.value !== null">
+          · 미시작 <strong class="text-brand-text">{{ list.backlogTotal.value }}</strong>개
+        </template>
+      </p>
+    </div>
+
+    <!-- 포스터 벽 + 제목 ─ 48rem부터. 레이아웃의 본문 폭 제한을 거슬러 화면 끝까지 깐다 (wall-bleed) -->
+    <section class="wall-bleed relative -mt-5 hidden h-[280px] flex-col justify-end overflow-hidden md:flex">
       <div
         aria-hidden="true"
-        class="absolute -top-6 right-0 left-0 grid grid-cols-6 gap-2 px-2 md:grid-cols-12"
+        class="absolute -top-6 right-0 left-0 grid grid-cols-12 gap-2 px-2"
       >
         <template v-if="wall.length">
           <div
@@ -81,23 +101,15 @@ onBeforeUnmount(() => {
       <div aria-hidden="true" class="wall-fade absolute inset-0" />
 
       <!-- 벽은 끝까지 깔려도 제목은 본문 왼쪽 끝에 맞춘다 -->
-      <div class="relative mx-auto flex w-full max-w-[1280px] flex-wrap items-end justify-between gap-3 px-5 pb-2 md:px-10">
-        <div class="flex flex-col gap-1.5">
-          <h1 class="text-[32px] font-extrabold tracking-tight md:text-[40px]">라이브러리</h1>
-          <p v-if="list.total.value" class="text-[15px] text-muted-foreground">
-            총 <strong class="text-foreground">{{ list.total.value }}</strong>개
-            <template v-if="list.backlogTotal.value !== null">
-              · 미시작 <strong class="text-brand-text">{{ list.backlogTotal.value }}</strong>개
-            </template>
-          </p>
-        </div>
-        <!-- 48rem부터는 메뉴 띠에 같은 버튼이 있다 (DESIGN 2.2절) -->
-        <Button as-child class="h-11 rounded-[10px] px-4.5 text-[15px] font-semibold md:hidden">
-          <RouterLink :to="{ name: 'entry-new' }">
-            <Plus class="size-[18px]" aria-hidden="true" />
-            게임 등록
-          </RouterLink>
-        </Button>
+      <!-- 등록 버튼은 메뉴 띠에 있다 (DESIGN 2.2절) -->
+      <div class="relative mx-auto flex w-full max-w-[1280px] flex-col gap-1.5 px-10 pb-2">
+        <h1 class="text-[40px] font-extrabold tracking-tight">라이브러리</h1>
+        <p v-if="list.total.value" class="text-[15px] text-muted-foreground">
+          총 <strong class="text-foreground">{{ list.total.value }}</strong>개
+          <template v-if="list.backlogTotal.value !== null">
+            · 미시작 <strong class="text-brand-text">{{ list.backlogTotal.value }}</strong>개
+          </template>
+        </p>
       </div>
     </section>
 
@@ -108,9 +120,14 @@ onBeforeUnmount(() => {
       role="status"
       aria-label="목록을 불러오는 중"
     >
-      <div v-for="i in SKELETON_COUNT" :key="i" class="overflow-hidden rounded-xl border border-border bg-card">
-        <div class="aspect-[460/215] animate-pulse bg-secondary" />
-        <div class="flex flex-col gap-2 p-3.5">
+      <!-- 모양을 아래 목록 카드와 같게 ─ 모바일에서도 큰 카드로 그리면 데이터가 올 때 화면이 튄다 -->
+      <div
+        v-for="i in SKELETON_COUNT"
+        :key="i"
+        class="flex items-center gap-3.5 border-b border-border py-2.5 md:flex-col md:items-stretch md:gap-0 md:overflow-hidden md:rounded-xl md:border md:bg-card md:py-0"
+      >
+        <div class="aspect-[460/215] w-28 shrink-0 animate-pulse rounded-lg bg-secondary md:w-auto md:rounded-none" />
+        <div class="flex min-w-0 flex-1 flex-col gap-2 md:flex-none md:p-3.5">
           <div class="h-4 w-2/3 animate-pulse rounded bg-secondary" />
           <div class="h-3 w-1/2 animate-pulse rounded bg-secondary" />
         </div>
