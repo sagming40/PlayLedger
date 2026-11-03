@@ -1,0 +1,4 @@
+# git blame에서 건너뛸 커밋 ─ 내용 변경 없이 모양만 바꾼 커밋을 적는다 (GitHub는 자동으로 읽는다)
+
+# chore(M2): Prettier 전체 포맷
+9384f2ce1bd0e9af9a71e142ee437b43c61aff6c
