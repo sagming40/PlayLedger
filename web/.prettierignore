@@ -1,0 +1,6 @@
+# 빌드 결과물 · 잠금 파일은 사람이 고치지 않는다
+dist/
+package-lock.json
+
+# shadcn-vue가 만들어 주는 부품 ─ 원본과 모양을 맞춰 둬야 나중에 다시 받을 때 비교가 쉽다
+src/components/ui/
