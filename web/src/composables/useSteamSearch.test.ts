@@ -21,6 +21,19 @@ afterEach(() => {
   setAccessToken(null)
 })
 
+// 컴포넌트 밖에서 부르면 onScopeDispose가 붙을 곳이 없어 Vue가 경고를 찍는다
+// 화면 안처럼 effectScope 안에서 만들고, 테스트가 끝나면 화면을 떠난 것처럼 닫는다
+let scope: ReturnType<typeof effectScope> | null = null
+function mount() {
+  scope = effectScope()
+  return scope.run(() => useSteamSearch())!
+}
+
+afterEach(() => {
+  scope?.stop()
+  scope = null
+})
+
 async function pass(ms = SEARCH_DELAY_MS) {
   await vi.advanceTimersByTimeAsync(ms)
 }
@@ -29,7 +42,7 @@ describe('useSteamSearch', () => {
   it('입력이 멈춘 뒤 마지막 검색어로 한 번만 부른다', async () => {
     const fetchMock = vi.fn(async () => json(200, [{ appid: 1, name: 'Hollow Knight' }]))
     vi.stubGlobal('fetch', fetchMock)
-    const s = useSteamSearch()
+    const s = mount()
 
     s.search('ho')
     await pass(100)
@@ -47,7 +60,7 @@ describe('useSteamSearch', () => {
   it('두 글자 미만이면 부르지 않고 후보를 비운다', async () => {
     const fetchMock = vi.fn(async () => json(200, [{ appid: 1, name: 'A' }]))
     vi.stubGlobal('fetch', fetchMock)
-    const s = useSteamSearch()
+    const s = mount()
 
     s.search('ho')
     await pass()
@@ -68,7 +81,7 @@ describe('useSteamSearch', () => {
       .mockReturnValueOnce(first)
       .mockResolvedValueOnce(json(200, [{ appid: 2, name: 'Hollow Knight' }]))
     vi.stubGlobal('fetch', fetchMock)
-    const s = useSteamSearch()
+    const s = mount()
 
     s.search('ho')
     await pass() // 첫 요청이 나가고 답을 기다린다
@@ -86,7 +99,7 @@ describe('useSteamSearch', () => {
       'fetch',
       vi.fn(async () => json(500, { detail: 'Internal Server Error' })),
     )
-    const s = useSteamSearch()
+    const s = mount()
 
     s.search('hollow')
     await pass()
@@ -99,7 +112,7 @@ describe('useSteamSearch', () => {
   it('검색어에 & 가 있어도 잘리지 않고, 100자로 잘라 보낸다', async () => {
     const fetchMock = vi.fn(async () => json(200, []))
     vi.stubGlobal('fetch', fetchMock)
-    const s = useSteamSearch()
+    const s = mount()
 
     s.search('R&D')
     await pass()
