@@ -64,11 +64,18 @@ describe('카드 두 번째 줄', () => {
     })
   })
 
-  it('나머지 상태는 플레이타임 (분 → 시간, 소수 한 자리)', () => {
-    expect(cardMetric({ status: 'CLEARED', purchased_at: '2026-01-15', playtime_minutes: 3744 }, TODAY)).toEqual({
-      text: '62.4시간',
-      loud: false,
-    })
+  // DESIGN 3.2절 표의 네 줄 그대로 ─ 구매일이 180일을 넘어도 미시작이 아니면 방치로 세지 않는다
+  it.each([
+    ['PLAYING', 750, '12.5시간'],
+    ['CLEARED', 3744, '62.4시간'],
+    ['ON_HOLD', 480, '8.0시간'],
+    ['DROPPED', 72, '1.2시간'],
+  ] as const)('%s는 플레이타임 (분 → 시간, 소수 한 자리)', (status, playtime_minutes, text) => {
+    expect(cardMetric({ status, purchased_at: '2026-01-15', playtime_minutes }, TODAY)).toEqual({ text, loud: false })
+  })
+
+  it('미시작이 아니면 플레이타임이 0이어도 그대로 보인다', () => {
+    expect(cardMetric({ status: 'PLAYING', purchased_at: null, playtime_minutes: 0 }, TODAY)).toEqual({ text: '0.0시간', loud: false })
     expect(formatPlaytime(0)).toBe('0.0시간')
   })
 })
