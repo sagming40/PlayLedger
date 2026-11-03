@@ -13,7 +13,7 @@ function json(status: number, body?: unknown) {
 function entry(id: number): Entry {
   return {
     id,
-    game: { id, title: `게임 ${id}`, genres: [] },
+    game: { id, title: `게임 ${id}`, steam_appid: null, cover_url: null, genres: [] },
     status: 'BACKLOG',
     purchased_at: null,
     purchase_price: null,

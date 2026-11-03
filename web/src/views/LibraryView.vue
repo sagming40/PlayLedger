@@ -2,7 +2,8 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { Gamepad2, Plus } from '@lucide/vue'
 import { useEntryList } from '@/composables/useEntryList'
-import { STATUS_DOT_CLASS, STATUS_LABEL, cardMetric, titleInitials } from '@/lib/entry-display'
+import { STATUS_DOT_CLASS, STATUS_LABEL, cardMetric } from '@/lib/entry-display'
+import GameCover from '@/components/GameCover.vue'
 import { Button } from '@/components/ui/button'
 
 // S-02 라이브러리 (DESIGN 3.2절, 그림은 docs/mockups/Library · LibraryMobile · LibraryEmpty)
@@ -12,12 +13,12 @@ const list = useEntryList()
 const today = new Date()
 
 // 위쪽 포스터 벽 24칸 (DESIGN 4.4절 원칙 ─ 게임 커버가 화면의 주인공)
-// 커버 이미지는 M2.5 이후라, 지금은 커버 없는 게임의 대체 표시(제목 앞 두 글자)로 채운다
+// 커버가 없는 게임은 대체 표시(제목 앞 두 글자)로 채운다
 // 기록이 24개보다 적으면 돌려 써서 칸을 채운다. 0개면 빈 칸(점선)으로 둔다
 const wall = computed(() => {
   const source = list.items.value
   if (source.length === 0) return []
-  return Array.from({ length: 24 }, (_, i) => titleInitials(source[i % source.length]!.game.title))
+  return Array.from({ length: 24 }, (_, i) => source[i % source.length]!.game)
 })
 
 // 첫 로딩 뼈대 8장 ─ 목록 자리를 미리 잡아 데이터가 들어올 때 화면이 덜컥 밀리지 않게 한다
@@ -62,11 +63,13 @@ onBeforeUnmount(() => {
       >
         <template v-if="wall.length">
           <div
-            v-for="(initials, i) in wall"
+            v-for="(game, i) in wall"
             :key="i"
-            class="flex aspect-[2/3] items-end rounded-md bg-secondary p-2 opacity-70 dark:opacity-90"
+            class="flex aspect-[2/3] items-end overflow-hidden rounded-md bg-secondary opacity-70 dark:opacity-90"
           >
-            <span class="text-[11px] leading-tight font-extrabold text-muted-foreground/60">{{ initials }}</span>
+            <GameCover v-slot="{ initials }" :title="game.title" :cover-url="game.cover_url">
+              <span class="p-2 text-[11px] leading-tight font-extrabold text-muted-foreground/60">{{ initials }}</span>
+            </GameCover>
           </div>
         </template>
         <template v-else>
@@ -140,11 +143,13 @@ onBeforeUnmount(() => {
             :to="{ name: 'entry-detail', params: { id: entry.id } }"
             class="flex h-full items-center gap-3.5 border-b border-border py-2.5 md:flex-col md:items-stretch md:gap-0 md:overflow-hidden md:rounded-xl md:border md:bg-card md:py-0 md:transition-colors md:hover:border-brand-line"
           >
-            <!-- 커버 자리 ─ 비율은 Steam header.jpg(460×215)와 같다. 커버는 M2.5 이후, 지금은 대체 표시 -->
-            <div class="flex aspect-[460/215] w-28 shrink-0 items-center justify-center rounded-lg bg-secondary md:w-auto md:rounded-none">
-              <span class="text-lg font-extrabold tracking-tight text-muted-foreground/40 md:text-[34px]" aria-hidden="true">
-                {{ titleInitials(entry.game.title) }}
-              </span>
+            <!-- 커버 자리 ─ 비율은 Steam header 이미지(460×215)와 같다 -->
+            <div class="flex aspect-[460/215] w-28 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-secondary md:w-auto md:rounded-none">
+              <GameCover v-slot="{ initials }" :title="entry.game.title" :cover-url="entry.game.cover_url">
+                <span class="text-lg font-extrabold tracking-tight text-muted-foreground/40 md:text-[34px]" aria-hidden="true">
+                  {{ initials }}
+                </span>
+              </GameCover>
             </div>
             <div class="flex min-w-0 flex-col gap-1 md:gap-1.5 md:px-3.5 md:pt-3 md:pb-3.5">
               <span class="truncate text-[15px] font-semibold">{{ entry.game.title }}</span>

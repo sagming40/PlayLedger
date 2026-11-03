@@ -41,11 +41,11 @@ const routes: RouteRecordRaw[] = [
       },
       // S-03 · S-04는 라이브러리의 하위 화면이라 주소도 /library 아래에 둔다 (DESIGN 2.1절)
       // new를 :id보다 먼저 ─ 위에서부터 맞춰 보므로 뒤에 두면 'new'가 id로 읽힌다
-      // 화면은 다음 작업(S-03 · M3 S-04)에서 채운다. 지금은 목록 카드 · 등록 버튼이 갈 자리만 있다
+      // 상세 화면은 M3 S-04에서 채운다. 지금은 목록 카드가 갈 자리만 있다
       {
         path: 'library/new',
         name: 'entry-new',
-        meta: { title: '게임 등록' },
+        meta: { title: '게임 등록', ownTitle: true },
         component: () => import('@/views/EntryNewView.vue'),
       },
       {

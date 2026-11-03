@@ -13,6 +13,8 @@ export interface Genre {
 export interface Game {
   id: number
   title: string
+  steam_appid: number | null // 수동 등록 게임은 없다
+  cover_url: string | null // 없거나 깨지면 제목 앞 두 글자로 대체한다 (DESIGN 4.4절)
   genres: Genre[]
 }
 
@@ -39,6 +41,24 @@ export interface ListParams {
   status?: EntryStatus
   limit?: number
   offset?: number
+}
+
+// title과 steam_appid 중 정확히 하나만 보낸다 (ARCHITECTURE 5.3절)
+export interface EntryCreateBody {
+  title?: string
+  steam_appid?: number
+  status: EntryStatus
+  genre_ids: number[]
+  purchased_at: string | null
+  purchase_price: number | null
+  playtime_minutes: number
+  rating: number | null
+  review: string | null
+}
+
+// POST /api/entries ─ 201. 이미 내 라이브러리에 있으면 409
+export function createEntry(body: EntryCreateBody) {
+  return request<Entry>('/entries', { method: 'POST', body })
 }
 
 // GET /api/entries ─ 최근 수정순 (DESIGN 3.2절 정렬 기본값, SERVER가 정렬한다)
