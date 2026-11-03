@@ -1,7 +1,7 @@
 // S-03 입력값을 SERVER가 받는 값으로 바꾸는 규칙 (DESIGN 3.3절)
 // 화면과 떼어 둔다 ─ "1.5시간 → 90분" 같은 규칙을 화면 없이 테스트하기 위해서다
 
-import type { EntryCreateBody, EntryStatus } from '@/api/entries'
+import type { Entry, EntryCreateBody, EntryStatus, EntryUpdateBody } from '@/api/entries'
 import type { FieldIssue } from '@/api/errors'
 import type { SteamApp } from '@/api/steam'
 
@@ -72,6 +72,57 @@ export function buildCreateBody(form: EntryForm): EntryCreateBody | null {
   const title = form.title.trim()
   if (!title) return null
   return { title, ...common }
+}
+
+// 수정 폼이 고칠 수 있는 칸 ─ 제목은 고칠 수 없다 (DATA_MODEL 2.6절)
+// 장르는 게임에 붙는 값이라 따로 다룬다 (DATA_MODEL 2.5절, 화면 처리는 수정 화면 작업에서 정한다)
+export type EntryEditForm = Pick<EntryForm, 'status' | 'purchasedAt' | 'price' | 'hours' | 'rating' | 'review'>
+
+/** 분 → 입력칸 글자. 90 → '1.5', 0 → '' (빈 칸 = 0시간, parseHours와 짝) */
+function minutesToHours(minutes: number): string {
+  if (minutes === 0) return ''
+  // 소수 둘째 자리까지 ─ 100분은 '1.67'. 시간 칸은 분을 정확히 담지 못한다 (buildUpdateBody가 이 손실을 막는다)
+  return String(Math.round((minutes / 60) * 100) / 100)
+}
+
+/** 저장된 기록 → 수정 폼의 처음 값 (DESIGN 3.3절 "기존 값 채워서 진입") */
+export function entryToEditForm(entry: Entry): EntryEditForm {
+  return {
+    status: entry.status,
+    purchasedAt: entry.purchased_at ?? '',
+    price: entry.purchase_price === null ? '' : String(entry.purchase_price),
+    hours: minutesToHours(entry.playtime_minutes),
+    rating: entry.rating,
+    review: entry.review ?? '',
+  }
+}
+
+/**
+ * 수정 폼 → PATCH 본문. 잘못된 입력이 있으면 null, 바뀐 게 없으면 빈 객체
+ *
+ * **평점 보존 규칙 (DESIGN 4.3절)**: 평점 칸이 숨겨진 상태(클리어 · 포기가 아님)면 평점 · 한줄평을 아예 보내지 않는다
+ * ─ buildCreateBody처럼 null을 보내면 CLEARED → PLAYING으로 바꿔 저장하는 순간 평점이 지워진다
+ *
+ * **손대지 않은 칸은 보내지 않는다**: 폼을 연 뒤 다른 기기 · 상세 화면에서 바꾼 값을 옛 값으로 덮어쓰지 않게 (PATCH = 보낸 항목만)
+ * 비교는 저장된 값이 아니라 처음 채운 글자로 한다 ─ 100분은 '1.67'시간으로 보여서 다시 읽으면 100.2분이 된다
+ */
+export function buildUpdateBody(form: EntryEditForm, initial: EntryEditForm): EntryUpdateBody | null {
+  const price = parsePrice(form.price)
+  const minutes = parseHours(form.hours)
+  if (price === undefined || minutes === undefined) return null
+
+  const body: EntryUpdateBody = {}
+  if (form.status !== initial.status) body.status = form.status
+  if (form.purchasedAt !== initial.purchasedAt) body.purchased_at = form.purchasedAt || null
+  if (form.price !== initial.price) body.purchase_price = price
+  if (form.hours !== initial.hours) body.playtime_minutes = minutes
+
+  if (canRate(form.status)) {
+    if (form.rating !== initial.rating) body.rating = form.rating
+    const review = form.review.trim()
+    if (review !== initial.review.trim()) body.review = review || null
+  }
+  return body
 }
 
 const FIELD_LABEL: Record<string, string> = {

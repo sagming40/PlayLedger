@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
-import { buildCreateBody, canRate, issuesMessage, parseHours, parsePrice } from './entry-form'
+import { buildCreateBody, buildUpdateBody, canRate, entryToEditForm, issuesMessage, parseHours, parsePrice } from './entry-form'
 import type { EntryForm } from './entry-form'
+import type { Entry } from '@/api/entries'
 
 // S-03 입력값 변환 (DESIGN 3.3절)
 
@@ -92,5 +93,90 @@ describe('issuesMessage', () => {
       ]),
     ).toBe('한줄평 · 구매가을(를) 다시 확인해 주세요')
     expect(issuesMessage([{ field: 'body', rule: 'value_error' }])).toBeNull()
+  })
+})
+
+// 수정 폼 (DESIGN 3.3 · 4.3절) ─ 수정 화면이 이 규칙으로 PATCH 본문을 만든다
+function saved(over: Partial<Entry> = {}): Entry {
+  return {
+    id: 7,
+    game: { id: 7, title: 'Celeste', steam_appid: null, cover_url: null, genres: [] },
+    status: 'CLEARED',
+    purchased_at: '2026-01-15',
+    purchase_price: 66000,
+    playtime_minutes: 3744,
+    rating: 4,
+    review: '엔딩 보고 한참 멍했음',
+    source: 'MANUAL',
+    cost_per_hour: 1058,
+    created_at: '2026-10-25T00:00:00Z',
+    updated_at: '2026-10-25T00:00:00Z',
+    ...over,
+  }
+}
+
+describe('entryToEditForm', () => {
+  it('저장된 값을 입력칸 글자로 채운다', () => {
+    expect(entryToEditForm(saved())).toEqual({
+      status: 'CLEARED',
+      purchasedAt: '2026-01-15',
+      price: '66000',
+      hours: '62.4',
+      rating: 4,
+      review: '엔딩 보고 한참 멍했음',
+    })
+  })
+
+  it('없는 값은 빈 칸 ─ 0시간도 빈 칸 (parseHours가 빈 칸을 0으로 읽는다)', () => {
+    expect(entryToEditForm(saved({ purchased_at: null, purchase_price: null, playtime_minutes: 0, rating: null, review: null }))).toEqual({
+      status: 'CLEARED',
+      purchasedAt: '',
+      price: '',
+      hours: '',
+      rating: null,
+      review: '',
+    })
+  })
+})
+
+describe('buildUpdateBody', () => {
+  it('아무것도 안 바꾸면 빈 본문', () => {
+    const initial = entryToEditForm(saved())
+    expect(buildUpdateBody({ ...initial }, initial)).toEqual({})
+  })
+
+  it('CLEARED → PLAYING으로 바꿔도 평점 · 한줄평을 보내지 않는다 ─ 숨기기만 한다 (평점 보존 규칙)', () => {
+    const initial = entryToEditForm(saved())
+    // 상태를 바꾼 뒤 숨겨진 칸에 무엇이 남아 있든 보내지 않는다
+    expect(buildUpdateBody({ ...initial, status: 'PLAYING', rating: null, review: '' }, initial)).toEqual({ status: 'PLAYING' })
+  })
+
+  it('숨겨져 있던 평점을 다시 보이는 상태로 돌리면 남아 있던 값이 그대로다 ─ 보낼 것이 상태뿐', () => {
+    const initial = entryToEditForm(saved({ status: 'PLAYING' }))
+    expect(buildUpdateBody({ ...initial, status: 'CLEARED' }, initial)).toEqual({ status: 'CLEARED' })
+  })
+
+  it('보이는 평점을 지우면 null로 지운다 ─ 숨김과 지움은 다르다', () => {
+    const initial = entryToEditForm(saved())
+    expect(buildUpdateBody({ ...initial, rating: null, review: '  ' }, initial)).toEqual({ rating: null, review: null })
+  })
+
+  it('손대지 않은 칸은 보내지 않는다 ─ 다른 기기에서 바꾼 값을 덮어쓰지 않게', () => {
+    const initial = entryToEditForm(saved())
+    expect(buildUpdateBody({ ...initial, price: '50,000' }, initial)).toEqual({ purchase_price: 50000 })
+  })
+
+  it('시간 칸으로 정확히 못 담는 분(100분 → 1.67)도 손대지 않으면 그대로 둔다', () => {
+    const initial = entryToEditForm(saved({ playtime_minutes: 100 }))
+    expect(initial.hours).toBe('1.67')
+    expect(buildUpdateBody({ ...initial, status: 'DROPPED' }, initial)).toEqual({ status: 'DROPPED' })
+    // 고치면 고친 값으로
+    expect(buildUpdateBody({ ...initial, hours: '2' }, initial)).toEqual({ playtime_minutes: 120 })
+  })
+
+  it('구매일 · 구매가를 비우면 null, 숫자 칸이 잘못되면 null(보내지 않음)', () => {
+    const initial = entryToEditForm(saved())
+    expect(buildUpdateBody({ ...initial, purchasedAt: '', price: '' }, initial)).toEqual({ purchased_at: null, purchase_price: null })
+    expect(buildUpdateBody({ ...initial, hours: 'abc' }, initial)).toBeNull()
   })
 })
