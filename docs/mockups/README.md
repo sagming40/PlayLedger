@@ -35,7 +35,7 @@
 | S-04 게임 상세 · 데스크톱 / 모바일 / 삭제 확인 | `Detail.dc.html`, `DetailMobile.dc.html`, `DeleteDialog.dc.html` | 3.4절 | 채택 (2026-10-24), 구현 전 |
 | S-05 통계 · 데스크톱 / 모바일 | `Stats.dc.html`, `StatsMobile.dc.html` | 3.5절 | 채택 (2026-10-24), 구현 전. 장르별 완주율은 CSS 막대라 M4에서 ECharts로 옮긴다 |
 | S-06 설정 | `Settings.dc.html` | 3.6절 | 채택 (2026-10-24) |
-| 상단 메뉴 시안 A ~ H 비교 (D ~ H는 B 기반) | `TopNavBoard.dc.html`, `TopNav.dc.html` (`?variant=A` · `?screen=plain` · `?dark=false`) | 2.2절 | **H 채택** (2026-11-03, E + G의 아이콘), 구현 전. **F(떠 있는 캡슐)는 나중에 다시 볼 후보**, 나머지는 비교용. 캔버스 없이 저장소에서 직접 그렸다. material-dict 추천안의 상단 메뉴를 참고 |
+| 상단 메뉴 시안 A ~ H 비교 (D ~ H는 B 기반) | `TopNavBoard.dc.html`, `TopNav.dc.html` (`?variant=A` · `?screen=plain` · `?dark=false`) | 2.2절 | **H 채택** (2026-11-03, E + G의 아이콘). **F(떠 있는 캡슐)는 나중에 다시 볼 후보**, 나머지는 비교용. 캔버스 없이 저장소에서 직접 그렸다. material-dict 추천안의 상단 메뉴를 참고 |
 
 데스크톱 보드(`Library` · `LibraryEmpty` · `Form` · `Detail` · `Stats` · `Settings`)의 왼쪽 사이드바는 옛 안이다 — 메뉴는 `TopNav.dc.html` 시안 H가 기준이다.
 
