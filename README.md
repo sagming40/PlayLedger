@@ -248,6 +248,7 @@ python -m venv venv
 .\venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 Copy-Item .env.example .env   # 값 채우기
+alembic upgrade head
 
 # web/
 npm install
@@ -255,6 +256,15 @@ npm install
 # 루트
 Copy-Item .env.example .env   # 값 채우기
 ```
+
+**Steam 게임 검색을 쓰려면 — 기기마다 1회 (`server/`)**
+
+```powershell
+# server/.env에 STEAM_API_KEY를 넣은 뒤 (https://steamcommunity.com/dev/apikey)
+python -m app.scripts.sync_steam_apps   # 게임 약 20만 건을 DB로 복사, 약 20초
+```
+
+> 건너뛰어도 서버는 뜨고 제목 직접 입력은 됩니다. 후보만 나오지 않습니다.
 
 **실행 — 터미널 3개**
 

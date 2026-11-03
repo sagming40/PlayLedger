@@ -81,7 +81,7 @@ PlayLedger: 사놓고 안 한 게임을 구매일 · 구매가 · 플레이타�
 - **반응형 기준은 `48rem`**: px이 아니라 루트 글꼴 크기에 따라 기기마다 전환 지점이 다르다
 
 ## 하지 말 것
-- `.env`(루트 · `server/`)를 커밋하지 않는다
+- `.env`(루트 · `server/`)를 커밋하지 않는다. `STEAM_API_KEY`는 화면 · 로그 · URL에 찍지 않는다 (헤더로만 보낸다)
 - `alembic.ini`에 한글을 쓰지 않는다 (Windows에서 cp949로 읽어서 `UnicodeDecodeError`가 날 수 있다). DB 주소도 넣지 않는다 (`alembic/env.py`가 `.env`에서 읽음)
 - access 토큰을 `localStorage`에 넣지 않는다. 메모리(`api/client.ts`)에만 둔다
 
@@ -105,6 +105,7 @@ pip install -r requirements.txt
 alembic upgrade head
 uvicorn app.main:app --reload --port 8001         # http://localhost:8001/docs
 pytest                                            # 테스트 전용 DB 사용
+python -m app.scripts.sync_steam_apps             # Steam 게임 목록 미러링 (STEAM_API_KEY 필요, 비어 있어도 서버는 뜬다)
 
 # web/
 npm ci

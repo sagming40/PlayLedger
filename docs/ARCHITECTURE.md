@@ -534,6 +534,7 @@ sequenceDiagram
 - **외부 호출은 DB 잠금을 잡기 전에 한다.** Steam이 느릴 때 게임 행을 잠근 채 기다리면 같은 게임을 등록하는 다른 사용자까지 멈춘다
 - **보유 기록의 `source`는 `MANUAL`이다.** `STEAM`이면 M8 동기화가 사용자가 입력한 플레이타임을 덮어쓴다(5.1절). 게임이 Steam에 있는지는 `games.steam_appid`가 말한다
 - 등록 요청은 `title` 또는 `steam_appid` 중 정확히 하나만 받는다
+- 미러링은 `server/`에서 `python -m app.scripts.sync_steam_apps`로 손으로 돌린다 (M9 전까지). 테이블이 비어 있어도 직접 입력은 된다
 
 ---
 
