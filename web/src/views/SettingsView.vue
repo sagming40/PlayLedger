@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useThemeStore } from '@/stores/theme'
 import type { ThemePreference } from '@/lib/theme'
+import SurfacePanel from '@/components/SurfacePanel.vue'
 import { Button } from '@/components/ui/button'
 
 const auth = useAuthStore()
@@ -35,7 +36,7 @@ async function onLogout() {
 <template>
   <div class="flex max-w-[720px] flex-col gap-5">
     <!-- 계정 -->
-    <section class="flex items-center gap-4 rounded-[14px] border border-border bg-card px-6 py-[22px]" aria-labelledby="account-title">
+    <SurfacePanel class="flex items-center gap-4" aria-labelledby="account-title">
       <div
         aria-hidden="true"
         class="flex size-[52px] shrink-0 items-center justify-center rounded-full border border-brand-line bg-brand-tint text-xl font-extrabold text-brand-text"
@@ -47,10 +48,10 @@ async function onLogout() {
         <span class="truncate text-lg font-bold">{{ auth.user?.nickname }}</span>
         <span class="truncate text-sm text-muted-foreground">{{ auth.user?.email }}</span>
       </div>
-    </section>
+    </SurfacePanel>
 
     <!-- 화면 테마 ─ 고른 값은 브라우저에 저장되어 로그인 화면에도 적용된다 -->
-    <section class="flex flex-wrap items-center justify-between gap-3 rounded-[14px] border border-border bg-card px-6 py-[22px]">
+    <SurfacePanel class="flex flex-wrap items-center justify-between gap-3">
       <h2 id="theme-title" class="text-base font-bold">화면 테마</h2>
       <div role="group" aria-labelledby="theme-title" class="inline-flex gap-1 rounded-xl border border-border bg-background p-1">
         <!-- aria-pressed ─ 화면 읽기 프로그램에 "지금 눌려 있는 버튼"을 알린다 -->
@@ -70,10 +71,10 @@ async function onLogout() {
           {{ option.label }}
         </button>
       </div>
-    </section>
+    </SurfacePanel>
 
     <!-- Steam 연동 ─ M8에서 연결한다. 자리와 안내 문구만 먼저 보여준다 (DESIGN 3.6절) -->
-    <section class="flex flex-col gap-3.5 rounded-[14px] border border-border bg-card px-6 py-[22px]">
+    <SurfacePanel class="flex flex-col gap-3.5">
       <div class="flex items-center gap-2.5">
         <h2 class="text-base font-bold">Steam 연동</h2>
         <span class="rounded-md bg-secondary px-2 py-0.5 text-[11px] font-bold text-muted-foreground">M8 예정</span>
@@ -90,25 +91,25 @@ async function onLogout() {
             class="h-[46px] min-w-0 flex-[1_1_260px] rounded-[10px] border border-border bg-background px-3.5 text-[15px] opacity-60"
           />
           <!-- 곧 생길 기능이라 흐리게 지우지 않고 글자색만 낮춘다 (목업 Settings) -->
-          <Button variant="secondary" disabled class="h-[46px] rounded-[10px] border-border px-4.5 font-semibold text-muted-foreground disabled:opacity-100">지금 동기화</Button>
+          <Button variant="secondary" disabled class="h-[46px] border-border px-4.5 font-semibold text-muted-foreground disabled:opacity-100">지금 동기화</Button>
         </div>
         <span id="steam-help" class="text-[13px] text-muted-foreground">Steam 프로필의 게임 세부 정보가 공개여야 동기화됩니다</span>
       </div>
-    </section>
+    </SurfacePanel>
 
     <!-- Discord 연결 ─ M11 -->
-    <section class="flex flex-wrap items-center justify-between gap-3 rounded-[14px] border border-border bg-card px-6 py-[22px]">
+    <SurfacePanel class="flex flex-wrap items-center justify-between gap-3">
       <div class="flex items-center gap-2.5">
         <h2 class="text-base font-bold">Discord 연결</h2>
         <span class="rounded-md bg-secondary px-2 py-0.5 text-[11px] font-bold text-muted-foreground">M11 예정</span>
       </div>
-      <Button variant="secondary" disabled class="h-11 rounded-[10px] border-border px-4 font-semibold text-muted-foreground disabled:opacity-100">Discord 계정 연결</Button>
-    </section>
+      <Button variant="secondary" disabled class="h-11 border-border px-4 font-semibold text-muted-foreground disabled:opacity-100">Discord 계정 연결</Button>
+    </SurfacePanel>
 
     <div class="pt-1">
       <Button
         variant="outline"
-        class="h-[46px] rounded-[10px] border-brand-line bg-transparent px-5 font-semibold text-brand-text hover:bg-brand-tint hover:text-brand-text dark:border-brand-line dark:bg-transparent"
+        class="h-[46px] border-brand-line bg-transparent px-5 font-semibold text-brand-text hover:bg-brand-tint hover:text-brand-text dark:border-brand-line dark:bg-transparent"
         :disabled="loggingOut"
         @click="onLogout"
       >

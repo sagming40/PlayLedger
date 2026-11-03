@@ -92,7 +92,7 @@ function onKeydown(e: KeyboardEvent) {
       :aria-expanded="showList"
       :aria-activedescendant="active >= 0 ? `title-option-${active}` : undefined"
       placeholder="예: Baldur's Gate 3"
-      class="h-12 rounded-[10px] bg-card text-base"
+      class="h-12 bg-card text-base"
       @input="onInput"
       @keydown="onKeydown"
       @blur="open = false"

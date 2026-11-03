@@ -7,11 +7,13 @@ import type { EntryStatus, Genre } from '@/api/entries'
 import { ApiError } from '@/api/errors'
 import { listGenres } from '@/api/genres'
 import type { SteamApp } from '@/api/steam'
+import FormField from '@/components/FormField.vue'
+import StatusDot from '@/components/StatusDot.vue'
 import SteamTitleField from '@/components/SteamTitleField.vue'
+import SurfacePanel from '@/components/SurfacePanel.vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { STATUS_DOT_CLASS, STATUS_LABEL } from '@/lib/entry-display'
+import { STATUS_LABEL } from '@/lib/entry-display'
 import { STATUSES, buildCreateBody, canRate, issuesMessage, parseHours, parsePrice } from '@/lib/entry-form'
 
 // S-03 게임 등록 (DESIGN 3.3절, 그림은 docs/mockups/Form)
@@ -103,10 +105,9 @@ async function onSubmit() {
     <h1 class="text-[34px] font-extrabold tracking-tight">게임 등록</h1>
 
     <form class="flex flex-col gap-[26px]" @submit.prevent="onSubmit">
-      <div class="flex flex-col gap-2">
-        <Label for="title" class="gap-1 text-sm font-semibold">제목 <span class="text-brand-text">*</span></Label>
+      <FormField id="title" label="제목" required>
         <SteamTitleField v-model:title="title" v-model:steam-app="steamApp" />
-      </div>
+      </FormField>
 
       <fieldset class="flex flex-col gap-2.5">
         <legend class="mb-2.5 text-sm font-semibold">상태 <span class="text-brand-text">*</span></legend>
@@ -120,7 +121,7 @@ async function onSubmit() {
             :class="status === s ? 'border-brand-line bg-brand-tint font-semibold' : 'border-border bg-card text-muted-foreground'"
             @click="status = s"
           >
-            <span class="size-2 rounded-full" :class="STATUS_DOT_CLASS[s]" aria-hidden="true" />
+            <StatusDot :status="s" class="size-2" />
             {{ STATUS_LABEL[s] }}
           </button>
         </div>
@@ -132,7 +133,7 @@ async function onSubmit() {
         </legend>
         <div v-if="genresFailed" class="flex items-center gap-3 text-sm text-muted-foreground">
           장르를 불러오지 못했어요
-          <Button type="button" variant="outline" class="h-9 rounded-[10px]" @click="loadGenres">다시 시도</Button>
+          <Button type="button" variant="outline" class="h-9" @click="loadGenres">다시 시도</Button>
         </div>
         <div v-else class="flex flex-wrap gap-2">
           <button
@@ -153,12 +154,10 @@ async function onSubmit() {
       </fieldset>
 
       <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
-        <div class="flex min-w-0 flex-col gap-2">
-          <Label for="purchased-at" class="text-sm font-semibold">구매일</Label>
-          <Input id="purchased-at" v-model="purchasedAt" type="date" class="h-12 rounded-[10px] bg-card text-[15px]" />
-        </div>
-        <div class="flex min-w-0 flex-col gap-2">
-          <Label for="price" class="gap-1 text-sm font-semibold">구매가 <span class="font-normal text-muted-foreground">(원)</span></Label>
+        <FormField id="purchased-at" label="구매일">
+          <Input id="purchased-at" v-model="purchasedAt" type="date" class="h-12 bg-card text-[15px]" />
+        </FormField>
+        <FormField id="price" label="구매가" unit="원" :error="priceInvalid ? '0 이상의 정수로 적어 주세요' : undefined">
           <Input
             id="price"
             v-model="price"
@@ -166,13 +165,11 @@ async function onSubmit() {
             inputmode="numeric"
             placeholder="66,000"
             :aria-invalid="priceInvalid"
-            aria-describedby="price-error"
-            class="h-12 rounded-[10px] bg-card text-[15px]"
+            :aria-describedby="priceInvalid ? 'price-error' : undefined"
+            class="h-12 bg-card text-[15px]"
           />
-          <span v-if="priceInvalid" id="price-error" class="text-xs text-destructive">0 이상의 정수로 적어 주세요</span>
-        </div>
-        <div class="flex min-w-0 flex-col gap-2">
-          <Label for="hours" class="gap-1 text-sm font-semibold">플레이타임 <span class="font-normal text-muted-foreground">(시간)</span></Label>
+        </FormField>
+        <FormField id="hours" label="플레이타임" unit="시간" :error="hoursInvalid ? '숫자로 적어 주세요 (예: 1.5)' : undefined">
           <Input
             id="hours"
             v-model="hours"
@@ -180,15 +177,14 @@ async function onSubmit() {
             inputmode="decimal"
             placeholder="0"
             :aria-invalid="hoursInvalid"
-            aria-describedby="hours-error"
-            class="h-12 rounded-[10px] bg-card text-[15px]"
+            :aria-describedby="hoursInvalid ? 'hours-error' : undefined"
+            class="h-12 bg-card text-[15px]"
           />
-          <span v-if="hoursInvalid" id="hours-error" class="text-xs text-destructive">숫자로 적어 주세요 (예: 1.5)</span>
-        </div>
+        </FormField>
       </div>
 
       <!-- 평점 · 한줄평 ─ 끝난 게임에만 (DESIGN 3.3절) -->
-      <section v-if="showRating" class="flex flex-col gap-4 rounded-[14px] border border-border bg-card px-[22px] py-5">
+      <SurfacePanel v-if="showRating" class="flex flex-col gap-4 px-[22px] py-5">
         <div class="flex flex-col gap-2">
           <span id="rating-label" class="text-sm font-semibold">평점</span>
           <div role="group" aria-labelledby="rating-label" class="flex gap-0.5">
@@ -210,8 +206,7 @@ async function onSubmit() {
             </button>
           </div>
         </div>
-        <div class="flex flex-col gap-2">
-          <Label for="review" class="text-sm font-semibold">한줄평</Label>
+        <FormField id="review" label="한줄평">
           <textarea
             id="review"
             v-model="review"
@@ -221,17 +216,17 @@ async function onSubmit() {
             class="resize-y rounded-[10px] border border-input bg-background px-3.5 py-3 text-[15px] outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
           />
           <span class="self-end text-xs text-muted-foreground">{{ review.length }} / 200</span>
-        </div>
-      </section>
+        </FormField>
+      </SurfacePanel>
       <p v-else class="text-[13px] text-muted-foreground">평점 · 한줄평은 클리어 또는 포기했을 때 적을 수 있어요</p>
 
       <p v-if="errorMessage" role="alert" class="text-sm text-destructive">{{ errorMessage }}</p>
 
       <div class="flex justify-end gap-2.5 border-t border-border pt-2">
-        <Button as-child variant="outline" class="mt-2 h-[46px] rounded-[10px] px-[18px] text-[15px]">
+        <Button as-child variant="outline" class="mt-2 h-[46px] px-[18px] text-[15px]">
           <RouterLink :to="{ name: 'library' }">취소</RouterLink>
         </Button>
-        <Button type="submit" class="mt-2 h-[46px] rounded-[10px] px-[22px] text-[15px] font-bold" :disabled="!canSubmit">
+        <Button type="submit" class="mt-2 h-[46px] px-[22px] text-[15px] font-bold" :disabled="!canSubmit">
           {{ submitting ? '저장 중…' : '저장' }}
         </Button>
       </div>

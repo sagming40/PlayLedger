@@ -2,8 +2,10 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { Gamepad2, Plus } from '@lucide/vue'
 import { useEntryList } from '@/composables/useEntryList'
-import { STATUS_DOT_CLASS, STATUS_LABEL, cardMetric } from '@/lib/entry-display'
+import { STATUS_LABEL, cardMetric } from '@/lib/entry-display'
+import EntrySummary from '@/components/EntrySummary.vue'
 import GameCover from '@/components/GameCover.vue'
+import StatusDot from '@/components/StatusDot.vue'
 import { Button } from '@/components/ui/button'
 
 // S-02 라이브러리 (DESIGN 3.2절, 그림은 docs/mockups/Library · LibraryMobile · LibraryEmpty)
@@ -61,18 +63,13 @@ onBeforeUnmount(() => {
     <div class="-mt-5 -mb-3.5 md:hidden">
       <div class="-mr-2 flex h-[60px] items-center justify-between">
         <h1 class="text-[22px] font-extrabold tracking-[-0.02em]">라이브러리</h1>
-        <Button as-child size="icon" class="size-11 rounded-[10px]">
+        <Button as-child size="icon" class="size-11">
           <RouterLink :to="{ name: 'entry-new' }" aria-label="게임 등록">
             <Plus class="size-[22px]" aria-hidden="true" />
           </RouterLink>
         </Button>
       </div>
-      <p v-if="list.total.value" class="mt-1 text-[13px] text-muted-foreground">
-        총 <strong class="text-foreground">{{ list.total.value }}</strong>개
-        <template v-if="list.backlogTotal.value !== null">
-          · 미시작 <strong class="text-brand-text">{{ list.backlogTotal.value }}</strong>개
-        </template>
-      </p>
+      <EntrySummary :total="list.total.value" :backlog="list.backlogTotal.value" class="mt-1 text-[13px]" />
     </div>
 
     <!-- 포스터 벽 + 제목 ─ 48rem부터. 레이아웃의 본문 폭 제한을 거슬러 화면 끝까지 깐다 (wall-bleed) -->
@@ -104,12 +101,7 @@ onBeforeUnmount(() => {
       <!-- 등록 버튼은 메뉴 띠에 있다 (DESIGN 2.2절) -->
       <div class="relative mx-auto flex w-full max-w-[1280px] flex-col gap-1.5 px-10 pb-2">
         <h1 class="text-[40px] font-extrabold tracking-tight">라이브러리</h1>
-        <p v-if="list.total.value" class="text-[15px] text-muted-foreground">
-          총 <strong class="text-foreground">{{ list.total.value }}</strong>개
-          <template v-if="list.backlogTotal.value !== null">
-            · 미시작 <strong class="text-brand-text">{{ list.backlogTotal.value }}</strong>개
-          </template>
-        </p>
+        <EntrySummary :total="list.total.value" :backlog="list.backlogTotal.value" class="text-[15px]" />
       </div>
     </section>
 
@@ -137,7 +129,7 @@ onBeforeUnmount(() => {
     <!-- 처음부터 실패 ─ 목록 대신 안내 + 다시 시도 (DESIGN 6장) -->
     <div v-else-if="list.firstError.value" role="alert" class="flex flex-col items-center gap-3 py-16 text-center">
       <p class="text-[15px]">{{ list.firstError.value }}</p>
-      <Button variant="outline" class="h-11 rounded-[10px]" @click="list.loadFirst()">다시 시도</Button>
+      <Button variant="outline" class="h-11" @click="list.loadFirst()">다시 시도</Button>
     </div>
 
     <!-- 0개 ─ 행동을 유도한다 (DESIGN 5장) -->
@@ -145,7 +137,7 @@ onBeforeUnmount(() => {
       <Gamepad2 class="size-14 text-muted-foreground" stroke-width="1.5" aria-hidden="true" />
       <h2 class="text-[22px] font-bold">아직 등록된 게임이 없어요</h2>
       <p class="text-[15px] text-muted-foreground">산 게임을 하나 등록하면 방치일수부터 세기 시작해요</p>
-      <Button as-child class="mt-2 h-12 rounded-[10px] px-5.5 text-[15px] font-bold">
+      <Button as-child class="mt-2 h-12 px-5.5 text-[15px] font-bold">
         <RouterLink :to="{ name: 'entry-new' }">
           <Plus class="size-[18px]" aria-hidden="true" />
           게임 추가하기
@@ -174,7 +166,7 @@ onBeforeUnmount(() => {
               <span class="truncate text-[15px] font-semibold">{{ entry.game.title }}</span>
               <!-- 상태는 점 + 글자 (DESIGN 4.1절 ─ 색만으로 구분하지 않는다) -->
               <span class="flex items-center gap-1.5 text-[13px] text-muted-foreground">
-                <span class="size-[7px] shrink-0 rounded-full" :class="STATUS_DOT_CLASS[entry.status]" aria-hidden="true" />
+                <StatusDot :status="entry.status" class="size-[7px]" />
                 <span class="text-foreground">{{ STATUS_LABEL[entry.status] }}</span>
                 <template v-if="cardMetric(entry, today).text">
                   ·
@@ -196,12 +188,12 @@ onBeforeUnmount(() => {
         <p v-if="list.loadingMore.value" role="status" class="text-sm text-muted-foreground">불러오는 중…</p>
         <template v-else-if="list.moreError.value">
           <p role="alert" class="text-sm">{{ list.moreError.value }}</p>
-          <Button variant="outline" class="h-10 rounded-[10px]" @click="list.loadMore()">다시 시도</Button>
+          <Button variant="outline" class="h-10" @click="list.loadMore()">다시 시도</Button>
         </template>
         <Button
           v-else-if="list.hasMore.value"
           variant="ghost"
-          class="h-10 rounded-[10px] text-muted-foreground"
+          class="h-10 text-muted-foreground"
           @click="list.loadMore()"
         >
           더 불러오기

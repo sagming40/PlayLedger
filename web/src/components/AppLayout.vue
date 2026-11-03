@@ -57,7 +57,7 @@ function isActive(name: string) {
         <Button
           v-if="route.name !== 'entry-new'"
           as-child
-          class="ml-auto h-10 shrink-0 rounded-[10px] px-4 text-sm font-semibold"
+          class="ml-auto h-10 shrink-0 px-4 text-sm font-semibold"
         >
           <RouterLink :to="{ name: 'entry-new' }">
             <Plus class="size-4" aria-hidden="true" />
