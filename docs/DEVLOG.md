@@ -8,12 +8,12 @@
 | 항목 | 내용 |
 |---|---|
 | 단계 | **M3** 🔄 (`PLAN` M3) |
-| 진행 중 | 없음. 오늘(2026-11-03 집 PC) 한 것: S-04 상세 · 상태 · 평점 · 한줄평 바로 고치기, 평점 보존 규칙, 상태별 필터 · 주소 쿼리 ((1) ~ (5)). 모두 커밋 · push됨 |
-| 다음에 할 일 | `PLAN` M3 순서대로 **카드 두 번째 줄 상태별 분기** → 수정 화면 → 삭제 → 저장 알림. 작업마다 "자동으로 할까, 직접 칠래?"를 먼저 묻는다 |
-| 다음 작업 메모 | **카드 두 번째 줄**: M2에서 `cardMetric`(`web/src/lib/entry-display.ts`)으로 이미 상태별로 갈라 놓았다(미시작 = 방치일수, 나머지 = 플레이타임). 새로 만들기보다 `DESIGN` 3.2절 표와 5가지 상태를 화면에서 대조하고 차이만 고치면 될 수 있다. 개발 DB에 5상태 기록이 다 있어야 확인된다(확인용 계정에는 미시작 1 · 클리어 2뿐). **수정 화면**: `entryToEditForm` · `buildUpdateBody`를 쓴다(숨긴 평점은 안 보냄 · 바뀐 칸만). 장르 처리 · 제목 읽기 전용 안내는 그때 정한다(`DESIGN` 3.3절). S-04에 수정 버튼 · ⋮를 붙인다. **저장 알림**: Motion은 설치 전 ─ 의존성 목록을 먼저 보여 주고 사용자가 설치한다 |
+| 진행 중 | 없음. 완료 기준 5개 모두 충족, 작업 목록 3개 남음 |
+| 다음에 할 일 | `PLAN` M3 순서대로 **수정 화면** → 삭제 → 저장 알림. 작업마다 "자동으로 할까, 직접 칠래?"를 먼저 묻는다 |
+| 다음 작업 메모 | **수정 화면**: `entryToEditForm` · `buildUpdateBody`를 쓴다(숨긴 평점은 안 보냄 · 바뀐 칸만). 장르 처리 · 제목 읽기 전용 안내는 그때 정한다(`DESIGN` 3.3절). S-04에 수정 버튼 · ⋮를 붙인다. **저장 알림**: Motion은 설치 전 ─ 의존성 목록을 먼저 보여 주고 사용자가 설치한다 |
 | M3에서 같이 볼 것 | 눌림 칩이 세 군데(S-02 상태 필터 · S-03 상태 버튼 · S-03 장르 칩)에 모양이 다르게 있다 ─ 수정 화면 작업 때 공용 컴포넌트로 묶을지 본다. 모바일 첫 줄이 요약 줄 도착 때 24px 밀리는 것 · `가장 오래 방치` 요약은 `PLAN` 항목이 없어 판단이 필요하다 |
 | M5 전에 | 라우터 `onError` 없음 ─ 화면 모듈을 못 받으면 안내 없이 빈 화면 ([DEVLOG_M2](archive/DEVLOG_M2.md) 2026-11-03 (7)) |
-| 기기별로 할 일 | **회사 PC(데스크톱 B)**: `git pull`만. 오늘 의존성(`requirements.txt` · `package-lock.json`) · 마이그레이션 변화 없음. 확인은 `pytest`(64건) · `npm test`(119건). **노트북**: `git pull` → `docker compose up -d` → `server/`에서 `pip install -r requirements.txt` · `alembic upgrade head` → `server/.env`에 `STEAM_API_KEY` → `python -m app.scripts.sync_steam_apps` → `web/`에서 `npm ci` → 전역 설정(`~/.claude/CLAUDE.md`)에 "작업 방식" · "문서 체계" 절 추가 (원본은 회사 PC `~/.claude/CLAUDE.md`, 사본 `G:\내 드라이브\_private\.claude\desktop_cm_CLAUDE.md`). 선택: `git config blame.ignoreRevsFile .git-blame-ignore-revs`. 집 PC(데스크톱 A)는 2026-11-03에 끝냄 |
+| 기기별로 할 일 | **집 PC(데스크톱 A)**: `git pull`만. 의존성 · 마이그레이션 변화 없음. 확인은 `pytest`(64건) · `npm test`(123건). **노트북**: `git pull` → `docker compose up -d` → `server/`에서 `pip install -r requirements.txt` · `alembic upgrade head` → `server/.env`에 `STEAM_API_KEY` → `python -m app.scripts.sync_steam_apps` → `web/`에서 `npm ci` → 전역 설정(`~/.claude/CLAUDE.md`)에 "작업 방식" · "문서 체계" 절 추가 (원본은 회사 PC `~/.claude/CLAUDE.md`, 사본 `G:\내 드라이브\_private\.claude\desktop_cm_CLAUDE.md`). 선택: `git config blame.ignoreRevsFile .git-blame-ignore-revs` |
 | 집 PC에만 있는 것 | 개발 DB의 확인용 계정 1개 · 기록 3개(Hollow Knight · 예시 게임 2개). 계정 값은 저장소에 없다(세션 임시 폴더). `.claude/launch.json`(Claude 앱 미리보기로 API · 프론트를 띄우는 설정)은 이 PC의 절대 경로가 들어 있어 커밋하지 않고 `.git/info/exclude`에 넣었다 ─ 다른 기기에서 Claude가 미리보기를 쓰려면 그 기기에서 새로 만든다 |
 | 회사 PC에만 있는 것 | 화면 전후 픽셀 비교 스크립트는 저장소에 없다(세션 임시 폴더). 다른 기기에서 필요하면 방법을 보고 새로 만든다 ([DEVLOG_M2](archive/DEVLOG_M2.md) 2026-11-03 (6) · (7)) |
 
@@ -23,6 +23,28 @@
 - 기기 표기는 `README` 개발 환경 표를 따른다 (데스크톱 A · 데스크톱 B · 노트북)
 - **막혔던 점은 해결됐어도 반드시 남긴다.** 같은 실수를 반복하지 않기 위한 기록이고, 나중에 이 프로젝트를 설명할 때 "어떤 문제를 어떻게 해결했는가"가 결과물보다 더 중요한 이야기가 된다
 - 환경 버전은 여기 적지 않는다. `requirements.txt` · `package.json` · `ci.yml`이 원본이고, 기기별 런타임은 `README`에 있다
+
+---
+
+## 2026-11-04 (1) · 카드 두 번째 줄 대조 (데스크톱 B, 자동 작업)
+
+### 한 일
+- 진행 순서: `DESIGN` 3.2 · 4.2절 · 목업과 `cardMetric` 대조 → 빠진 테스트 추가 → 5상태 예시 기록을 넣어 화면에서 읽기 → 예시 기록 삭제 → 문서
+- **코드는 고치지 않았다.** M2의 `cardMetric`이 이미 표와 같았다. 테스트가 `CLEARED`만 보고 있어서 나머지 상태를 추가했다
+- 문서: 구매일 없는 미시작 표기가 코드에만 있어서 `DESIGN` 3.2절에 한 줄 적었다
+- 검증
+  - `npm test` **123 passed** (4건 늘어남), `lint` · `format:check` · `vue-tsc` 통과
+  - 화면(1440px 다크 · 라이트, 값은 DOM에서 읽음): `플레이중 · 12.5시간`, `클리어 · 62.4시간`, `보류 · 8.0시간`, `포기 · 1.2시간`, `플레이중 · 0.0시간`, `미시작 · 방치 214일 / 180일 / 179일 / 0일`, 구매일 없으면 `미시작`만
+  - 강조: 180 · 214일은 굵게(700) + 다크 `#FF7276` · 라이트 `#B4232A`, 179일은 400 + 기본 글자색. 상태 점 5색은 목업 값과 일치
+  - 넘침: 1440 · 390 · 320px × 다크 · 라이트에서 가로 스크롤 없음. 긴 제목은 말줄임, `플레이중 · 9999.0시간`도 안 넘친다
+  - 확인용 계정 1개 · 기록 11개 DB에서 삭제
+- **확인 못 한 것**: Steam 커버가 있는 카드로는 이번에 보지 않았다(M2 픽셀 비교 때의 카드와 같은 구조)
+
+### 이번 세션 커밋
+- `test(M3): 카드 두 번째 줄 상태별 테스트 보강`, `docs(M3): 카드 두 번째 줄 확인 반영`
+
+### 다음에 할 일
+- 수정 화면
 
 ---
 
