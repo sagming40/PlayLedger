@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>상단 메뉴 비교</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=Noto+Sans+KR:wght@400;500;700;800&amp;display=swap">
+<style>
+body{margin:0}
+a{color:inherit}a:hover{opacity:.85}
+.thumb{width:648px;height:405px;overflow:hidden;border-radius:10px;position:relative}
+.thumb>iframe{transform:scale(.45);transform-origin:0 0;pointer-events:none}
+</style>
+</helmet>
+<div style="width: 1440px; box-sizing: border-box; padding: 56px; background: {{t.bg}}; color: {{t.text}}; font-family: 'Inter','Noto Sans KR',sans-serif; display: flex; flex-direction: column; gap: 40px">
+<div style="display: flex; flex-direction: column; gap: 6px">
+<h1 style="margin: 0; font-size: 32px; font-weight: 800; letter-spacing: -0.02em">상단 메뉴 시안</h1>
+<p style="margin: 0; font-size: 15px; color: {{t.muted}}">왼쪽은 포스터 벽이 있는 S-02, 오른쪽은 벽이 없는 화면이다. 48rem 미만의 하단 탭은 그대로 둔다.</p>
+</div>
+
+<section style="display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; align-items: baseline; gap: 12px">
+<h2 style="margin: 0; font-size: 20px; font-weight: 700">H · 채택 (2026-11-03)</h2>
+<span style="font-size: 14px; color: {{t.muted}}">E의 띠와 게임 등록 + G의 아이콘. F는 나중에 다시 볼 후보, 나머지는 비교용이다</span>
+<a href="TopNav.dc.html?variant=H&amp;dark={{dark}}" style="margin-left: auto; font-size: 13px; color: {{t.muted}}">크게 보기</a>
+</div>
+<div style="display: flex; gap: 24px">
+<div class="thumb" style="border: 1px solid {{t.border}}"><dc-import name="TopNav" variant="H" dark="{{dark}}" hint-size="1455px,900px"></dc-import></div>
+<div class="thumb" style="border: 1px solid {{t.border}}"><dc-import name="TopNav" variant="H" screen="plain" dark="{{dark}}" hint-size="1455px,900px"></dc-import></div>
+</div>
+</section>
+
+<section style="display: flex; flex-direction: column; gap: 12px">
+<h2 style="margin: 0; font-size: 20px; font-weight: 700">옛 안 · 왼쪽 사이드바</h2>
+<div style="display: flex; gap: 24px">
+<div class="thumb" style="border: 1px solid {{t.border}}"><dc-import name="Library" dark="{{dark}}" hint-size="1455px,900px"></dc-import></div>
+<div class="thumb" style="border: 1px solid {{t.border}}"><dc-import name="Stats" dark="{{dark}}" hint-size="1455px,900px"></dc-import></div>
+</div>
+</section>
+
+<section style="display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; align-items: baseline; gap: 12px">
+<h2 style="margin: 0; font-size: 20px; font-weight: 700">A · 벽 위의 유리 알약</h2>
+<span style="font-size: 14px; color: {{t.muted}}">활성은 무채색 채움, 설정은 오른쪽 아이콘</span>
+<a href="TopNav.dc.html?variant=A&amp;dark={{dark}}" style="margin-left: auto; font-size: 13px; color: {{t.muted}}">크게 보기</a>
+</div>
+<div style="display: flex; gap: 24px">
+<div class="thumb" style="border: 1px solid {{t.border}}"><dc-import name="TopNav" variant="A" dark="{{dark}}" hint-size="1455px,900px"></dc-import></div>
+<div class="thumb" style="border: 1px solid {{t.border}}"><dc-import name="TopNav" variant="A" screen="plain" dark="{{dark}}" hint-size="1455px,900px"></dc-import></div>
+</div>
+</section>
+
+<section style="display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; align-items: baseline; gap: 12px">
+<h2 style="margin: 0; font-size: 20px; font-weight: 700">B · material-dict 그대로</h2>
+<span style="font-size: 14px; color: {{t.muted}}">벽 위쪽의 불투명 띠, 활성은 포인트 색 채움, 메뉴 3개</span>
+<a href="TopNav.dc.html?variant=B&amp;dark={{dark}}" style="margin-left: auto; font-size: 13px; color: {{t.muted}}">크게 보기</a>
+</div>
+<div style="display: flex; gap: 24px">
+<div class="thumb" style="border: 1px solid {{t.border}}"><dc-import name="TopNav" variant="B" dark="{{dark}}" hint-size="1455px,900px"></dc-import></div>
+<div class="thumb" style="border: 1px solid {{t.border}}"><dc-import name="TopNav" variant="B" screen="plain" dark="{{dark}}" hint-size="1455px,900px"></dc-import></div>
+</div>
+</section>
+
+<section style="display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; align-items: baseline; gap: 12px">
+<h2 style="margin: 0; font-size: 20px; font-weight: 700">C · 벽 위의 글자 탭</h2>
+<span style="font-size: 14px; color: {{t.muted}}">알약 없이 빨간 밑줄, 아래 상태 칩과 모양이 겹치지 않는다</span>
+<a href="TopNav.dc.html?variant=C&amp;dark={{dark}}" style="margin-left: auto; font-size: 13px; color: {{t.muted}}">크게 보기</a>
+</div>
+<div style="display: flex; gap: 24px">
+<div class="thumb" style="border: 1px solid {{t.border}}"><dc-import name="TopNav" variant="C" dark="{{dark}}" hint-size="1455px,900px"></dc-import></div>
+<div class="thumb" style="border: 1px solid {{t.border}}"><dc-import name="TopNav" variant="C" screen="plain" dark="{{dark}}" hint-size="1455px,900px"></dc-import></div>
+</div>
+</section>
+
+<div style="display: flex; flex-direction: column; gap: 6px; padding-top: 24px; border-top: 1px solid {{t.border}}">
+<h1 style="margin: 0; font-size: 26px; font-weight: 800; letter-spacing: -0.02em">B에서 출발한 시안</h1>
+<p style="margin: 0; font-size: 15px; color: {{t.muted}}">D ~ G는 모두 활성 칩의 빨강을 무채색으로 바꿨다. 활성 메뉴와 빨강이 겹치지 않게 하려는 것이다.</p>
+</div>
+
+<section style="display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; align-items: baseline; gap: 12px">
+<h2 style="margin: 0; font-size: 20px; font-weight: 700">D · B + 무채색 칩</h2>
+<span style="font-size: 14px; color: {{t.muted}}">B에서 칩 색만 바꿨다</span>
+<a href="TopNav.dc.html?variant=D&amp;dark={{dark}}" style="margin-left: auto; font-size: 13px; color: {{t.muted}}">크게 보기</a>
+</div>
+<div style="display: flex; gap: 24px">
+<div class="thumb" style="border: 1px solid {{t.border}}"><dc-import name="TopNav" variant="D" dark="{{dark}}" hint-size="1455px,900px"></dc-import></div>
+<div class="thumb" style="border: 1px solid {{t.border}}"><dc-import name="TopNav" variant="D" screen="plain" dark="{{dark}}" hint-size="1455px,900px"></dc-import></div>
+</div>
+</section>
+
+<section style="display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; align-items: baseline; gap: 12px">
+<h2 style="margin: 0; font-size: 20px; font-weight: 700">E · 메뉴 띠에 게임 등록</h2>
+<span style="font-size: 14px; color: {{t.muted}}">D + 등록 버튼을 띠 오른쪽으로, 어느 화면에서든 누를 수 있다</span>
+<a href="TopNav.dc.html?variant=E&amp;dark={{dark}}" style="margin-left: auto; font-size: 13px; color: {{t.muted}}">크게 보기</a>
+</div>
+<div style="display: flex; gap: 24px">
+<div class="thumb" style="border: 1px solid {{t.border}}"><dc-import name="TopNav" variant="E" dark="{{dark}}" hint-size="1455px,900px"></dc-import></div>
+<div class="thumb" style="border: 1px solid {{t.border}}"><dc-import name="TopNav" variant="E" screen="plain" dark="{{dark}}" hint-size="1455px,900px"></dc-import></div>
+</div>
+</section>
+
+<section style="display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; align-items: baseline; gap: 12px">
+<h2 style="margin: 0; font-size: 20px; font-weight: 700">F · 떠 있는 캡슐</h2>
+<span style="font-size: 14px; color: {{t.muted}}">띠 대신 벽 위에 둥근 캡슐, 등록 버튼도 그 안에. 나중에 다시 볼 후보</span>
+<a href="TopNav.dc.html?variant=F&amp;dark={{dark}}" style="margin-left: auto; font-size: 13px; color: {{t.muted}}">크게 보기</a>
+</div>
+<div style="display: flex; gap: 24px">
+<div class="thumb" style="border: 1px solid {{t.border}}"><dc-import name="TopNav" variant="F" dark="{{dark}}" hint-size="1455px,900px"></dc-import></div>
+<div class="thumb" style="border: 1px solid {{t.border}}"><dc-import name="TopNav" variant="F" screen="plain" dark="{{dark}}" hint-size="1455px,900px"></dc-import></div>
+</div>
+</section>
+
+<section style="display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; align-items: baseline; gap: 12px">
+<h2 style="margin: 0; font-size: 20px; font-weight: 700">G · 가운데 아이콘 알약</h2>
+<span style="font-size: 14px; color: {{t.muted}}">D + 알약을 가운데로, 지금 메뉴의 아이콘을 유지</span>
+<a href="TopNav.dc.html?variant=G&amp;dark={{dark}}" style="margin-left: auto; font-size: 13px; color: {{t.muted}}">크게 보기</a>
+</div>
+<div style="display: flex; gap: 24px">
+<div class="thumb" style="border: 1px solid {{t.border}}"><dc-import name="TopNav" variant="G" dark="{{dark}}" hint-size="1455px,900px"></dc-import></div>
+<div class="thumb" style="border: 1px solid {{t.border}}"><dc-import name="TopNav" variant="G" screen="plain" dark="{{dark}}" hint-size="1455px,900px"></dc-import></div>
+</div>
+</section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":true,"section":"테마"},"$preview":{"width":1440,"height":4720}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const dark = this.props.dark ?? true;
+    const t = dark
+      ? { bg: '#0B0B0D', text: '#F2F2F5', muted: '#A1A1AC', border: '#2C2C35' }
+      : { bg: '#ECECF0', text: '#17171B', muted: '#5C5C68', border: '#D6D6DE' };
+    return { t, dark };
+  }
+}
+</script>
+</body>
+</html>
