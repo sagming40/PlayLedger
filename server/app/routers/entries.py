@@ -11,6 +11,7 @@ from app.models.entry import Entry
 from app.models.game import Game
 from app.models.user import User
 from app.schemas.entry import (
+    INT_MAX,
     EntryCreate,
     EntryListResponse,
     EntryRead,
@@ -41,7 +42,11 @@ async def _get_my_entry_or_404(db: AsyncSession, *, user_id: int, entry_id: int)
     단건 · 수정 · 삭제 3곳이 같은 상태 코드 · 같은 문구를 써야 한다
     한 곳만 문구가 바뀌면 '없는 것'과 '남의 것'의 응답이 갈려 존재 여부가 새어 나간다
     """
-    entry = await get_entry(db, user_id=user_id, entry_id=entry_id)
+    # integer 범위를 넘는 id는 DB에 묻기도 전에 asyncpg가 터진다(500) ─ 그런 기록은 있을 수 없으니 없는 것과 같이 404
+    # 422로 돌려주면 '없는 id'와 응답이 갈린다. 주소창에 아무 숫자나 쳐 볼 수 있는 곳이다 (S-04 /library/:id)
+    entry = None
+    if 1 <= entry_id <= INT_MAX:
+        entry = await get_entry(db, user_id=user_id, entry_id=entry_id)
     if entry is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

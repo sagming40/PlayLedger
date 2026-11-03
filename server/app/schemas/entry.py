@@ -4,7 +4,7 @@
 from datetime import date, datetime
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, computed_field, field_validator, model_validator
 
 from app.core.normalize import normalize_title
 from app.schemas.game import GameRead
@@ -87,6 +87,24 @@ class EntryRead(BaseModel):
     source: str
     created_at: datetime
     updated_at: datetime
+
+    # computed_field = DB 컬럼이 아니라 응답을 만들 때 계산해서 끼워 넣는 값
+    # 계산은 서버가 한다는 원칙(ARCHITECTURE 2장)을 따른다 ─ 화면마다 따로 나누면 반올림이 제각각이 된다
+    @computed_field
+    @property
+    def cost_per_hour(self) -> int | None:
+        """시간당 비용(원) = 구매가 ÷ 플레이타임(시간) (REQUIREMENTS 5.1절)
+
+        플레이타임이 0이거나 구매가가 없으면 계산할 수 없다 → None (화면은 '—')
+        무료 게임(0원)은 0원/h ─ 계산할 수 없는 게 아니라 정말 0이다
+        """
+        if self.purchase_price is None or self.playtime_minutes == 0:
+            return None
+        # 정수로만 계산해 원 단위로 반올림(0.5는 올림)한다
+        # round()는 0.5를 짝수 쪽으로 보내고(은행가 반올림), 시간으로 먼저 나누면 소수 오차가 끼어든다
+        # 구매가 × 60 ÷ 분 = 구매가 ÷ 시간. 분자에 분의 절반을 더하고 나누면 반올림이 된다
+        minutes = self.playtime_minutes
+        return (self.purchase_price * 60 * 2 + minutes) // (minutes * 2)
 
 
 class EntryListResponse(BaseModel):
