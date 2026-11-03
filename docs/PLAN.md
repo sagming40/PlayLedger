@@ -21,7 +21,7 @@
 |---|---|:---:|---|
 | M0 | 환경 구성 | v1.0 | ✅ 2026-09-19 |
 | M1 | 백엔드 기초 (인증 + CRUD + 테스트) | v1.0 | ✅ 2026-09-28 |
-| M2 | 프론트 연동 | v1.0 | 🔄 ESLint 판단 남음, 완료 기준 10개 모두 충족 |
+| M2 | 프론트 연동 | v1.0 | ✅ 2026-11-03 |
 | M2.5 | Steam 검색 등록 + 커버 이미지 | v1.0 | ✅ 2026-11-03 |
 | M3 | 상태 관리 + 평점 | v1.0 | ⬜ |
 | M4 | 통계 대시보드 | **v1.0** | ⬜ |
@@ -74,7 +74,7 @@
 
 ---
 
-### M2. 프론트 연동
+### M2. 프론트 연동 ✅
 
 | 항목 | 내용 |
 |---|---|
@@ -123,7 +123,7 @@
 - [x] S-01을 목업에 맞춰 다시 그림 (카드 제거, 추상 타일 배경, 가입 폼 도움말)
 - [x] 화면 4종(S-01 · S-02 · S-03 · S-06)에서 반복되는 패턴을 공용 컴포넌트로 추출 — `FormField` · `SurfacePanel` · `StatusDot` · `EntrySummary`, 버튼 · 입력칸 모서리 기본값 10px
 - [x] S-02 카드에 커버 이미지 슬롯을 비워두는 레이아웃 — 커버가 없을 때의 대체 표시 포함
-- [ ] ESLint · Prettier 도입 여부 판단
+- [x] ESLint · Prettier 도입 여부 판단 — 둘 다 도입 (`npm run lint` · `format:check`, CI 포함). 이유는 [DEVLOG_M2](archive/DEVLOG_M2.md) 2026-11-03 (7)
 - [x] 상단 메뉴 시안 비교 · 채택 (`mockups/TopNavBoard`, [0010](decisions/0010-top-nav.md)) *(계획에 없던 작업)*
 - [x] 메인 레이아웃을 상단 메뉴 띠로 교체 + 등록 버튼 이동 (`DESIGN` 2.2절) *(계획에 없던 작업)*
 
@@ -133,7 +133,7 @@
 - [x] `CLAUDE.md` 추가, 브랜치 운영을 `main` 단일 브랜치로 전환 (`m2-frontend`는 PR #3으로 중간 병합)
 
 *검증 수단 (계획에 없던 작업)*
-- [x] GitHub Actions에 프론트 job 추가 (`npm ci` → `vue-tsc -b --noEmit` → `npm test` → `npm run build`)
+- [x] GitHub Actions에 프론트 job 추가 (`npm ci` → `npm run lint` → `npm run format:check` → `vue-tsc -b --noEmit` → `npm test` → `npm run build`)
 - [x] Vitest 도입, API 호출 모듈 1차 테스트 10건 (`detail` 자료형 분기 · 204 본문 미읽기 · 네트워크 실패 · 토큰 헤더)
 - [x] API 호출 모듈의 401 처리 4원칙 테스트 (`ARCHITECTURE` 3.3절) — 2차 구현과 함께. 경쟁 상황 · 실패 포함 9건 (Vitest 합계 19건), 뮤테이션으로 장치 5개 검증
 
@@ -147,7 +147,7 @@
 - [x] `npm run build` 결과물(`dist/`)에서 토큰 · 비밀값 문자열이 검색되지 않고, localStorage에 테마 선택 외의 값이 없음 — 2026-10-25 실측: `dist/`에서 JWT 형태 · `JWT_SECRET` · `DATABASE_URL` · `POSTGRES_PASSWORD` · 쿠키 이름 검색 결과 없음, 로그인 후 localStorage는 `pl-theme` 하나
 - [x] S-06 테마가 `시스템`일 때 OS(또는 개발자 도구의 `prefers-color-scheme` 에뮬레이션)를 다크 ↔ 라이트로 바꾸면 새로고침 없이 화면이 따라 바뀜 (F-24) — 실측: 다크 에뮬레이션 → 라이트로 바꾸자 같은 페이지에서 배경 `#F6F6F8`로 전환
 - [x] S-06에서 `다크`를 고르고 새로고침해도 다크가 유지되고, 첫 화면이 라이트로 번쩍였다가 바뀌지 않음 — 실측: OS 라이트 + `다크` 선택 후 새로고침 → 첫 확인부터 `.dark` · `color-scheme: dark`. `index.html` 인라인 스크립트가 앱보다 먼저 입힌다
-- [x] 화면 4종(S-01 · S-02 · S-03 · S-06)의 다크 · 라이트가 `docs/mockups/`의 같은 화면과 색 · 배치가 같음 — 2026-11-03 실측: 나란히 찍어 대조. 메뉴는 `TopNav` 시안 H 기준. 일부러 다르게 둔 것은 `DEVLOG` 2026-11-03 (4)
+- [x] 화면 4종(S-01 · S-02 · S-03 · S-06)의 다크 · 라이트가 `docs/mockups/`의 같은 화면과 색 · 배치가 같음 — 2026-11-03 실측: 나란히 찍어 대조. 메뉴는 `TopNav` 시안 H 기준. 일부러 다르게 둔 것은 [DEVLOG_M2](archive/DEVLOG_M2.md) 2026-11-03 (4)
 
 > **테마 선택은 localStorage에 둔다:** 완료 기준 7번은 원래 "localStorage가 비어 있음"이었다. 그 기준이 막으려던 것은
 > 토큰 · 비밀값이다. 테마 선택(`시스템 / 다크 / 라이트`)은 비밀이 아니고 로그인 전 S-01에서도 필요해서 브라우저에 저장하므로,

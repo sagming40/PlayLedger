@@ -47,7 +47,7 @@ PlayLedger: 사놓고 안 한 게임을 구매일 · 구매가 · 플레이타�
 - **주석**: 기존 코드처럼 한국어로, "왜 이렇게 했나"와 비유를 곁들인다. 문서를 근거로 삼은 줄에는 `(DATA_MODEL 2.4절)`처럼 출처를 단다
 - **범위**: 새 기능 아이디어가 떠오르면 바로 구현하지 않고 `REQUIREMENTS` 4.4절에 항목만 추가한다. 범위를 일부러 넓힐 때는 사유를 `decisions/`나 DEVLOG `[설계]`에 남긴다
 - **검증**: 원칙(관찰값을 남긴다)은 전역 "작업 방식"을 따른다. PlayLedger에서는 네트워크 탭 기록도 관찰값으로 남긴다
-  - 서버를 고쳤으면 `pytest`, 프론트를 고쳤으면 `vue-tsc -b --noEmit` · `npm test`를 돌린다
+  - 서버를 고쳤으면 `pytest`, 프론트를 고쳤으면 `npm run lint` · `npm run format:check` · `vue-tsc -b --noEmit` · `npm test`를 돌린다
   - 응답 본문의 모양은 코드에 적혀 있지 않다. 문서에 JSON을 옮길 때는 Swagger `Execute`로 실제 응답을 받아 옮긴다
 
 ## 브랜치 · 커밋 · 푸시
@@ -111,4 +111,5 @@ python -m app.scripts.sync_steam_apps             # Steam 게임 목록 미러�
 npm ci
 npm run dev                                       # http://localhost:5173 (/api는 8001로 프록시)
 npx vue-tsc -b --noEmit; npm test                 # 타입 검사 · Vitest
+npm run lint; npm run format:check                # ESLint · Prettier 검사 (npm run format이 모양을 고친다)
 ```
