@@ -32,7 +32,7 @@
 | S-01 로그인 · 가입 (전환 동작) | `Login.dc.html` | 3.1절 | 채택 (2026-10-24). 배경 타일 수는 옛 안 — 구현이 기준 |
 | S-02 라이브러리 · 데스크톱 / 모바일 / 빈 상태 | `Library.dc.html`, `LibraryMobile.dc.html`, `LibraryEmpty.dc.html` | 3.2 · 5장 | 채택 (2026-10-24) |
 | S-03 게임 등록 (상태에 따라 평점 칸) | `Form.dc.html` | 3.3절 | 채택 (2026-10-24), 구현 전 |
-| S-04 게임 상세 · 데스크톱 / 모바일 / 삭제 확인 | `Detail.dc.html`, `DetailMobile.dc.html`, `DeleteDialog.dc.html` | 3.4절 | 채택 (2026-10-24), 구현 전 |
+| S-04 게임 상세 · 데스크톱 / 모바일 / 삭제 확인 | `Detail.dc.html`, `DetailMobile.dc.html`, `DeleteDialog.dc.html` | 3.4절 | 채택 (2026-10-24). 상세 · 상태 변경 구현 (2026-11-03), 수정 버튼 · ⋮ · 삭제 확인은 구현 전 |
 | S-05 통계 · 데스크톱 / 모바일 | `Stats.dc.html`, `StatsMobile.dc.html` | 3.5절 | 채택 (2026-10-24), 구현 전. 장르별 완주율은 CSS 막대라 M4에서 ECharts로 옮긴다 |
 | S-06 설정 | `Settings.dc.html` | 3.6절 | 채택 (2026-10-24) |
 | 상단 메뉴 시안 A ~ H 비교 (D ~ H는 B 기반) | `TopNavBoard.dc.html`, `TopNav.dc.html` (`?variant=A` · `?screen=plain` · `?dark=false`) | 2.2절 | **H 채택** (2026-11-03, E + G의 아이콘). **F(떠 있는 캡슐)는 나중에 다시 볼 후보**, 나머지는 비교용. 캔버스 없이 저장소에서 직접 그렸다. material-dict 추천안의 상단 메뉴를 참고 |

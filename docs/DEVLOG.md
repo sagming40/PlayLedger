@@ -7,12 +7,12 @@
 
 | 항목 | 내용 |
 |---|---|
-| 단계 | **M2** ✅ 2026-11-03. 다음은 **M3** ⬜ (`PLAN` M3) |
-| 진행 중 | 없음 |
-| 다음에 할 일 | **M3** 첫 작업은 S-04 상세 화면 (`PLAN` M3 작업 목록 순서). 코드 쓰기 전에 "자동으로 할까, 직접 칠래?"를 먼저 묻는다(M3는 아직 안 정함). `PLAN` M3의 Motion은 아직 설치 전이라 의존성 목록을 먼저 보여 주고 사용자가 설치한다 |
+| 단계 | **M3** 🔄 (`PLAN` M3) |
+| 진행 중 | 없음. S-04 상세 · 상태 바로 바꾸기 끝 (2026-11-03 (1)) |
+| 다음에 할 일 | `PLAN` M3 작업 목록 순서대로 평점 · 한줄평 입력 → 수정 화면 → 삭제. 수정 버튼 · ⋮는 S-04에 아직 없다. 작업마다 "자동으로 할까, 직접 칠래?"를 먼저 묻는다(S-04는 자동). Motion은 저장 알림 때 쓰니 그 전에 의존성 목록을 보여 주고 사용자가 설치한다 |
 | M3에서 같이 볼 것 | S-02 필터의 선택 칩은 무채색 (`DESIGN` 4.4절), 그때 눌림 칩 컴포넌트를 다시 본다. 모바일 첫 줄이 요약 줄 도착 때 24px 밀리는 것 · `가장 오래 방치` 요약은 `PLAN` 항목이 없어 판단이 필요하다 |
 | M5 전에 | 라우터 `onError` 없음 ─ 화면 모듈을 못 받으면 안내 없이 빈 화면 ([DEVLOG_M2](archive/DEVLOG_M2.md) 2026-11-03 (7)) |
-| 기기별로 할 일 | **집 PC · 노트북**: `git pull` → `docker compose up -d` → `server/`에서 `pip install -r requirements.txt` · `alembic upgrade head` → `server/.env`에 `STEAM_API_KEY` → `python -m app.scripts.sync_steam_apps` → `web/`에서 `npm ci` → 전역 설정(`~/.claude/CLAUDE.md`)에 "작업 방식" · "문서 체계" 절 추가 (원본은 회사 PC `~/.claude/CLAUDE.md`, 사본 `G:\내 드라이브\_private\.claude\desktop_cm_CLAUDE.md`). 선택: `git config blame.ignoreRevsFile .git-blame-ignore-revs` |
+| 기기별로 할 일 | **노트북**: `git pull` → `docker compose up -d` → `server/`에서 `pip install -r requirements.txt` · `alembic upgrade head` → `server/.env`에 `STEAM_API_KEY` → `python -m app.scripts.sync_steam_apps` → `web/`에서 `npm ci` → 전역 설정(`~/.claude/CLAUDE.md`)에 "작업 방식" · "문서 체계" 절 추가 (원본은 회사 PC `~/.claude/CLAUDE.md`, 사본 `G:\내 드라이브\_private\.claude\desktop_cm_CLAUDE.md`). 선택: `git config blame.ignoreRevsFile .git-blame-ignore-revs`. 집 PC(데스크톱 A)는 2026-11-03에 끝냄 |
 | 회사 PC에만 있는 것 | 화면 전후 픽셀 비교 스크립트는 저장소에 없다(세션 임시 폴더). 다른 기기에서 필요하면 방법을 보고 새로 만든다 ([DEVLOG_M2](archive/DEVLOG_M2.md) 2026-11-03 (6) · (7)) |
 
 ## 작성 규칙
@@ -21,6 +21,54 @@
 - 기기 표기는 `README` 개발 환경 표를 따른다 (데스크톱 A · 데스크톱 B · 노트북)
 - **막혔던 점은 해결됐어도 반드시 남긴다.** 같은 실수를 반복하지 않기 위한 기록이고, 나중에 이 프로젝트를 설명할 때 "어떤 문제를 어떻게 해결했는가"가 결과물보다 더 중요한 이야기가 된다
 - 환경 버전은 여기 적지 않는다. `requirements.txt` · `package.json` · `ci.yml`이 원본이고, 기기별 런타임은 `README`에 있다
+
+---
+
+## 2026-11-03 (1) · S-04 상세 화면과 상태 바로 바꾸기 (데스크톱 A, 자동 작업)
+
+> M2 블록의 (1) ~ (7)은 [DEVLOG_M2](archive/DEVLOG_M2.md)에 있다. M3 블록은 (1)부터 다시 센다.
+
+### 한 일
+- 집 PC 준비(사용자가 직접): `pytest` 49 passed, `sync_steam_apps` 198,226건 · 15.6초, `lint` · `format:check` · `vue-tsc` 통과, `npm test` 82 passed, blame 설정 확인
+- 진행 순서: 문서 · 목업 · 기존 API 확인 → 서버(`cost_per_hour` · 범위 밖 id) + pytest → `useEntryDetail` + Vitest → 화면 → 브라우저 확인 → 문서
+- 서버: `EntryRead.cost_per_hour` 계산 필드, 단건 · 수정 · 삭제의 범위 밖 id를 404로. `tests/test_entry_detail.py` 15건
+- 프론트: `EntryDetailView` · `useEntryDetail`, `getEntry` · `updateEntry`, 표시 함수 4개, 상세 라우트 `ownTitle`
+- Steam 검색 테스트의 `[Vue warn] onScopeDispose()` 5건을 effectScope로 정리
+- 검증
+  - `pytest` **64 passed**, `npm test` **95 passed**, `lint` · `format:check` · `vue-tsc` 통과
+  - 브라우저(데스크톱 · 모바일 375 · 라이트), 확인용 계정 1개 · 기록 3개(Steam 게임 1, 직접 입력 2)
+    - Hollow Knight(16,500원 · 62.4시간): 시간당 비용 `264원/h`, 별 4개 · 한줄평, 출처 `직접 입력`
+    - 상태를 플레이중으로 → 평가 카드가 사라짐, 클리어로 되돌림 → 별 4개 · 한줄평 다시 보임
+    - 네트워크: `GET /api/entries/38` 200, `PATCH /api/entries/38` 200 두 번. 두 번째 응답 본문 `status: "CLEARED"`, `rating: 4`, `cost_per_hour: 264`
+    - 플레이타임 0 게임: 시간당 비용 `—`. `/library/99999999999` · `/library/1`(내 기록 아님): "게임을 찾을 수 없어요"
+  - **확인 못 한 것**: 상태 저장 실패 화면(되돌림 · 문구)은 Vitest로만 봤다. 커버 주소가 깨진 게임의 배경, 아주 긴 제목의 줄바꿈은 화면에서 안 봤다
+  - 확인용 계정 · 기록은 개발 DB에 남아 있다 (계정 값은 세션 임시 폴더에만 있음)
+
+### [설계]
+- **시간당 비용을 M3에서 응답에 넣음**: `DESIGN` 3.4절이 "서버 계산값"이라 S-04가 기다릴 수 없었다. 건별 값만 계산 필드로 넣고(저장 안 함 ─ 플레이타임을 고치면 바로 다시 계산), 통계 집계는 M4에 남겼다
+  - 반올림은 정수로만 계산하는 0.5 올림. `round()`는 0.5를 짝수로 보내서 1원 · 2시간이 0원이 된다(테스트 `(1, 120, 1)`)
+  - 구매가를 안 적어도 `—`. `REQUIREMENTS` 5.1절은 플레이타임 0만 적었지만 나눌 값이 없기는 같다
+- **상태는 기본 select**: 목업대로. 모바일에서 OS 선택창이 뜨고 키보드 · 화면 읽기가 그대로 된다
+- **고르자마자 반영 + 저장 중 잠금**: 점 색 · 평가 카드가 바로 바뀌어야 "바뀌었나?"를 안 묻는다. 대신 두 요청이 거꾸로 도착하지 않게 저장 중에는 잠근다. 실패하면 되돌린다
+- **상세 → 상세 이동은 번호표**: 화면이 다시 만들어지지 않고 id만 바뀌어서, 늦게 온 앞 게임 답이 덮어쓸 수 있다. `useSteamSearch`와 같은 방법
+- **평가 카드는 값이 있을 때만**: CLEARED인데 평점이 없으면 빈 카드가 된다. 입력은 다음 작업(평점 입력)에서 수정 화면에 붙는다
+- **수정 버튼 · ⋮는 아직 안 그림**: 누를 곳 없는 버튼은 고장으로 보인다. 수정 · 삭제 작업에서 같이 붙인다
+- 배경 커버는 48rem부터 흐리게(`blur-md`). Steam 커버가 460px 폭이라 넓은 화면에 늘리면 거칠다. 또렷한 커버는 카드가 맡는다
+
+### 막힌 것
+- 증상: 사전 검증에서 "주소창에 큰 숫자"를 따라가 보고 테스트를 썼더니 `GET /api/entries/99999999999`가 **500** (사전 검증에서 발견)
+  - 원인: id가 Python int라 크기 제한이 없고, asyncpg가 int4 범위를 넘는 값을 쿼리에 넣다가 `DataError`
+  - 해결: `_get_my_entry_or_404`에서 `1 <= id <= INT_MAX`가 아니면 DB에 묻지 않고 같은 404. 422로 하면 '없는 id'와 응답이 갈린다
+  - 배운 것: 등록 입력은 `INT_MAX`로 막아 뒀는데(M1) 주소 경로의 id는 빠져 있었다. 경로 값도 입력이다
+- 증상: 확인용 계정 가입이 422
+  - 원인: `.test` 도메인은 email-validator가 받지 않는다(예약 도메인)
+  - 해결: `example.com`으로 가입
+
+### 이번 세션 커밋
+- `feat(M3): 응답에 시간당 비용 추가, 범위 밖 id를 404로`, `feat(M3): S-04 상세 화면과 상태 바로 바꾸기`, `test(M3): Steam 검색 테스트를 effectScope 안에서 실행`, `docs(M3): S-04 구현 반영`
+
+### 다음에 할 일
+- 평점 · 한줄평 입력 (`PLAN` M3 순서)
 
 ---
 
