@@ -75,8 +75,8 @@ export function buildCreateBody(form: EntryForm): EntryCreateBody | null {
 }
 
 // 수정 폼이 고칠 수 있는 칸 ─ 제목은 고칠 수 없다 (DATA_MODEL 2.6절)
-// 장르는 게임에 붙는 값이라 따로 다룬다 (DATA_MODEL 2.5절, 화면 처리는 수정 화면 작업에서 정한다)
-export type EntryEditForm = Pick<EntryForm, 'status' | 'purchasedAt' | 'price' | 'hours' | 'rating' | 'review'>
+// genreIds는 새로 고른 장르만 담는다 ─ 이미 붙은 장르는 고칠 수 없어 폼에 넣지 않는다 (DATA_MODEL 2.5절)
+export type EntryEditForm = Pick<EntryForm, 'status' | 'genreIds' | 'purchasedAt' | 'price' | 'hours' | 'rating' | 'review'>
 
 /** 분 → 입력칸 글자. 90 → '1.5', 0 → '' (빈 칸 = 0시간, parseHours와 짝) */
 function minutesToHours(minutes: number): string {
@@ -89,6 +89,7 @@ function minutesToHours(minutes: number): string {
 export function entryToEditForm(entry: Entry): EntryEditForm {
   return {
     status: entry.status,
+    genreIds: [],
     purchasedAt: entry.purchased_at ?? '',
     price: entry.purchase_price === null ? '' : String(entry.purchase_price),
     hours: minutesToHours(entry.playtime_minutes),
@@ -113,6 +114,7 @@ export function buildUpdateBody(form: EntryEditForm, initial: EntryEditForm): En
 
   const body: EntryUpdateBody = {}
   if (form.status !== initial.status) body.status = form.status
+  if (form.genreIds.length) body.genre_ids = form.genreIds
   if (form.purchasedAt !== initial.purchasedAt) body.purchased_at = form.purchasedAt || null
   if (form.price !== initial.price) body.purchase_price = price
   if (form.hours !== initial.hours) body.playtime_minutes = minutes

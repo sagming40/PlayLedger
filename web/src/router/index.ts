@@ -56,6 +56,12 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/EntryDetailView.vue'),
       },
       {
+        path: 'library/:id(\\d+)/edit',
+        name: 'entry-edit',
+        meta: { title: '게임 수정', ownTitle: true },
+        component: () => import('@/views/EntryEditView.vue'),
+      },
+      {
         path: 'stats',
         name: 'stats',
         meta: { title: '통계' },

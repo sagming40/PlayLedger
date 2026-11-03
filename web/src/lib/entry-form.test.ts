@@ -118,6 +118,7 @@ function saved(over: Partial<Entry> = {}): Entry {
 describe('entryToEditForm', () => {
   it('저장된 값을 입력칸 글자로 채운다', () => {
     expect(entryToEditForm(saved())).toEqual({
+      genreIds: [],
       status: 'CLEARED',
       purchasedAt: '2026-01-15',
       price: '66000',
@@ -129,6 +130,7 @@ describe('entryToEditForm', () => {
 
   it('없는 값은 빈 칸 ─ 0시간도 빈 칸 (parseHours가 빈 칸을 0으로 읽는다)', () => {
     expect(entryToEditForm(saved({ purchased_at: null, purchase_price: null, playtime_minutes: 0, rating: null, review: null }))).toEqual({
+      genreIds: [],
       status: 'CLEARED',
       purchasedAt: '',
       price: '',

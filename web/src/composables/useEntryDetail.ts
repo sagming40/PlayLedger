@@ -3,7 +3,7 @@ import { getEntry, updateEntry, type Entry, type EntryStatus } from '@/api/entri
 import { ApiError } from '@/api/errors'
 
 // 네트워크가 끊겨 SERVER 답 자체가 없을 때 (DESIGN 6장)
-const OFFLINE_MESSAGE = '연결에 실패했습니다'
+export const OFFLINE_MESSAGE = '연결에 실패했습니다'
 
 // 상세 화면에서 수정 화면을 거치지 않고 바로 고치는 값
 export type QuickEdit = Partial<Pick<Entry, 'status' | 'rating' | 'review'>>

@@ -11,7 +11,7 @@ import StatusDot from '@/components/StatusDot.vue'
 import { Button } from '@/components/ui/button'
 
 // S-04 게임 상세 (DESIGN 3.4절, 그림은 docs/mockups/Detail · DetailMobile)
-// 수정 버튼 · ⋮(삭제) 메뉴는 PLAN M3의 수정 · 삭제 작업에서 붙인다
+// ⋮(삭제) 메뉴는 PLAN M3의 삭제 작업에서 붙인다
 const route = useRoute()
 const detail = useEntryDetail()
 
@@ -82,7 +82,7 @@ function onStatusChange(event: Event) {
     <!-- 위쪽을 얼마나 덮을지는 테마마다 다르다 ─ 라이트는 밝은 배경이라 더 덮어야 글자가 읽힌다 (목업 Detail) -->
     <div aria-hidden="true" class="bleed backdrop-fade absolute -top-5 h-[252px] [--fade-top:55%] md:h-[522px] dark:[--fade-top:25%]" />
 
-    <!-- 위쪽 줄 ─ 뒤로 -->
+    <!-- 위쪽 줄 ─ 뒤로 · 수정 (목업 Detail · DetailMobile) -->
     <div class="relative -mt-5 flex h-14 items-center justify-between md:mt-0 md:h-11">
       <RouterLink
         :to="{ name: 'library' }"
@@ -91,6 +91,15 @@ function onStatusChange(event: Event) {
         <ChevronLeft class="size-[18px]" aria-hidden="true" />
         라이브러리
       </RouterLink>
+      <!-- 모바일은 테두리 없이 글자만, 48rem부터 테두리 버튼 -->
+      <Button
+        v-if="entry"
+        as-child
+        variant="ghost"
+        class="-mr-3 h-11 px-3 text-[15px] font-semibold md:mr-0 md:h-10 md:border md:border-border md:bg-card md:px-4 md:text-sm md:font-medium"
+      >
+        <RouterLink :to="{ name: 'entry-edit', params: { id: entry.id } }">수정</RouterLink>
+      </Button>
     </div>
 
     <!-- 처음 불러오는 중 ─ 자리만 잡는다 (DESIGN 6장 뼈대) -->
