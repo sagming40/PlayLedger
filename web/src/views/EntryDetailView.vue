@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { computed, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { ChevronDown, ChevronLeft, Star } from '@lucide/vue'
 import type { EntryStatus } from '@/api/entries'
 import { useEntryDetail } from '@/composables/useEntryDetail'
-import { EMPTY_VALUE, SOURCE_LABEL, STATUS_LABEL, formatPlaytime, formatWon, showsRating } from '@/lib/entry-display'
+import { EMPTY_VALUE, SOURCE_LABEL, STATUS_LABEL, formatPlaytime, formatWon } from '@/lib/entry-display'
+import { canRate } from '@/lib/entry-form'
 import GameCover from '@/components/GameCover.vue'
 import StatusDot from '@/components/StatusDot.vue'
 import { Button } from '@/components/ui/button'
@@ -27,10 +28,32 @@ watch(
 const STATUSES = Object.keys(STATUS_LABEL) as EntryStatus[]
 
 const entry = computed(() => detail.entry.value)
-const ratingVisible = computed(() => {
-  const e = entry.value
-  return !!e && showsRating(e.status) && (e.rating !== null || !!e.review)
-})
+// 평가 칸은 클리어 · 포기일 때만 ─ 다른 상태로 바꿔도 값은 남아 있고 숨기기만 한다 (DESIGN 4.3절)
+// 플레이중 → 클리어로 바꾸는 순간 입력란이 나타난다 (PLAN M3 완료 기준)
+const ratingVisible = computed(() => !!entry.value && canRate(entry.value.status))
+
+// 한줄평은 누르면 입력칸으로 바뀐다 ─ 별처럼 한 번에 저장할 수 없어서 저장 · 취소를 둔다
+const editingReview = ref(false)
+const reviewDraft = ref('')
+const reviewInput = ref<HTMLTextAreaElement | null>(null)
+
+async function startReview() {
+  reviewDraft.value = entry.value?.review ?? ''
+  editingReview.value = true
+  await nextTick()
+  reviewInput.value?.focus()
+}
+
+async function submitReview() {
+  // 실패하면 입력칸을 열어 둔다 ─ 적은 글이 사라지지 않게
+  if (await detail.saveReview(reviewDraft.value)) editingReview.value = false
+}
+
+// 다른 게임으로 옮기면 쓰던 한줄평 입력칸을 닫는다 ─ 앞 게임에 쓰던 글이 다음 게임에 저장되면 안 된다
+watch(
+  () => entry.value?.id,
+  () => (editingReview.value = false),
+)
 
 function onStatusChange(event: Event) {
   detail.changeStatus((event.target as HTMLSelectElement).value as EntryStatus)
@@ -141,7 +164,7 @@ function onStatusChange(event: Event) {
               <ChevronDown class="pointer-events-none absolute right-3 size-4 text-muted-foreground" aria-hidden="true" />
             </span>
           </label>
-          <p v-if="detail.saveError.value" role="alert" class="text-[13px] text-destructive">
+          <p v-if="detail.failedField.value === 'status'" role="alert" class="text-[13px] text-destructive">
             상태를 바꾸지 못했어요. {{ detail.saveError.value }}
           </p>
 
@@ -184,28 +207,75 @@ function onStatusChange(event: Event) {
           </div>
         </section>
 
-        <!-- 평가 ─ 클리어 · 포기일 때만. 다른 상태로 바꿔도 값은 남아 있고 숨기기만 한다 (DESIGN 4.3절) -->
+        <!-- 평가 ─ 클리어 · 포기일 때만 (ratingVisible). 여기서 바로 고친다 (DESIGN 3.4 · 4.3절) -->
         <section
           v-if="ratingVisible"
+          aria-labelledby="rating-heading"
           class="flex flex-col gap-2.5 rounded-xl border border-border bg-card px-4 py-3.5 md:gap-[18px] md:rounded-[14px] md:p-6"
         >
-          <h2 class="hidden text-[15px] font-bold text-muted-foreground md:block">평가</h2>
-          <div v-if="entry.rating !== null" class="flex gap-0.5 md:gap-1" role="img" :aria-label="`평점 5점 중 ${entry.rating}점`">
-            <Star
-              v-for="n in 5"
-              :key="n"
-              class="size-[22px] md:size-[26px]"
-              :class="n <= entry.rating ? 'fill-brand-text text-brand-text' : 'text-muted-foreground'"
-              stroke-width="1.5"
-              aria-hidden="true"
-            />
+          <h2 id="rating-heading" class="sr-only text-[15px] font-bold text-muted-foreground md:not-sr-only">평가</h2>
+
+          <!-- 별 ─ 누르면 바로 저장, 같은 별을 다시 누르면 지운다 (S-03 등록 폼과 같은 동작)
+               한 칸 44px ─ 손가락으로 누를 수 있는 크기. -ml로 첫 별의 왼쪽 끝을 글자와 맞춘다 -->
+          <div class="flex flex-col gap-1">
+            <div role="group" aria-label="평점" class="-ml-2.5 flex">
+              <button
+                v-for="n in 5"
+                :key="n"
+                type="button"
+                class="flex size-11 items-center justify-center disabled:opacity-60"
+                :aria-label="`${n}점`"
+                :aria-pressed="entry.rating === n"
+                :disabled="detail.saving.value"
+                @click="detail.rate(n)"
+              >
+                <Star
+                  class="size-[22px] md:size-[26px]"
+                  :class="entry.rating !== null && n <= entry.rating ? 'fill-brand-text text-brand-text' : 'text-muted-foreground'"
+                  stroke-width="1.5"
+                  aria-hidden="true"
+                />
+              </button>
+            </div>
+            <p v-if="entry.rating === null" class="text-[13px] text-muted-foreground">별을 눌러 평점을 남겨요</p>
+            <p v-if="detail.failedField.value === 'rating'" role="alert" class="text-[13px] text-destructive">
+              평점을 저장하지 못했어요. {{ detail.saveError.value }}
+            </p>
           </div>
-          <blockquote
-            v-if="entry.review"
-            class="text-[15px] leading-normal break-words md:border-l-2 md:border-border md:py-1 md:pl-4 md:text-lg"
-          >
-            "{{ entry.review }}"
-          </blockquote>
+
+          <!-- 한줄평 -->
+          <form v-if="editingReview" class="flex flex-col gap-2" @submit.prevent="submitReview">
+            <label for="review" class="sr-only">한줄평</label>
+            <textarea
+              id="review"
+              ref="reviewInput"
+              v-model="reviewDraft"
+              rows="2"
+              maxlength="200"
+              placeholder="예: 엔딩 보고 한참 멍했음"
+              class="resize-y rounded-[10px] border border-input bg-background px-3.5 py-3 text-[15px] outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+              @keydown.esc="editingReview = false"
+            />
+            <p v-if="detail.failedField.value === 'review'" role="alert" class="text-[13px] text-destructive">
+              한줄평을 저장하지 못했어요. {{ detail.saveError.value }}
+            </p>
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-xs text-muted-foreground">{{ reviewDraft.length }} / 200</span>
+              <div class="flex gap-2">
+                <Button type="button" variant="outline" class="h-10" @click="editingReview = false">취소</Button>
+                <Button type="submit" class="h-10 font-semibold" :disabled="detail.saving.value">
+                  {{ detail.saving.value ? '저장 중…' : '저장' }}
+                </Button>
+              </div>
+            </div>
+          </form>
+          <div v-else-if="entry.review" class="flex items-start justify-between gap-3">
+            <blockquote class="min-w-0 text-[15px] leading-normal break-words md:border-l-2 md:border-border md:py-1 md:pl-4 md:text-lg">
+              "{{ entry.review }}"
+            </blockquote>
+            <Button type="button" variant="ghost" class="-mr-2 h-9 shrink-0 text-muted-foreground" @click="startReview">고치기</Button>
+          </div>
+          <Button v-else type="button" variant="outline" class="h-10 self-start" @click="startReview">한줄평 남기기</Button>
         </section>
       </div>
 

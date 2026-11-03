@@ -174,6 +174,7 @@ describe('상태 변경', () => {
     expect(d.entry.value?.status).toBe('CLEARED')
     expect(d.saveError.value).toBe('요청을 처리하지 못했습니다. 잠시 후 다시 시도해 주세요.')
     expect(d.saving.value).toBe(false)
+    expect(d.failedField.value).toBe('status')
   })
 
   it('다른 탭에서 지운 기록이면(404) 찾을 수 없음으로 바뀐다', async () => {
@@ -208,5 +209,89 @@ describe('상태 변경', () => {
 
     expect(d.entry.value?.id).toBe(8)
     expect(d.entry.value?.status).toBe('BACKLOG')
+  })
+
+  it('평점 · 한줄평은 보낸 값으로 PATCH하고 상태는 보내지 않는다', async () => {
+    const { d, held } = await loaded(entry(7, { rating: null, review: null }))
+
+    const p = d.rate(3)
+    expect(JSON.parse(String(held[1]!.init?.body))).toEqual({ rating: 3 })
+    held[1]!.reply(json(200, entry(7, { rating: 3, review: null })))
+    await p
+
+    const q = d.saveReview('  다시 할 것 같음  ')
+    // 앞뒤 공백은 지워서 보낸다
+    expect(JSON.parse(String(held[2]!.init?.body))).toEqual({ review: '다시 할 것 같음' })
+    held[2]!.reply(json(200, entry(7, { rating: 3, review: '다시 할 것 같음' })))
+    expect(await q).toBe(true)
+    expect(d.entry.value?.review).toBe('다시 할 것 같음')
+  })
+})
+
+describe('평점 · 한줄평', () => {
+  async function loaded(e: Entry) {
+    const held = heldServer()
+    const d = useEntryDetail()
+    const p = d.load(e.id)
+    held[0]!.reply(json(200, e))
+    await p
+    return { d, held }
+  }
+
+  it('같은 별을 다시 누르면 평점을 지운다 (S-03과 같은 동작)', async () => {
+    const { d, held } = await loaded(entry(7, { rating: 4 }))
+
+    const p = d.rate(4)
+    expect(JSON.parse(String(held[1]!.init?.body))).toEqual({ rating: null })
+    expect(d.entry.value?.rating).toBeNull()
+    held[1]!.reply(json(200, entry(7, { rating: null })))
+    await p
+  })
+
+  it('비운 한줄평은 빈 문자열이 아니라 null로 지운다', async () => {
+    const { d, held } = await loaded(entry(7))
+
+    d.saveReview('   ')
+
+    expect(JSON.parse(String(held[1]!.init?.body))).toEqual({ review: null })
+  })
+
+  it('한줄평이 그대로면 요청 없이 성공으로 본다 ─ 입력칸은 닫힌다', async () => {
+    const { d, held } = await loaded(entry(7, { review: '최고' }))
+
+    expect(await d.saveReview(' 최고 ')).toBe(true)
+    expect(held).toHaveLength(1)
+  })
+
+  it('평점 저장이 실패하면 되돌리고, 실패한 칸을 알려 준다', async () => {
+    const { d, held } = await loaded(entry(7, { rating: 4 }))
+
+    const p = d.rate(2)
+    held[1]!.reply(json(500, { detail: 'Internal Server Error' }))
+    await p
+
+    expect(d.entry.value?.rating).toBe(4)
+    expect(d.failedField.value).toBe('rating')
+  })
+
+  it('한줄평 저장이 실패하면 false ─ 화면은 입력칸을 열어 둔다', async () => {
+    const { d, held } = await loaded(entry(7, { review: null }))
+
+    const p = d.saveReview('새 한줄평')
+    held[1]!.reply(json(422, { detail: [{ loc: ['body', 'review'], type: 'string_too_long' }] }))
+
+    expect(await p).toBe(false)
+    expect(d.entry.value?.review).toBeNull()
+    expect(d.failedField.value).toBe('review')
+  })
+
+  it('저장 중에는 별을 눌러도 요청하지 않는다', async () => {
+    const { d, held } = await loaded(entry(7, { rating: 4 }))
+
+    d.changeStatus('DROPPED')
+    d.rate(1)
+
+    expect(held).toHaveLength(2)
+    expect(d.entry.value?.rating).toBe(4)
   })
 })

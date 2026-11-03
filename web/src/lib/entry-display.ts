@@ -83,11 +83,6 @@ export function formatWon(won: number): string {
   return won.toLocaleString('ko-KR')
 }
 
-/** 평점 · 한줄평이 보이는 상태 ─ 다른 상태에서는 값이 있어도 숨기기만 한다 (DESIGN 4.3절) */
-export function showsRating(status: EntryStatus): boolean {
-  return status === 'CLEARED' || status === 'DROPPED'
-}
-
 /** 커버가 없을 때 보여줄 제목 앞 두 글자 (DESIGN 4.4절). 공백은 건너뛴다 */
 export function titleInitials(title: string): string {
   return Array.from(title.replace(/\s+/g, '')).slice(0, 2).join('')

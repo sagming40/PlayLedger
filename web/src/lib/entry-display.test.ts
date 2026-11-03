@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { cardMetric, formatPlaytime, formatWon, idleDays, showsRating, titleInitials } from './entry-display'
+import { cardMetric, formatPlaytime, formatWon, idleDays, titleInitials } from './entry-display'
 
 // 카드에 보이는 글자 (DESIGN 3.2 · 4.2절)
 // "오늘"을 고정해서 날짜가 바뀌어도 결과가 같게 한다
@@ -86,13 +86,5 @@ describe('S-04 상세 표시', () => {
     expect(formatWon(66000)).toBe('66,000')
     expect(formatWon(1058)).toBe('1,058')
     expect(formatWon(0)).toBe('0')
-  })
-
-  it('평점은 클리어 · 포기에서만 보인다 (DESIGN 4.3절)', () => {
-    expect(showsRating('CLEARED')).toBe(true)
-    expect(showsRating('DROPPED')).toBe(true)
-    expect(showsRating('BACKLOG')).toBe(false)
-    expect(showsRating('PLAYING')).toBe(false)
-    expect(showsRating('ON_HOLD')).toBe(false)
   })
 })
