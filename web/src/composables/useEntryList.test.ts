@@ -21,6 +21,7 @@ function entry(id: number): Entry {
     rating: null,
     review: null,
     source: 'MANUAL',
+    cost_per_hour: null,
     created_at: '2026-10-25T00:00:00Z',
     updated_at: '2026-10-25T00:00:00Z',
   }

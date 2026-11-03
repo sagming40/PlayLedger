@@ -1,4 +1,233 @@
+<script setup lang="ts">
+import { computed, watch } from 'vue'
+import { useRoute } from 'vue-router'
+import { ChevronDown, ChevronLeft, Star } from '@lucide/vue'
+import type { EntryStatus } from '@/api/entries'
+import { useEntryDetail } from '@/composables/useEntryDetail'
+import { EMPTY_VALUE, SOURCE_LABEL, STATUS_LABEL, formatPlaytime, formatWon, showsRating } from '@/lib/entry-display'
+import GameCover from '@/components/GameCover.vue'
+import StatusDot from '@/components/StatusDot.vue'
+import { Button } from '@/components/ui/button'
+
+// S-04 게임 상세 (DESIGN 3.4절, 그림은 docs/mockups/Detail · DetailMobile)
+// 수정 버튼 · ⋮(삭제) 메뉴는 PLAN M3의 수정 · 삭제 작업에서 붙인다
+const route = useRoute()
+const detail = useEntryDetail()
+
+// 상세 → 상세로 옮겨 가도(주소의 id만 바뀜) 화면은 다시 만들어지지 않는다 ─ id를 지켜보다 다시 부른다
+// 주소 규칙이 숫자만 받으므로(router (\d+)) Number가 NaN이 되지 않는다
+watch(
+  () => route.params.id,
+  (id) => {
+    if (typeof id === 'string') detail.load(Number(id))
+  },
+  { immediate: true },
+)
+
+const STATUSES = Object.keys(STATUS_LABEL) as EntryStatus[]
+
+const entry = computed(() => detail.entry.value)
+const ratingVisible = computed(() => {
+  const e = entry.value
+  return !!e && showsRating(e.status) && (e.rating !== null || !!e.review)
+})
+
+function onStatusChange(event: Event) {
+  detail.changeStatus((event.target as HTMLSelectElement).value as EntryStatus)
+}
+</script>
+
 <template>
-  <!-- S-04 상세 자리 ─ M3에서 채운다. 지금은 목록 카드를 눌렀을 때 갈 곳만 있다 -->
-  <p class="text-sm text-muted-foreground">게임 상세가 들어갈 자리</p>
+  <div class="relative flex flex-col gap-6 md:gap-7">
+    <!-- 배경 ─ 그 게임 커버를 페이지 위쪽에 깔고 아래로 갈수록 배경색으로 사라진다 (DESIGN 4.4절)
+         레이아웃의 본문 폭 제한을 거슬러 화면 끝까지 깐다 (LibraryView의 wall-bleed와 같은 방법) -->
+    <div
+      aria-hidden="true"
+      class="bleed absolute -top-5 h-[250px] overflow-hidden bg-secondary md:h-[520px] md:[&_img]:scale-110 md:[&_img]:blur-md"
+    >
+      <template v-if="entry">
+        <!-- Steam 커버는 460px 폭이라 넓은 화면에 늘리면 거칠다 ─ 48rem부터 흐리게 깔고, 또렷한 커버는 본문 카드가 맡는다 -->
+        <GameCover v-slot="{ initials }" :title="entry.game.title" :cover-url="entry.game.cover_url">
+          <span
+            class="flex size-full items-center justify-end pr-6 text-[76px] font-extrabold tracking-[-0.04em] whitespace-nowrap text-foreground/[0.07] md:pr-16 md:text-[140px]"
+          >
+            {{ initials }}
+          </span>
+        </GameCover>
+      </template>
+    </div>
+    <!-- 위쪽을 얼마나 덮을지는 테마마다 다르다 ─ 라이트는 밝은 배경이라 더 덮어야 글자가 읽힌다 (목업 Detail) -->
+    <div aria-hidden="true" class="bleed backdrop-fade absolute -top-5 h-[252px] [--fade-top:55%] md:h-[522px] dark:[--fade-top:25%]" />
+
+    <!-- 위쪽 줄 ─ 뒤로 -->
+    <div class="relative -mt-5 flex h-14 items-center justify-between md:mt-0 md:h-11">
+      <RouterLink
+        :to="{ name: 'library' }"
+        class="-ml-2.5 inline-flex h-11 items-center gap-1.5 px-2.5 text-sm text-muted-foreground hover:text-foreground md:ml-0 md:px-0"
+      >
+        <ChevronLeft class="size-[18px]" aria-hidden="true" />
+        라이브러리
+      </RouterLink>
+    </div>
+
+    <!-- 처음 불러오는 중 ─ 자리만 잡는다 (DESIGN 6장 뼈대) -->
+    <div
+      v-if="detail.loading.value && !entry"
+      role="status"
+      aria-label="게임 정보를 불러오는 중"
+      class="relative flex flex-col gap-4 pt-24 md:pt-[120px]"
+    >
+      <div class="h-6 w-28 animate-pulse rounded bg-secondary" />
+      <div class="h-10 w-2/3 animate-pulse rounded bg-secondary" />
+      <div class="h-11 w-48 animate-pulse rounded-[10px] bg-secondary" />
+    </div>
+
+    <!-- 없거나 남의 기록 ─ 둘을 구분하지 않는다 (ARCHITECTURE 3.8절) -->
+    <div v-else-if="detail.notFound.value" role="alert" class="relative flex flex-col items-center gap-3 py-24 text-center">
+      <h1 class="text-[22px] font-bold">게임을 찾을 수 없어요</h1>
+      <p class="text-[15px] text-muted-foreground">지워졌거나 주소가 잘못됐어요</p>
+      <Button as-child variant="outline" class="mt-2 h-11">
+        <RouterLink :to="{ name: 'library' }">라이브러리로</RouterLink>
+      </Button>
+    </div>
+
+    <!-- 네트워크 · 서버 오류 ─ 안내 + 다시 시도 (DESIGN 6장) -->
+    <div v-else-if="detail.loadError.value" role="alert" class="relative flex flex-col items-center gap-3 py-24 text-center">
+      <p class="text-[15px]">{{ detail.loadError.value }}</p>
+      <Button variant="outline" class="h-11" @click="detail.load(Number(route.params.id))">다시 시도</Button>
+    </div>
+
+    <template v-else-if="entry">
+      <!-- 제목 · 장르 · 상태 -->
+      <section class="relative flex flex-wrap items-end gap-8 pt-24 md:pt-[120px]">
+        <!-- 또렷한 커버 ─ 48rem부터. 모바일은 배경이 커버 역할을 한다 (목업 DetailMobile) -->
+        <div class="hidden aspect-[460/215] max-w-[560px] flex-[1_1_420px] items-end overflow-hidden rounded-[14px] bg-secondary md:flex">
+          <GameCover v-slot="{ initials }" :title="entry.game.title" :cover-url="entry.game.cover_url">
+            <span class="p-5 text-[30px] font-extrabold tracking-[-0.02em] text-muted-foreground/50" aria-hidden="true">
+              {{ initials }}
+            </span>
+          </GameCover>
+        </div>
+
+        <div class="flex min-w-0 flex-[1_1_300px] flex-col gap-3 md:gap-4">
+          <div v-if="entry.game.genres.length" class="flex flex-wrap gap-1.5 md:gap-2">
+            <span
+              v-for="genre in entry.game.genres"
+              :key="genre.id"
+              class="inline-flex h-6 items-center rounded-md bg-secondary px-2.5 text-xs font-semibold text-muted-foreground md:h-[26px]"
+            >
+              {{ genre.name }}
+            </span>
+          </div>
+          <h1 class="text-[30px] leading-[1.15] font-extrabold tracking-[-0.03em] break-words md:text-[40px] md:leading-[1.1]">
+            {{ entry.game.title }}
+          </h1>
+
+          <!-- 상태 변경 ─ 수정 화면을 거치지 않고 여기서 바로 (DESIGN 3.4절)
+               기본 select를 쓴다 ─ 모바일에서 OS 선택창이 떠서 손가락으로 고르기 쉽고, 키보드 · 화면 읽기도 그대로 된다 -->
+          <label class="flex items-center gap-2.5 text-[13px] text-muted-foreground md:gap-3">
+            상태
+            <span class="relative inline-flex flex-1 items-center md:flex-none">
+              <StatusDot :status="entry.status" class="pointer-events-none absolute left-3.5 size-2" />
+              <select
+                :value="entry.status"
+                :disabled="detail.saving.value"
+                :aria-busy="detail.saving.value"
+                class="h-[46px] w-full appearance-none rounded-[10px] border border-border bg-card pr-10 pl-[30px] text-[15px] font-semibold text-foreground disabled:opacity-60 md:h-11 md:w-auto md:min-w-40"
+                @change="onStatusChange"
+              >
+                <option v-for="s in STATUSES" :key="s" :value="s">{{ STATUS_LABEL[s] }}</option>
+              </select>
+              <ChevronDown class="pointer-events-none absolute right-3 size-4 text-muted-foreground" aria-hidden="true" />
+            </span>
+          </label>
+          <p v-if="detail.saveError.value" role="alert" class="text-[13px] text-destructive">
+            상태를 바꾸지 못했어요. {{ detail.saveError.value }}
+          </p>
+
+          <span class="hidden text-[13px] text-muted-foreground md:block">출처 · {{ SOURCE_LABEL[entry.source] }}</span>
+        </div>
+      </section>
+
+      <div class="relative grid max-w-[1180px] grid-cols-1 gap-3 md:grid-cols-[repeat(auto-fit,minmax(320px,1fr))] md:gap-5">
+        <!-- 기록 ─ 모바일은 카드 없이 바로 놓는다 (목업 DetailMobile) -->
+        <section class="flex flex-col gap-3 md:gap-[18px] md:rounded-[14px] md:border md:border-border md:bg-card md:p-6">
+          <h2 class="hidden text-[15px] font-bold text-muted-foreground md:block">기록</h2>
+          <dl class="grid grid-cols-3 gap-2.5 md:gap-4">
+            <div>
+              <dt class="text-xs text-muted-foreground">구매일</dt>
+              <!-- 날짜 문자열을 그대로 쓴다 ─ Date로 읽으면 한국 시간으로 하루 전날이 될 수 있다 (CLAUDE.md 함정 "날짜와 시각") -->
+              <dd class="mt-[3px] text-[15px] font-bold md:mt-1 md:text-lg">{{ entry.purchased_at ?? EMPTY_VALUE }}</dd>
+            </div>
+            <div>
+              <dt class="text-xs text-muted-foreground">구매가</dt>
+              <dd class="mt-[3px] text-[15px] font-bold md:mt-1 md:text-lg">
+                {{ entry.purchase_price === null ? EMPTY_VALUE : `${formatWon(entry.purchase_price)}원` }}
+              </dd>
+            </div>
+            <div>
+              <dt class="text-xs text-muted-foreground">플레이타임</dt>
+              <dd class="mt-[3px] text-[15px] font-bold md:mt-1 md:text-lg">{{ formatPlaytime(entry.playtime_minutes) }}</dd>
+            </div>
+          </dl>
+
+          <!-- 시간당 비용 ─ 서버 계산값. 강조는 포인트 테두리 + 옅은 바탕 (DESIGN 4.4절) -->
+          <div
+            class="flex items-baseline justify-between gap-3 rounded-xl border border-brand-line bg-brand-tint px-4 py-3.5 md:px-5 md:py-[18px]"
+          >
+            <span class="text-[13px] text-muted-foreground md:text-sm">시간당 비용</span>
+            <span v-if="entry.cost_per_hour !== null" class="text-2xl font-extrabold tracking-[-0.02em] text-brand-text md:text-[30px]">
+              {{ formatWon(entry.cost_per_hour) }}<span class="ml-[3px] text-[13px] font-semibold md:ml-1 md:text-[15px]">원/h</span>
+            </span>
+            <!-- 플레이타임 0 · 구매가 없음 ─ 계산하지 않는다 (DESIGN 3.4절, REQUIREMENTS 5.1절) -->
+            <span v-else class="text-2xl font-extrabold text-muted-foreground md:text-[30px]">{{ EMPTY_VALUE }}</span>
+          </div>
+        </section>
+
+        <!-- 평가 ─ 클리어 · 포기일 때만. 다른 상태로 바꿔도 값은 남아 있고 숨기기만 한다 (DESIGN 4.3절) -->
+        <section
+          v-if="ratingVisible"
+          class="flex flex-col gap-2.5 rounded-xl border border-border bg-card px-4 py-3.5 md:gap-[18px] md:rounded-[14px] md:p-6"
+        >
+          <h2 class="hidden text-[15px] font-bold text-muted-foreground md:block">평가</h2>
+          <div v-if="entry.rating !== null" class="flex gap-0.5 md:gap-1" role="img" :aria-label="`평점 5점 중 ${entry.rating}점`">
+            <Star
+              v-for="n in 5"
+              :key="n"
+              class="size-[22px] md:size-[26px]"
+              :class="n <= entry.rating ? 'fill-brand-text text-brand-text' : 'text-muted-foreground'"
+              stroke-width="1.5"
+              aria-hidden="true"
+            />
+          </div>
+          <blockquote
+            v-if="entry.review"
+            class="text-[15px] leading-normal break-words md:border-l-2 md:border-border md:py-1 md:pl-4 md:text-lg"
+          >
+            "{{ entry.review }}"
+          </blockquote>
+        </section>
+      </div>
+
+      <span class="relative text-xs text-muted-foreground md:hidden">출처 · {{ SOURCE_LABEL[entry.source] }}</span>
+    </template>
+  </div>
 </template>
+
+<style scoped>
+/* 본문 폭의 절반과 화면 폭(cqw)의 절반 차이만큼 양쪽으로 넓힌다 ─ LibraryView .wall-bleed와 같은 계산 */
+.bleed {
+  left: calc(50% - 50cqw);
+  right: calc(50% - 50cqw);
+}
+
+/* 커버가 아래로 갈수록 배경색으로 사라진다 (목업 Detail backdropFade). 맨 위 덮는 정도는 --fade-top */
+.backdrop-fade {
+  background: linear-gradient(
+    180deg,
+    color-mix(in oklab, var(--background) var(--fade-top), transparent) 0%,
+    color-mix(in oklab, var(--background) 75%, transparent) 55%,
+    var(--background) 100%
+  );
+}
+</style>

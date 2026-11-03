@@ -69,6 +69,25 @@ export function cardMetric(entry: Pick<Entry, 'status' | 'purchased_at' | 'playt
   return { text: formatPlaytime(entry.playtime_minutes), loud: false }
 }
 
+// S-04 출처 표시 (DESIGN 3.4절)
+export const SOURCE_LABEL: Record<Entry['source'], string> = {
+  MANUAL: '직접 입력',
+  STEAM: 'Steam 연동',
+}
+
+// 값이 없을 때의 자리 ─ 빈칸으로 두면 "아직 불러오는 중인가?"로 읽힌다 (DESIGN 3.4절 시간당 비용 '—')
+export const EMPTY_VALUE = '—'
+
+/** 원 단위 숫자 → '66,000'. 천 단위 쉼표는 지역 설정과 상관없이 한국 표기로 고정한다 */
+export function formatWon(won: number): string {
+  return won.toLocaleString('ko-KR')
+}
+
+/** 평점 · 한줄평이 보이는 상태 ─ 다른 상태에서는 값이 있어도 숨기기만 한다 (DESIGN 4.3절) */
+export function showsRating(status: EntryStatus): boolean {
+  return status === 'CLEARED' || status === 'DROPPED'
+}
+
 /** 커버가 없을 때 보여줄 제목 앞 두 글자 (DESIGN 4.4절). 공백은 건너뛴다 */
 export function titleInitials(title: string): string {
   return Array.from(title.replace(/\s+/g, '')).slice(0, 2).join('')

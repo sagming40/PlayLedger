@@ -28,6 +28,7 @@ export interface Entry {
   rating: number | null
   review: string | null
   source: 'MANUAL' | 'STEAM'
+  cost_per_hour: number | null // 원/시간, SERVER 계산값. 플레이타임 0 · 구매가 없음이면 null (REQUIREMENTS 5.1절)
   created_at: string // UTC 시각 '...Z'
   updated_at: string
 }
@@ -69,4 +70,17 @@ export function listEntries(params: ListParams = {}) {
   if (params.offset !== undefined) query.set('offset', String(params.offset))
   const qs = query.toString()
   return request<EntryListResponse>(`/entries${qs ? `?${qs}` : ''}`)
+}
+
+// GET /api/entries/:id ─ S-04 상세. 없거나 남의 기록이면 404 (ARCHITECTURE 3.8절)
+export function getEntry(id: number) {
+  return request<Entry>(`/entries/${id}`)
+}
+
+// 수정 요청 ─ 보낸 항목만 바뀐다. 제목은 받지 않는다 (DATA_MODEL 2.6절)
+export type EntryUpdateBody = Partial<Omit<EntryCreateBody, 'title' | 'steam_appid'>>
+
+// PATCH /api/entries/:id ─ 상세 화면의 상태 변경은 { status }만 보낸다 (DESIGN 3.4절)
+export function updateEntry(id: number, body: EntryUpdateBody) {
+  return request<Entry>(`/entries/${id}`, { method: 'PATCH', body })
 }
