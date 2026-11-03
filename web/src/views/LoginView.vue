@@ -114,7 +114,7 @@ async function onSubmit() {
            div가 아닌 form을 사용하는 이유: Enter키 제출과 비밀번호 관리자가 공짜로 따라온다 -->
       <form class="flex flex-col gap-4" @submit.prevent="onSubmit">
         <div class="flex flex-col gap-1.5">
-          <Label for="email">이메일</Label>
+          <Label for="email" class="text-[13px] font-semibold">이메일</Label>
           <!-- v-model ─ 입력칸과 email 상자를 양쪽으로 묶는다
                사용자가 타이핑하면 상자가 바뀌고, 코드가 상자를 바꾸면 칸이 바뀐다 -->
           <Input
@@ -123,27 +123,27 @@ async function onSubmit() {
             type="email"
             autocomplete="email"
             placeholder="you@example.com"
-            class="h-11 rounded-[10px] bg-card/85 text-[15px]"
+            class="h-[46px] rounded-[10px] bg-card/85 px-3.5 text-[15px]"
           />
         </div>
 
         <!-- v-if ─ 거짓이면 아예 그리지 않는다 (숨기는 개념이 아니라 아예 없는 것) -->
         <div v-if="isRegister" class="flex flex-col gap-1.5">
-          <Label for="nickname">닉네임</Label>
+          <Label for="nickname" class="text-[13px] font-semibold">닉네임</Label>
           <Input
             id="nickname"
             v-model="nickname"
             type="text"
             autocomplete="nickname"
             aria-describedby="nickname-help"
-            class="h-11 rounded-[10px] bg-card/85 text-[15px]"
+            class="h-[46px] rounded-[10px] bg-card/85 px-3.5 text-[15px]"
           />
           <!-- 서버 규칙(2~30자)을 미리 알려 422 왕복을 줄인다 (9/30 Backloggd 레퍼런스) -->
           <span id="nickname-help" class="text-xs text-muted-foreground">2~30자</span>
         </div>
 
         <div class="flex flex-col gap-1.5">
-          <Label for="password">비밀번호</Label>
+          <Label for="password" class="text-[13px] font-semibold">비밀번호</Label>
           <!-- : 이 붙으면 "문자 그대로"가 아니라 "이 식을 계산한 값"이라는 뜻
                브라우저 비밀번호 관리자가 가입/로그인을 구분하도록 값을 바꿔준다 -->
           <Input
@@ -152,7 +152,7 @@ async function onSubmit() {
             type="password"
             :autocomplete="isRegister ? 'new-password' : 'current-password'"
             :aria-describedby="isRegister ? 'password-help' : undefined"
-            class="h-11 rounded-[10px] bg-card/85 text-[15px]"
+            class="h-[46px] rounded-[10px] bg-card/85 px-3.5 text-[15px]"
           />
           <span v-if="isRegister" id="password-help" class="text-xs text-muted-foreground">최소 8자</span>
         </div>

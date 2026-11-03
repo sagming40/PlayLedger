@@ -104,7 +104,7 @@ async function onSubmit() {
 
     <form class="flex flex-col gap-[26px]" @submit.prevent="onSubmit">
       <div class="flex flex-col gap-2">
-        <Label for="title" class="text-sm font-semibold">제목 <span class="text-brand-text">*</span></Label>
+        <Label for="title" class="gap-1 text-sm font-semibold">제목 <span class="text-brand-text">*</span></Label>
         <SteamTitleField v-model:title="title" v-model:steam-app="steamApp" />
       </div>
 
@@ -158,7 +158,7 @@ async function onSubmit() {
           <Input id="purchased-at" v-model="purchasedAt" type="date" class="h-12 rounded-[10px] bg-card text-[15px]" />
         </div>
         <div class="flex min-w-0 flex-col gap-2">
-          <Label for="price" class="text-sm font-semibold">구매가 <span class="font-normal text-muted-foreground">(원)</span></Label>
+          <Label for="price" class="gap-1 text-sm font-semibold">구매가 <span class="font-normal text-muted-foreground">(원)</span></Label>
           <Input
             id="price"
             v-model="price"
@@ -172,7 +172,7 @@ async function onSubmit() {
           <span v-if="priceInvalid" id="price-error" class="text-xs text-destructive">0 이상의 정수로 적어 주세요</span>
         </div>
         <div class="flex min-w-0 flex-col gap-2">
-          <Label for="hours" class="text-sm font-semibold">플레이타임 <span class="font-normal text-muted-foreground">(시간)</span></Label>
+          <Label for="hours" class="gap-1 text-sm font-semibold">플레이타임 <span class="font-normal text-muted-foreground">(시간)</span></Label>
           <Input
             id="hours"
             v-model="hours"
