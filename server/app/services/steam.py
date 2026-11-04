@@ -18,6 +18,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.normalize import normalize_title
 from app.models.game import Game, Genre
 from app.models.steam_app import SteamApp
+from app.schemas.common import contains_broken_text
+from app.schemas.entry import INT_MAX
 
 APP_LIST_URL = "https://api.steampowered.com/IStoreService/GetAppList/v1/"
 APP_DETAILS_URL = "https://store.steampowered.com/api/appdetails"
@@ -83,14 +85,21 @@ async def fetch_app_pages(
 
         try:
             body = res.json()["response"]
-        except (ValueError, KeyError):
+            apps = body.get("apps", [])
+        except (ValueError, KeyError, TypeError, AttributeError):
             raise SteamSyncError("Steam 응답 형식이 예상과 다름") from None
+        if not isinstance(apps, list):
+            raise SteamSyncError("Steam 응답 형식이 예상과 다름")
 
-        yield body.get("apps", [])
+        yield apps
 
         if not body.get("have_more_results"):
             return
-        last_appid = body["last_appid"]
+        # 앞으로 나아가지 않으면 영원히 돈다 ─ 더 있다면서 다음 위치가 없거나 그대로인 경우
+        next_appid = body.get("last_appid")
+        if not isinstance(next_appid, int) or (last_appid is not None and next_appid <= last_appid):
+            raise SteamSyncError("Steam 응답 형식이 예상과 다름")
+        last_appid = next_appid
 
 
 async def upsert_steam_apps(db: AsyncSession, apps: list[dict]) -> int:
@@ -100,10 +109,16 @@ async def upsert_steam_apps(db: AsyncSession, apps: list[dict]) -> int:
     """
     rows = []
     for app in apps:
+        # 비공식에 가까운 응답이다 ─ 행 하나가 이상해도 나머지를 버리지 않고 그 행만 건너뛴다
+        if not isinstance(app, dict):
+            continue
+        appid, name = app.get("appid"), app.get("name")
+        if not (isinstance(appid, int) and 1 <= appid <= INT_MAX and isinstance(name, str)):
+            continue
         # 빈 이름은 고를 수 없다. NUL 문자는 PostgreSQL text에 넣으면 터진다
-        name = (app.get("name") or "").replace("\x00", "").strip()
-        if name:
-            rows.append({"appid": app["appid"], "name": name})
+        name = name.replace("\x00", "").strip()
+        if name and not contains_broken_text(name):
+            rows.append({"appid": appid, "name": name})
 
     for start in range(0, len(rows), UPSERT_BATCH):
         stmt = insert(SteamApp).values(rows[start : start + UPSERT_BATCH])
@@ -219,7 +234,7 @@ async def fetch_app_details(
         data = entry["data"]
 
         cover = data.get("header_image")
-        if not (isinstance(cover, str) and cover.startswith("https://") and len(cover) <= COVER_URL_MAX):
+        if not (isinstance(cover, str) and cover.startswith("https://") and len(cover) <= COVER_URL_MAX) or contains_broken_text(cover):
             cover = None
 
         name = data.get("name")
@@ -228,7 +243,8 @@ async def fetch_app_details(
             name=name.strip() if isinstance(name, str) else None,
             cover_url=cover,
             # Steam은 id를 문자열로 준다. genres.steam_genre_id도 문자열이다 (DATA_MODEL 2.5절)
-            steam_genre_ids=[str(g["id"]) for g in data.get("genres", [])],
+            # 숫자 모양이 아니면 버린다 ─ 그대로 DB에 물으면 NUL에서 터지고, 어차피 고정 8개에 없다
+            steam_genre_ids=[str(g["id"]) for g in data.get("genres", []) if str(g["id"]).isascii() and str(g["id"]).isdigit()],
             released_at=parse_release_date(data.get("release_date")),
         )
     except (httpx.HTTPError, ValueError, KeyError, TypeError, AttributeError):
@@ -252,7 +268,7 @@ def usable_title(*candidates: str | None) -> str | None:
     Steam에는 414자짜리 이름도, 기호뿐인 이름도 있다 ─ 그대로 넣으면 500이 된다
     """
     for title in candidates:
-        if not title or len(title.strip()) > TITLE_MAX:
+        if not title or len(title.strip()) > TITLE_MAX or contains_broken_text(title):
             continue
         try:
             normalize_title(title)

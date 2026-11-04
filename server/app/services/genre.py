@@ -13,6 +13,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.game import Game, Genre, game_genres
 
 
+async def list_genres(db: AsyncSession) -> list[Genre]:
+    """장르 목록 전체. id순 ─ steam_genre_id는 String이라 정렬하면 "18"이 "2"보다 앞에 온다"""
+    # scalars = 결과의 각 행에서 첫 칸(Genre 객체)만 꺼낸다
+    # execute를 사용하면 (Genre,) Tuple로 감싸져 나온다
+    result = await db.scalars(select(Genre).order_by(Genre.id))
+    return list(result.all())
+
+
 async def genre_ids_exist(db: AsyncSession, genre_ids: list[int]) -> bool:
     """보낸 장르 id가 전부 실제로 존재하는 장르인지 확인한다
 

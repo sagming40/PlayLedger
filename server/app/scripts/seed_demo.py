@@ -19,6 +19,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.db import AsyncSessionLocal, engine
+from app.core.normalize import normalize_email
 from app.models.entry import Entry
 from app.models.user import User
 from app.services.game import find_or_create_game
@@ -102,7 +103,8 @@ async def main(email: str) -> int:
         return 1
     try:
         async with AsyncSessionLocal() as db:
-            user_id = await db.scalar(select(User.id).where(User.email == email))
+            # 가입할 때 소문자로 저장했다 ─ 대문자로 쳐도 같은 계정을 찾는다
+            user_id = await db.scalar(select(User.id).where(User.email == normalize_email(email)))
             if user_id is None:
                 print("실패: 그 이메일의 계정이 없다. 화면에서 먼저 가입한다", file=sys.stderr)
                 return 1

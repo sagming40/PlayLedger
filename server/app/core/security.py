@@ -94,13 +94,16 @@ def decode_access_token(token: str) -> int | None:
             token,
             settings.jwt_secret_key,
             algorithms=[settings.jwt_algorithm],   # list ─ 단수 인자와 이름이 다름에 주의
+            # 기본값은 exp가 없으면 영원히 유효한 토큰으로 읽는다. 우리가 발급한 토큰에는 항상 있다
+            options={"require": ["exp", "sub"]},
         )
-    except jwt.InvalidTokenError:
+        user_id = int(payload["sub"])
+    except (jwt.InvalidTokenError, ValueError):
         # 만료(ExpiredSignatureError)·서명 불일치 등이 전부 이 class 아래에 있다.
         return None
 
-    user_id = payload.get("sub")
-    return int(user_id) if user_id is not None else None
+    # integer를 넘는 번호는 DB에 묻는 순간 터진다(500). 그런 사용자는 없다
+    return user_id if 1 <= user_id <= 2_147_483_647 else None
 
 
 def create_refresh_token() -> str:
