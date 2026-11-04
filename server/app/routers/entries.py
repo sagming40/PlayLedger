@@ -8,7 +8,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.deps import get_current_user, get_db, get_http_client
+from app.core.rate_limit import entry_create_limiter
+from app.deps import ensure_not_limited, get_current_user, get_db, get_http_client
 from app.models.entry import Entry
 from app.models.game import Game
 from app.models.user import User
@@ -33,9 +34,12 @@ from app.services.steam import (
 
 router = APIRouter(prefix="/api/entries", tags=["entries"])
 
-# (user_id, game_id) 복합 UNIQUE 제약의 이름 ─ Base의 naming_convention이 생성한 이름
+# (user_id, game_id) 복합 UNIQUE 제약의 이름 ─ Base의 naming_convention이 생성한 이름 (첫 컬럼만 들어간다)
 # IntegrityError를 구분 하는데 사용한다 ('이 제약 때문에 터진 에러인지')
-ENTRY_UNIQUE = "uq_entries_user_id_game_id"
+ENTRY_UNIQUE = "uq_entries_user_id"
+
+# 비울 수 없는 칸의 이름 ─ 응답 문구는 화면에 그대로 보인다 (ARCHITECTURE 3.1절)
+REQUIRED_FIELDS = {"status": "상태는", "playtime_minutes": "플레이타임은"}
 
 
 async def _get_my_entry_or_404(
@@ -63,7 +67,7 @@ async def _ensure_genres_exist(db: AsyncSession, genre_ids: list[int]) -> None:
     """없는 장르 id가 섞여 있으면 422로 거절한다 (등록 · 수정 공통)"""
     if not await genre_ids_exist(db, genre_ids):
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="존재하지 않는 장르가 포함되어 있습니다",
         )
 
@@ -104,6 +108,9 @@ async def _steam_game(
     # 처음 들어오는 게임이거나, 지난번에 Steam이 실패해 커버가 빈 게임만 부른다
     details = None
     if game is None or game.cover_url is None:
+        # 외부 호출 동안 DB 연결을 붙들지 않는다 ─ Steam이 느릴 때 연결 풀이 말라 다른 요청까지 멈춘다
+        # 아직 쓴 것이 없어 읽기 트랜잭션만 닫힌다. expire_on_commit=False라 읽어 둔 객체는 그대로 쓸 수 있다
+        await db.commit()
         details = await fetch_app_details(http, appid)
 
     if details is not None and details.type != "game":
@@ -144,6 +151,9 @@ async def create_entry(
     비유: 도서관 대출 기록 적기. 책(게임) 자체가 서가에 없으면 먼저 들여놓은 후
     그 책에 내 이름이 적힌 대출 기록(보유 기록)을 적는다
     """
+    ensure_not_limited(entry_create_limiter, str(user.id))
+    entry_create_limiter.hit(str(user.id))
+
     # ① 없는 장르 id가 섞여 있으면 거절 ─ 게임 상태와 상관없이 항상 검사
     await _ensure_genres_exist(db, data.genre_ids)
 
@@ -198,7 +208,8 @@ async def list_my_entries(
     genre: int | None = Query(default=None, ge=1, le=INT_MAX),
     sort: Literal["updated", "purchased", "title", "playtime"] = "updated",
     limit: int = Query(default=20, ge=1, le=MAX_LIMIT),
-    offset: int = Query(default=0, ge=0),
+    # 상한이 없으면 PostgreSQL bigint를 넘는 값에서 500이 난다. 기록 수가 integer를 넘을 일은 없다
+    offset: int = Query(default=0, ge=0, le=INT_MAX),
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> EntryListResponse:
@@ -254,11 +265,11 @@ async def update_my_entry(
     # NOT NULL 컬럼에 null을 보낸 경우를 막는다
     # schema의 None은 "보내지 않음"이라는 뜻이라, 여기까지 None으로 들어왔다면
     # 유저가 명시적으로 null을 적어 보냈다는 뜻 → DB에 넣으면 500이므로 422로 거부
-    for field in ("status", "playtime_minutes"):
+    for field, label in REQUIRED_FIELDS.items():
         if field in changes and changes[field] is None:
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail=f"{field}은(는) 비울 수 없습니다",
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail=f"{label} 비울 수 없습니다",
             )
 
     # 장르를 보냈으면 연결 규칙을 그대로 적용 (DATA_MODEL 2.5절)

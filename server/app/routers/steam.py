@@ -1,11 +1,14 @@
 # app/routers/steam.py
 # Steam 게임 검색 API ─ 등록 폼의 자동완성 (DESIGN 3.3절)
 
+from typing import Annotated
+
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.deps import get_current_user, get_db
 from app.models.steam_app import SteamApp
+from app.schemas.common import CleanStr
 from app.schemas.steam import SteamAppRead
 from app.services.steam import SEARCH_LIMIT, search_steam_apps
 
@@ -19,7 +22,8 @@ router = APIRouter(
 
 @router.get("/apps", response_model=list[SteamAppRead])
 async def search_apps(
-    q: str = Query(min_length=2, max_length=100),
+    # Annotated로 묶어야 CleanStr의 검사도 함께 돈다. q: CleanStr = Query(...)로 쓰면 빠진다
+    q: Annotated[CleanStr, Query(min_length=2, max_length=100)],
     db: AsyncSession = Depends(get_db),
 ) -> list[SteamApp]:
     """영어 제목으로 후보를 찾는다. 미러가 비어 있으면 빈 목록이고 직접 입력은 그대로 된다"""

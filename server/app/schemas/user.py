@@ -6,6 +6,7 @@ from datetime import datetime
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
 from app.core.normalize import normalize_email as _normalize_email
+from app.schemas.common import CleanStr
 
 
 class UserCreate(BaseModel):
@@ -16,8 +17,8 @@ class UserCreate(BaseModel):
     """
 
     email: EmailStr                                       # 형식이 email인지 검사
-    password: str = Field(min_length=8, max_length=128)
-    nickname: str = Field(min_length=2, max_length=30)    # models/user.py ─ varchar(30)
+    password: CleanStr = Field(min_length=8, max_length=128)
+    nickname: CleanStr = Field(min_length=2, max_length=30)    # models/user.py ─ varchar(30)
 
     @field_validator("email")
     @classmethod
@@ -29,6 +30,14 @@ class UserCreate(BaseModel):
         화면에서 소문자로 변환해주는 것에 의존하면 안 된다.
         """
         return _normalize_email(value)
+
+    @field_validator("password")
+    @classmethod
+    def reject_blank_password(cls, value: str) -> str:
+        """공백뿐인 비밀번호는 없는 것과 같다"""
+        if not value.strip():
+            raise ValueError("공백만으로 된 비밀번호는 쓸 수 없습니다")
+        return value
 
     @field_validator("nickname", mode="before")
     @classmethod
@@ -68,7 +77,8 @@ class LoginRequest(BaseModel):
     """
 
     email: str
-    password: str
+    # 가입 상한과 같다. 그보다 길면 맞을 수 없는 값이고, 아주 긴 값을 해시에 넣게 두지 않는다
+    password: str = Field(max_length=128)
 
     @field_validator("email")
     @classmethod

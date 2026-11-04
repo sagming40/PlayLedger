@@ -8,6 +8,7 @@ from pydantic import BaseModel, ConfigDict, Field, computed_field, field_validat
 
 from app.core.metrics import cost_per_hour
 from app.core.normalize import normalize_title
+from app.schemas.common import CleanStr, PurchaseDate
 from app.schemas.game import GameRead
 
 # 허용되는 상태값 ─ DB의 CHECK와 같은 목록. Literal = "이 중 하나만"
@@ -33,7 +34,7 @@ class EntryCreate(BaseModel):
 
     # 둘 중 정확히 하나만 보낸다 (ARCHITECTURE 5.3절)
     # steam_appid를 보내면 제목은 서버가 찾는다 ─ 둘을 같이 받으면 가짜 게임이 공유 테이블에 들어갈 수 있다
-    title: str | None = Field(default=None, max_length=200)
+    title: CleanStr | None = Field(default=None, max_length=200)
     steam_appid: int | None = Field(default=None, ge=1, le=INT_MAX)
 
     # 등록 form의 default가 '시작 안 됨'이므로 생략하면 BACKLOG
@@ -45,11 +46,11 @@ class EntryCreate(BaseModel):
         default_factory=list, max_length=8
     )
 
-    purchased_at: date | None = None
+    purchased_at: PurchaseDate | None = None
     purchase_price: int | None = Field(default=None, ge=0, le=INT_MAX)
     playtime_minutes: int = Field(default=0, ge=0, le=INT_MAX)
     rating: int | None = Field(default=None, ge=1, le=5)
-    review: str | None = Field(default=None, max_length=200)
+    review: CleanStr | None = Field(default=None, max_length=200)
 
     @field_validator("title")
     @classmethod
@@ -125,8 +126,8 @@ class EntryUpdate(BaseModel):
     genre_ids: list[Annotated[int, Field(ge=1, le=INT_MAX)]] | None = Field(
         default=None, max_length=8
     )
-    purchased_at: date | None = None
+    purchased_at: PurchaseDate | None = None
     purchase_price: int | None = Field(default=None, ge=0, le=INT_MAX)
     playtime_minutes: int | None = Field(default=None, ge=0, le=INT_MAX)
     rating: int | None = Field(default=None, ge=1, le=5)
-    review: str | None = Field(default=None, max_length=200)
+    review: CleanStr | None = Field(default=None, max_length=200)

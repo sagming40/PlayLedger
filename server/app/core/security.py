@@ -3,6 +3,7 @@
 비밀번호 원문과 서명 키는 이 파일 밖으로 나가지 않는다.
 """
 
+import asyncio
 import hashlib
 import secrets
 from datetime import datetime, timedelta, timezone
@@ -17,6 +18,11 @@ from app.core.config import settings
 # module 최상단에 딱 하나만 만들어 계속 재사용한다
 # 주문 마다 주방을 새로 짓는 건 아니기 때문이다
 password_hasher = PasswordHasher()
+
+# 해시는 한 번에 65MB를 쓰고 수십 ms 동안 CPU를 잡는다
+# 이벤트 루프에서 그대로 돌리면 그동안 모든 요청이 멈춘다 ─ 별도 스레드로 보내고, 동시에 도는 개수도 제한한다
+# 비유: 시간이 오래 걸리는 주문은 조리대 2개에서만 받는다. 카운터는 계속 다른 손님을 받는다
+_hash_slots = asyncio.Semaphore(2)
 
 
 def hash_password(plain_password: str) -> str:
@@ -44,6 +50,16 @@ def verify_password(plain_password: str, stored_hash: str) -> bool:
         # 어느 쪽인지 노출시키게 되면 공격에 쉽게 노출된다. (공격자에게 Hint를 주는 셈)
         return False
     return True
+
+
+async def hash_password_async(plain_password: str) -> str:
+    async with _hash_slots:
+        return await asyncio.to_thread(hash_password, plain_password)
+
+
+async def verify_password_async(plain_password: str, stored_hash: str) -> bool:
+    async with _hash_slots:
+        return await asyncio.to_thread(verify_password, plain_password, stored_hash)
 
 
 def create_access_token(user_id: int) -> str:

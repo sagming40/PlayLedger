@@ -4,12 +4,13 @@
 from collections.abc import AsyncGenerator
 
 import httpx
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import AsyncSessionLocal
+from app.core.rate_limit import RateLimiter
 from app.core.security import decode_access_token
 from app.models.user import User
 
@@ -26,13 +27,41 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
         yield session
 
 
-async def get_http_client() -> AsyncGenerator[httpx.AsyncClient, None]:
+async def get_http_client(request: Request) -> httpx.AsyncClient:
     """외부 API(Steam)를 부를 때 쓰는 전화기. 테스트는 이것만 바꿔치기해 진짜 Steam을 부르지 않는다
 
-    timeout을 짧게 둔다 ─ Steam이 느려도 등록을 오래 붙잡지 않고 커버 없이 진행한다 (decisions/0008)
+    서버가 켜질 때 하나 만들어 돌려 쓴다 (main.py lifespan)
     """
-    async with httpx.AsyncClient(timeout=5) as client:
-        yield client
+    return request.app.state.http
+
+
+def client_ip(request: Request) -> str:
+    """요청을 보낸 곳. 프록시 뒤에서는 uvicorn --proxy-headers가 진짜 IP로 바꿔 준다 (M5)"""
+    return request.client.host if request.client else "unknown"
+
+
+def ensure_not_limited(limiter: RateLimiter, key: str) -> None:
+    """횟수를 넘겼으면 429. 몇 초 뒤에 다시 오라고 알려 준다"""
+    wait = limiter.retry_after(key)
+    if wait:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="요청이 너무 많습니다. 잠시 후 다시 시도해 주세요",
+            headers={"Retry-After": str(wait)},
+        )
+
+
+def reject_other_sites(request: Request) -> None:
+    """쿠키로 인증하는 경로(refresh · logout)는 우리 화면에서 온 요청만 받는다
+
+    SameSite=Strict는 다른 사이트만 막는다. 같은 sagming.com 아래 다른 앱이 뚫리면 그쪽에서 온 요청에는 쿠키가 붙는다
+    브라우저가 스스로 적어 주는 Sec-Fetch-Site는 페이지의 코드가 바꿀 수 없다. 이 헤더가 없는 도구(curl)는 쿠키도 직접 넣어야 하니 막을 이유가 없다
+    """
+    if request.headers.get("sec-fetch-site") in ("cross-site", "same-site"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="허용되지 않은 요청입니다",
+        )
 
 
 # Authorization Header에서 "Bearer {토큰}"을 꺼내주는 도구
@@ -49,7 +78,7 @@ async def get_current_user(
 
     비유: 놀이기구 앞 직원. 손목 밴드(access 토큰)의 도장과 기한을 확인하고
     "몇 번 손님"인지 확정해서 들여보낸다.
-    보호된 API는 전부 이 직원을 거쳐야 실행된다. (문서 02 ─ 4.2절 1번 방어선)
+    보호된 API는 전부 이 직원을 거쳐야 실행된다. (ARCHITECTURE 3.8절 1번 방어선)
     """
     # 실패 사유를 하나로 통일한다. 만료 / 위조 / 없는 사용자를 구분해 알려주면 HINT가 된다.
     credentials_error = HTTPException(
