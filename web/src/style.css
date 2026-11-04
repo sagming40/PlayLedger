@@ -1,6 +1,8 @@
 /* 글꼴 ─ Inter(영문 · 숫자) + Noto Sans KR(한글) (DESIGN 4.4절)
-   지금은 구글 서버에서 받는다. 내장 여부는 M5에서 검토 */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+KR:wght@400;500;700;800&display=swap');
+   저장소에 내장한다 ─ 외부 서버로 접속 IP가 나가지 않고 운영 CSP가 단순해진다
+   한글은 글자 범위별로 잘게 나뉜 파일이라 화면에 쓰는 글자의 조각만 받는다 */
+@import '@fontsource-variable/inter/wght.css';
+@import '@fontsource-variable/noto-sans-kr/wght.css';
 
 @import 'tailwindcss';
 @import 'tw-animate-css';
@@ -8,7 +10,7 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --font-sans: 'Inter', 'Noto Sans KR', ui-sans-serif, system-ui, sans-serif;
+  --font-sans: 'Inter Variable', 'Noto Sans KR Variable', ui-sans-serif, system-ui, sans-serif;
   --font-heading: var(--font-sans);
   /* 포인트 색 강조 3종 ─ 글자 · 옅은 바탕 · 테두리 (DESIGN 4.4절)
      bg-brand-tint · border-brand-line · text-brand-text 로 쓴다 */

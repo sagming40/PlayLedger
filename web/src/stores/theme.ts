@@ -19,7 +19,7 @@ export const useThemeStore = defineStore('theme', () => {
 
   /**
    * 앱 시작 시 한 번 부른다 (main.ts)
-   * index.html의 인라인 스크립트가 이미 칠해 둔 상태를 이어받고, 이후 OS 설정 변경을 따라간다
+   * public/theme-init.js가 이미 칠해 둔 상태를 이어받고, 이후 OS 설정 변경을 따라간다
    */
   function init(target: HTMLElement = document.documentElement, win: Window = window) {
     root = target
