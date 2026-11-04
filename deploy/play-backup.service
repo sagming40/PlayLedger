@@ -1,0 +1,9 @@
+# PlayLedger DB 백업 한 번 (SERVER.md). /etc/systemd/system/에 복사한다
+[Unit]
+Description=PlayLedger DB 백업
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/play-backup

@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# play-compose ─ 서버에서 운영 Compose를 부르는 짧은 이름 (SERVER.md). /usr/local/bin/에 설치한다
+# 설정(.env)과 지금 배포된 커밋(image.env)을 매번 같이 읽는다
+# 쓰는 법: sudo play-compose ps · sudo play-compose logs api --tail 50
+#          sudo play-compose run --rm api python -m app.scripts.sync_steam_apps
+
+set -euo pipefail
+
+ROOT=/srv/playledger
+
+[[ $EUID -eq 0 ]] || { echo "sudo play-compose …로 실행해 줘" >&2; exit 1; }
+[[ -f $ROOT/image.env ]] || { echo "아직 배포 전이다: $ROOT/image.env 없음" >&2; exit 1; }
+
+exec docker compose --project-directory "$ROOT" -f "$ROOT/compose.yaml" \
+	--env-file "$ROOT/.env" --env-file "$ROOT/image.env" "$@"

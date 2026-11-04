@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+# play-backup ─ 운영 DB를 덤프해서 age로 잠가 /var/backups/playledger/에 둔다 (SERVER.md). /usr/local/bin/에 설치한다
+# 매일 play-backup.timer가, 배포 직전에는 play-release가 부른다
+# 비유: 장부 사본을 떠서 금고에 넣기 ─ 서버에는 자물쇠(공개키)만 있고, 여는 열쇠(개인키)는 내 PC에만 있다
+#       서버가 털려도 사본은 못 연다
+
+set -euo pipefail
+
+RECIPIENTS=/etc/playledger/backup.pub
+DEST=/var/backups/playledger
+KEEP=14
+
+die() {
+	echo "[backup] 실패: $*" >&2
+	exit 1
+}
+
+[[ $EUID -eq 0 ]] || die "sudo로 실행해야 한다"
+[[ -s $RECIPIENTS ]] || die "공개키가 없다: $RECIPIENTS"
+
+install -d -m 755 "$DEST"
+# 이름에 UTC 시각을 넣는다 → 이름순 = 시간순
+NAME=playledger-$(date -u +%Y%m%dT%H%M%SZ).dump.age
+[[ ! -e $DEST/$NAME ]] || die "같은 이름이 이미 있다: $NAME (잠시 뒤 다시)"
+TMP=$DEST/.$NAME.tmp
+trap 'rm -f "$TMP"' EXIT
+
+# steam_apps(공개 게임 목록 20만 행)는 빼고 구조만 남긴다 ─ 미러링으로 언제든 다시 만들 수 있고, 백업이 작아진다
+# -T: 터미널 없이(타이머에서도 돈다). -Fc: pg_restore로 되살리는 압축 형식
+# pipefail 덕분에 pg_dump가 실패하면 전체가 실패한다. 크기로는 못 본다 ─ 빈 입력도 잠그면 200바이트쯤 된다
+# 작은따옴표가 맞다 ─ $POSTGRES_USER는 서버가 아니라 컨테이너 안에서 풀린다
+# shellcheck disable=SC2016
+play-compose exec -T db sh -c 'pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Fc --exclude-table-data=steam_apps' |
+	age -R "$RECIPIENTS" -o "$TMP" ||
+	die "pg_dump 또는 age가 실패했다"
+
+# 일반 계정이 scp로 받아 갈 수 있게 연다. 내용은 잠겨 있다
+chmod 644 "$TMP"
+mv "$TMP" "$DEST/$NAME"
+echo "[backup] 만듦: $DEST/$NAME ($(stat -c %s "$DEST/$NAME") 바이트)"
+
+# 최근 KEEP개만 남긴다. 계정을 지운 사람의 기록도 이 기간이 지나면 사라진다 (개인정보 안내)
+find "$DEST" -maxdepth 1 -name 'playledger-*.dump.age' -printf '%f\n' |
+	sort -r | tail -n +$((KEEP + 1)) |
+	while read -r old; do
+		echo "[backup] 정리: $old"
+		rm -f -- "$DEST/$old"
+	done
