@@ -48,7 +48,8 @@ export function idleDays(purchasedAt: string | null, today: Date = new Date()): 
 
 /** 분 → '12.5시간'. SERVER는 분으로 주고 화면은 시간(소수 한 자리)으로 보여준다 (DESIGN 3.2절) */
 export function formatPlaytime(minutes: number): string {
-  return `${(minutes / 60).toFixed(1)}시간`
+  // 0.1시간 = 6분 단위 정수로 반올림한다 ─ (1197 / 60).toFixed(1)은 소수 오차로 19.95를 19.9로 내린다
+  return `${(Math.round(minutes / 6) / 10).toFixed(1)}시간`
 }
 
 export interface CardMetric {
@@ -93,6 +94,18 @@ export const EMPTY_VALUE = '—'
 /** 원 단위 숫자 → '66,000'. 천 단위 쉼표는 지역 설정과 상관없이 한국 표기로 고정한다 */
 export function formatWon(won: number): string {
   return won.toLocaleString('ko-KR')
+}
+
+/** 비율 → '42.3%'. 계산할 수 없으면(null) '—' ─ 0%와 다르다 (REQUIREMENTS 5.3절) */
+export function formatPercent(rate: number | null): string {
+  return rate === null ? EMPTY_VALUE : `${rate.toFixed(1)}%`
+}
+
+/** 오늘을 'YYYY-MM-DD'로. toISOString은 UTC라 한국 오전 9시 전에 하루 전 날짜가 된다 */
+export function localToday(now: Date = new Date()): string {
+  const month = String(now.getMonth() + 1).padStart(2, '0')
+  const day = String(now.getDate()).padStart(2, '0')
+  return `${now.getFullYear()}-${month}-${day}`
 }
 
 /** 커버가 없을 때 보여줄 제목 앞 두 글자 (DESIGN 4.4절). 공백은 건너뛴다 */
