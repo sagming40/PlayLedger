@@ -1,0 +1,49 @@
+# 운영 Caddy 설정 (PLAN M5, decisions/0012). 화면 이미지 안에 들어간다 (web/Dockerfile)
+# 비유: 건물 1층 안내데스크 ─ 손님(443)을 맞아 신분증(인증서)을 보여 주고, /api 손님만 안쪽 사무실로 보낸다
+# - 인증서는 Caddy가 스스로 받고 갱신한다. 볼륨 caddy_data에 저장하므로 컨테이너를 바꿔도 다시 받지 않는다
+# - 접근 로그는 켜지 않는다. 기록이 남는 곳을 늘리지 않는다 (개인정보 안내)
+# - {$SITE_ADDRESS} ─ 운영은 play.sagming.com, 내 PC 확인은 localhost:8443
+
+{$SITE_ADDRESS} {
+	encode zstd gzip
+
+	header {
+		# 처음엔 하루만 ─ 설정이 틀린 채로 길게 걸면 되돌리기 어렵다. 운영에서 확인한 뒤 1년으로 늘린다
+		Strict-Transport-Security "max-age=86400"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "camera=(), microphone=(), geolocation=()"
+		# 어디서 온 것을 실행 · 표시할지 브라우저에 알린다 ─ 스크립트가 끼어들어도 토큰을 밖으로 못 보낸다
+		# style 'unsafe-inline' ─ Vue :style과 Motion · ECharts가 요소에 style을 직접 단다
+		# img https: ─ 커버 주소는 Steam CDN 여럿이고, 서버가 https만 저장한다 (services/steam.py)
+		Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' https: data:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+		-Server
+		-Via
+	}
+
+	# API ─ Caddy는 밖에서 온 X-Forwarded-For를 버리고 실제 접속 IP를 붙인다. uvicorn은 이 Caddy의 값만 믿는다
+	handle /api/* {
+		# 가장 큰 요청도 몇 KB다. 큰 본문을 끝까지 받느라 메모리를 쓰지 않는다
+		request_body {
+			max_size 1MB
+		}
+		reverse_proxy api:8000
+	}
+
+	# 파일 이름에 내용 해시가 붙어 있어 영원히 캐시해도 된다
+	# try_files를 안 쓴다 ─ 옛 버전 조각을 부르면 index.html이 아니라 404여야 화면이 새 버전임을 안다 (lib/app-errors.ts)
+	handle /assets/* {
+		root * /srv
+		header Cache-Control "public, max-age=31536000, immutable"
+		file_server
+	}
+
+	# 그 밖의 주소는 화면이 처리한다 ─ 없으면 /library에서 새로고침할 때 404가 된다
+	# index.html은 캐시하지 않는다 ─ 캐시하면 배포해도 옛 화면이 남는다
+	handle {
+		root * /srv
+		header Cache-Control "no-cache"
+		try_files {path} /index.html
+		file_server
+	}
+}
