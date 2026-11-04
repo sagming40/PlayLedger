@@ -102,6 +102,40 @@ jobs:
       - run: npm test
       - run: npm run build
 
+  # 운영 이미지 ─ 테스트를 통과한 main 커밋만 만든다. 서버는 이 이미지만 받으므로 실패한 코드는 배포할 수 없다
+  # 태그는 전체 커밋 번호 ─ 어떤 코드가 돌고 있는지 바로 알 수 있고 되돌리기도 쉽다 (deploy/play-release)
+  # 실제 배포는 하지 않는다 ─ 서버 SSH 키를 GitHub에 맡기지 않는다
+  images:
+    needs: [test, web]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        include:
+          - name: api
+            context: server
+          - name: web
+            context: web
+    steps:
+      - uses: actions/checkout@v6
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          push: true
+          tags: ghcr.io/sagming40/playledger-${{ matrix.name }}:${{ github.sha }}
+          cache-from: type=gha,scope=${{ matrix.name }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.name }}
+
   # 알려진 취약점 ─ 내 코드가 그대로여도 새로 발표되면 실패한다. 테스트와 섞이지 않게 따로 둔다
   # pipx run ─ 프로젝트에 설치하지 않고 이번 실행에서만 쓴다
   audit:
