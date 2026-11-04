@@ -70,7 +70,7 @@ ssh-keygen -t ed25519 -f "$HOME\.ssh\play_vultr" -C "company-pc"   # passphrase�
 Get-Content "$HOME\.ssh\play_vultr.pub"                            # Vultr에 붙여 넣을 공개키
 ```
 
-**다른 PC를 추가할 때** (서버는 이미 있다. 집 PC · 노트북은 아직 안 함)
+**다른 PC를 추가할 때** (서버는 이미 있다. 집 PC는 2026-11-04에 넣었다(5절), 노트북은 아직 안 함)
 
 1. 그 PC에서 위 명령으로 열쇠를 만든다(`-C`는 `home-pc` · `laptop`).
 2. 공개키 한 줄을 서버에 넣는다. 이미 접속되는 PC(회사 PC)로 `ssh play` 해서 치거나, Vultr 웹 콘솔(Server Information → View Console, root로 로그인)에서 친다. root · 비밀번호 SSH는 막혀 있어도 웹 콘솔은 된다.
@@ -227,3 +227,9 @@ sudo play-backup
 - **사고**: `.env`를 nano로 연 화면 캡처가 대화에 올라가 DB 비밀번호 · JWT 비밀이 노출됐다. DB를 만들기 전이라 둘 다 새로 만들었고 노출된 값은 어디에도 쓰지 않는다
 - **안 해 본 것**: 운영 백업으로 복구, `play-release` 되돌리기, 재부팅 뒤 자동 복구, 인증서 자동 갱신, 아이폰
 
+**2026-11-04 · 집 PC 열쇠 추가 (집 PC)**
+
+- 3.1절 "다른 PC를 추가할 때"를 회사 PC 없이 했다: 집 PC에서 `play_vultr`(`-C home-pc`) · `~/.ssh/config` → Vultr 웹 콘솔에 root로 들어가 공개키를 `>>`로 추가 → `tail -n 2`로 `company-pc` · `home-pc` 두 줄 확인
+- 집 PC에서 `ssh play` → 호스트 지문 `yes` → `sudo whoami`가 `root`
+- 접속할 때 본 것: 디스크 32.7% · 메모리 39% · 스왑 1%. "New release 26.04.1 LTS"가 떠도 올리지 않는다 ─ 12월에 AWS로 옮기며 새로 세팅한다
+- 웹 콘솔은 붙여 넣기가 안 될 수 있어 키 90글자를 손으로 칠 수도 있다. 회사 PC가 있으면 `Get-Content 공개키 | ssh play "cat >> ~/.ssh/authorized_keys"` 한 줄이 편하다
