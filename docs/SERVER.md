@@ -233,3 +233,9 @@ sudo play-backup
 - 집 PC에서 `ssh play` → 호스트 지문 `yes` → `sudo whoami`가 `root`
 - 접속할 때 본 것: 디스크 32.7% · 메모리 39% · 스왑 1%. "New release 26.04.1 LTS"가 떠도 올리지 않는다 ─ 12월에 AWS로 옮기며 새로 세팅한다
 - 웹 콘솔은 붙여 넣기가 안 될 수 있어 키 90글자를 손으로 칠 수도 있다. 회사 PC가 있으면 `Get-Content 공개키 | ssh play "cat >> ~/.ssh/authorized_keys"` 한 줄이 편하다
+
+**2026-11-04 · 세 번째 배포 (집 PC)**
+
+- 집 PC에서 `ssh -t play "sudo play-release f463a1b…"`: 이미지 받기 → 직전 백업 23,838바이트 → 마이그레이션(새 것 없음) → 교체 → 헬스체크 1번째 통과. 비밀번호 보기 버튼이 들어간 버전
+- 밖에서: `/api/health` 200, 로그인 화면이 불러오는 `PasswordInput-*.js`에 "비밀번호 보기" 문구가 있음
+- 한 줄 명령으로 `sudo`를 부를 때는 `-t`가 있어야 비밀번호를 묻는다. 없으면 "a terminal is required"
