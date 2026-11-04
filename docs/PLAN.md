@@ -250,6 +250,7 @@
 **작업 목록**
 - [x] S-05 레퍼런스 수집 + Figma 목업 (shadcn 커뮤니티 키트 기반, 결정은 `DESIGN`에 반영) *(계획에 없던 작업)* → 2026-10-24 전체 화면 목업(`docs/mockups/` `Stats` · `StatsMobile`)에 포함해 완료. Figma 대신 디자인 캔버스로 그림
 - [ ] 장르별 완주율 차트를 ECharts로 옮기며 배치 다듬기 — 목업은 CSS 막대로 그렸다 *(계획에 없던 작업)*
+- [x] `npm audit` 19건 → 15건 — `vite` · `vitest` · `source-map-js` 올림. 남은 건 이유는 DEVLOG 2026-11-04 (5) *(계획에 없던 작업)*
 - [ ] 테스트용 게임 데이터 20개 이상 입력 (시드 스크립트 — `find_or_create_game` 경유, `ARCHITECTURE` 2.2절)
 - [ ] 집계 쿼리를 HeidiSQL에서 먼저 검증 (`DATA_MODEL` 3장)
 - [ ] 총계 (총 보유 / 미시작 수)
