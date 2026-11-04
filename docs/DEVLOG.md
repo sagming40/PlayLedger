@@ -9,7 +9,7 @@
 |---|---|
 | 단계 | **M5** 🔄 배포 (`PLAN` M5). `v1.0.0` 태그 있음. **`https://play.sagming.com` 운영 중**, 배포된 커밋 `f463a1b` |
 | 진행 중 | 없음. 미커밋 없음 |
-| 다음에 할 일 | ① 서버 열쇠: 노트북에서 `play_vultr`(`-C laptop`)를 만들고 공개키를 넣는다(`SERVER` 3.1절, 집 PC는 끝남). 사용자가 친다 ② 코드: 서버 감시 `uptime.yml`, HSTS 1년, CSP `img-src` 좁히기, 개인정보 안내에 백업 14일 · Vultr 서울 · 접속 기록 반영 → 배포 ③ 재부팅 뒤 자동 복구 확인 ④ 운영 백업으로 복구 리허설(열쇠가 회사 PC에만 있다) ⑤ 200개 목록 측정 ⑥ 되돌리기 시험을 할지 사용자에게 묻는다 ⑦ `DESIGN` · `REQUIREMENTS` 대조 후 M5 ✅. 코드 · 문서는 Claude 자동, 서버 명령은 사용자가 친다. **Vultr 크레딧 2026-11-30 만료, 12월 AWS 이사** |
+| 다음에 할 일 | ⓪ **회사 PC에서 시작**: PC 쪽 배포 스크립트(`PLAN` M5, 아래 2026-11-04 (11) `[설계]`). 자동/직접을 먼저 묻는다 ① 서버 열쇠: 노트북에서 `play_vultr`(`-C laptop`)를 만들고 공개키를 넣는다(`SERVER` 3.1절, 집 PC는 끝남). 사용자가 친다 ② 코드: 서버 감시 `uptime.yml`, HSTS 1년, CSP `img-src` 좁히기, 개인정보 안내에 백업 14일 · Vultr 서울 · 접속 기록 반영 → 배포 ③ 재부팅 뒤 자동 복구 확인 ④ 운영 백업으로 복구 리허설(열쇠가 회사 PC에만 있다) ⑤ 200개 목록 측정 ⑥ 되돌리기 시험을 할지 사용자에게 묻는다 ⑦ `DESIGN` · `REQUIREMENTS` 대조 후 M5 ✅. 코드 · 문서는 Claude 자동, 서버 명령은 사용자가 친다. **Vultr 크레딧 2026-11-30 만료, 12월 AWS 이사** |
 | 판단이 남은 것 | 모바일 첫 줄이 요약 줄 도착 때 24px 밀리는 것. S-05 방치 일수 색(180일 미만도 포인트 색). 개인정보 안내 문구(법률 검토 안 받음). 아이폰 확인. 비밀번호 보기 버튼을 로그인 화면 · Edge · 실제 폰에서 아직 안 봤다(운영에는 올라감). 백업 개인키 사본(`SERVER` 3.7절) |
 | 기기별로 할 일 | **노트북**: `git pull` → `server/`에서 `pip install -r requirements-dev.txt` · `alembic upgrade head` → `web/`에서 `npm ci`(글꼴 패키지 2개 추가). `JWT_SECRET_KEY`가 32자 미만이면 서버가 뜨지 않는다. **서버 접속**: 회사 PC · 집 PC는 된다. 노트북은 아직(위 ①) |
 | 집 PC에만 있는 것 | `play-1` SSH 열쇠(`~/.ssh/play_vultr`, 회사 PC 것과 별개). 클린룸으로 새로 만든 개발 DB(확인용 계정 · 게임 기록). `.claude/launch.json`은 실행 중인 `5173`에 붙기만 하는 설정으로 새로 만들었다(커밋 안 함) |
@@ -44,6 +44,10 @@
 - 비밀번호 보기 버튼은 4.4절에 적지 않고 바로 넣었다. 사용자가 요청했고 화면 두 곳 · 컴포넌트 하나라 작다
 - 버튼은 `type="button"`(폼 제출 방지), `mousedown.prevent`(칸 포커스 유지 ─ 모바일 키보드가 닫히지 않게), `aria-pressed` · 바뀌는 `aria-label`. Edge의 `::-ms-reveal`을 숨겨 눈이 두 개 보이지 않게
 - 대화상자를 닫으면 컴포넌트가 사라져 다음에 열 때 가려진 상태로 시작한다 ─ 따로 되돌리는 코드를 두지 않았다
+- PC 쪽 배포 스크립트를 만들기로 했다(다음 세션, 회사 PC). 사용자가 `cbt-journal`은 `task deploy` 한 줄인데 왜 다르냐고 물었다 ─ 스택 차이가 아니라 단축 스크립트를 안 만든 차이다. 정해 둔 것:
+  - 확인 순서: 미커밋 없음 → `origin/main`과 같음 → GitHub Actions에서 그 커밋의 `ci`가 `success`(저장소가 공개라 토큰 없이 `api.github.com/repos/sagming40/PlayLedger/actions/runs?head_sha=…`로 볼 수 있다) → 통과하면 `ssh -t play "sudo play-release <전체 커밋>"`. 하나라도 아니면 이유를 말하고 멈춘다
+  - 정할 것: 파일 위치(`scripts/deploy.ps1` 새 폴더 vs `deploy/`. `deploy/`는 서버에 올라가는 파일이라 섞지 않는 쪽이 낫다), `Taskfile.yml`도 둘지(Task는 `cbt-journal` 때문에 기기마다 깔려 있는지 확인), `-DryRun`, CI가 아직 도는 중이면 기다릴지 멈출지
+  - 끝나면 `SERVER` 2절 배포 명령과 `README`를 바꾼다
 - 가입 409 "이미 사용 중인 이메일"이 계정 존재를 알려 준다는 리뷰 지적은 이미 `ARCHITECTURE` 3.10절 · F-27에 감수한 것으로 적혀 있다
 
 ### 막힌 것
