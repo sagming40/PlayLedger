@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ChevronDown, ChevronLeft, EllipsisVertical, Star } from '@lucide/vue'
-import { DropdownMenuContent, DropdownMenuItem, DropdownMenuPortal, DropdownMenuRoot, DropdownMenuTrigger } from 'reka-ui'
+import { ChevronLeft, EllipsisVertical, Star } from '@lucide/vue'
 import type { EntryStatus } from '@/api/entries'
 import { useEntryDetail } from '@/composables/useEntryDetail'
 import { EMPTY_VALUE, SOURCE_LABEL, STATUS_LABEL, formatPlaytime, formatWon } from '@/lib/entry-display'
@@ -11,6 +10,8 @@ import EntryDeleteDialog from '@/components/EntryDeleteDialog.vue'
 import GameCover from '@/components/GameCover.vue'
 import StatusDot from '@/components/StatusDot.vue'
 import { Button } from '@/components/ui/button'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 // S-04 게임 상세 (DESIGN 3.4절, 그림은 docs/mockups/Detail · DetailMobile · DeleteDialog)
 const route = useRoute()
@@ -56,10 +57,6 @@ watch(
   () => entry.value?.id,
   () => (editingReview.value = false),
 )
-
-function onStatusChange(event: Event) {
-  detail.changeStatus((event.target as HTMLSelectElement).value as EntryStatus)
-}
 
 const deleteOpen = ref(false)
 // 대화상자가 닫히면 포커스를 ⋮로 돌려준다 ─ 메뉴는 이미 닫혀서 대화상자가 돌아갈 자리를 모른다
@@ -125,7 +122,7 @@ async function confirmDelete() {
           <RouterLink :to="{ name: 'entry-edit', params: { id: entry.id } }">수정</RouterLink>
         </Button>
         <!-- modal 끔 ─ 메뉴가 닫히면서 곧바로 대화상자가 열린다. 둘 다 화면을 잠그면 서로의 잠금 해제가 부딪친다 -->
-        <DropdownMenuRoot :modal="false">
+        <DropdownMenu :modal="false">
           <DropdownMenuTrigger as-child>
             <Button
               ref="moreButton"
@@ -139,21 +136,10 @@ async function confirmDelete() {
               <EllipsisVertical class="size-5 md:size-4.5" aria-hidden="true" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuPortal>
-            <DropdownMenuContent
-              align="end"
-              :side-offset="6"
-              class="z-40 min-w-32 rounded-[10px] border border-border bg-popover p-1 text-popover-foreground shadow-md"
-            >
-              <DropdownMenuItem
-                class="flex h-11 cursor-pointer items-center rounded-md px-3 text-[15px] text-destructive outline-none data-highlighted:bg-secondary"
-                @select="askDelete"
-              >
-                삭제
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenuPortal>
-        </DropdownMenuRoot>
+          <DropdownMenuContent align="end" :side-offset="6" class="z-40 min-w-32 rounded-[10px]">
+            <DropdownMenuItem variant="destructive" class="h-11 rounded-md px-3 text-[15px]" @select="askDelete">삭제</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </div>
 
@@ -210,24 +196,30 @@ async function confirmDelete() {
             {{ entry.game.title }}
           </h1>
 
-          <!-- 상태 변경 ─ 수정 화면을 거치지 않고 여기서 바로 (DESIGN 3.4절)
-               기본 select를 쓴다 ─ 모바일에서 OS 선택창이 떠서 손가락으로 고르기 쉽고, 키보드 · 화면 읽기도 그대로 된다 -->
-          <label class="flex items-center gap-2.5 text-[13px] text-muted-foreground md:gap-3">
-            상태
-            <span class="relative inline-flex flex-1 items-center md:flex-none">
-              <StatusDot :status="entry.status" class="pointer-events-none absolute left-3.5 size-2" />
-              <select
-                :value="entry.status"
-                :disabled="detail.saving.value"
+          <!-- 상태 변경 ─ 수정 화면을 거치지 않고 여기서 바로 (DESIGN 3.4절) -->
+          <div class="flex items-center gap-2.5 text-[13px] text-muted-foreground md:gap-3">
+            <span id="status-label">상태</span>
+            <Select
+              :model-value="entry.status"
+              :disabled="detail.saving.value"
+              @update:model-value="(value) => detail.changeStatus(value as EntryStatus)"
+            >
+              <SelectTrigger
+                aria-labelledby="status-label"
                 :aria-busy="detail.saving.value"
-                class="h-11.5 w-full appearance-none rounded-[10px] border border-border bg-card pr-10 pl-7.5 text-[15px] font-semibold text-foreground disabled:opacity-60 md:h-11 md:w-auto md:min-w-40"
-                @change="onStatusChange"
+                class="flex-1 rounded-[10px] bg-card pl-3.5 text-[15px] font-semibold text-foreground data-[size=default]:h-11.5 md:w-auto md:min-w-40 md:flex-none md:data-[size=default]:h-11 dark:bg-card"
               >
-                <option v-for="s in STATUSES" :key="s" :value="s">{{ STATUS_LABEL[s] }}</option>
-              </select>
-              <ChevronDown class="pointer-events-none absolute right-3 size-4 text-muted-foreground" aria-hidden="true" />
-            </span>
-          </label>
+                <span class="flex items-center gap-2.5">
+                  <StatusDot :status="entry.status" class="size-2" />
+                  <SelectValue />
+                </span>
+              </SelectTrigger>
+              <SelectContent>
+                <!-- 한 칸 44px ─ 손가락으로 고르는 목록이다 -->
+                <SelectItem v-for="s in STATUSES" :key="s" :value="s" class="h-11 text-[15px]">{{ STATUS_LABEL[s] }}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           <p v-if="detail.failedField.value === 'status'" role="alert" class="text-[13px] text-destructive">
             상태를 바꾸지 못했어요. {{ detail.saveError.value }}
           </p>

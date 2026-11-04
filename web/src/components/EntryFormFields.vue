@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import { Star } from '@lucide/vue'
 import type { EntryStatus, Genre } from '@/api/entries'
 import { listGenres } from '@/api/genres'
+import DatePicker from '@/components/DatePicker.vue'
 import FormField from '@/components/FormField.vue'
 import StatusDot from '@/components/StatusDot.vue'
 import SurfacePanel from '@/components/SurfacePanel.vue'
@@ -114,7 +115,7 @@ function toggleGenre(id: number) {
 
   <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
     <FormField id="purchased-at" label="구매일">
-      <Input id="purchased-at" v-model="purchasedAt" type="date" class="h-12 bg-card text-[15px]" />
+      <DatePicker id="purchased-at" v-model="purchasedAt" />
     </FormField>
     <FormField id="price" label="구매가" unit="원" :error="priceInvalid ? '0 이상의 정수로 적어 주세요' : undefined">
       <Input
