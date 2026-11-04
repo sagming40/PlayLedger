@@ -1,12 +1,13 @@
 # app/services/genre.py
 """게임에 장르를 연결하는 곳 (DATA_MODEL 2.5절 장르 연결 규칙)
 
-games는 모든 사용자가 공유하는 데이터이다. 한 사람의 입력이 다른 사람의 통계를 변형시키면 안 된다.
+Steam 게임은 모든 사용자가 공유하는 데이터이다. 한 사람의 입력이 다른 사람의 통계를 변형시키면 안 된다.
 따라서, Genre가 비어있는 게임에만 채우고, 이미 존재하는 경우 건드리지 않는다.
 비유: 도서관 책의 분류 스티커 ─ 비어있는 책에만 부착하고, 이미 부착되어 있는 책은 떼거나 덧붙이지 않는다.
+직접 등록한 게임은 그 사람 것이라 주인이 언제든 바꿀 수 있다 (decisions/0011).
 """
 
-from sqlalchemy import func, insert, select
+from sqlalchemy import delete, func, insert, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.game import Game, Genre, game_genres
@@ -67,3 +68,19 @@ async def attach_genres_if_empty(
         insert(game_genres),
         [{"game_id": game_id, "genre_id": gid} for gid in sorted(wanted)],
     )
+
+
+async def replace_genres(db: AsyncSession, game_id: int, genre_ids: list[int]) -> None:
+    """직접 등록한 게임의 장르를 통째로 바꾼다. 빈 목록이면 모두 뗀다
+
+    commit은 하지 않는다. 게임 행을 잠가 두 탭의 수정이 섞이지 않게 한다 ─ 늦은 쪽의 목록만 남는다
+    """
+    await db.execute(select(Game.id).where(Game.id == game_id).with_for_update())
+    await db.execute(delete(game_genres).where(game_genres.c.game_id == game_id))
+
+    wanted = set(genre_ids)
+    if wanted:
+        await db.execute(
+            insert(game_genres),
+            [{"game_id": game_id, "genre_id": gid} for gid in sorted(wanted)],
+        )

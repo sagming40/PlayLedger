@@ -61,6 +61,11 @@ async def get_entry(
     return await db.scalar(stmt)
 
 
+async def count_entries(db: AsyncSession, user_id: int) -> int:
+    """이 사람의 기록 수"""
+    return await db.scalar(select(func.count()).select_from(Entry).where(Entry.user_id == user_id))
+
+
 async def entry_exists(
     db: AsyncSession, *, user_id: int, game_id: int
 ) -> bool:

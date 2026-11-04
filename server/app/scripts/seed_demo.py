@@ -77,7 +77,7 @@ async def add_demo_entries(db: AsyncSession, *, user_id: int, today: date) -> No
     """예시 기록을 넣는다. commit은 부르는 쪽이 한다"""
     for demo in DEMO:
         # 게임을 얻는 입구는 한 곳뿐이다 (ARCHITECTURE 2.2절)
-        game = await find_or_create_game(db, demo.title)
+        game = await find_or_create_game(db, demo.title, owner_user_id=user_id)
         await attach_genres_if_empty(db, game.id, demo.genres)
         db.add(
             Entry(

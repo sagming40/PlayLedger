@@ -21,9 +21,9 @@ from app.schemas.entry import (
     EntryStatus,
     EntryUpdate,
 )
-from app.services.entry import MAX_LIMIT, entry_exists, get_entry, list_entries
-from app.services.game import find_or_create_game
-from app.services.genre import attach_genres_if_empty, genre_ids_exist
+from app.services.entry import MAX_LIMIT, count_entries, entry_exists, get_entry, list_entries
+from app.services.game import delete_owned_game, find_or_create_game
+from app.services.genre import attach_genres_if_empty, genre_ids_exist, replace_genres
 from app.services.steam import (
     fetch_app_details,
     game_by_appid,
@@ -40,6 +40,10 @@ ENTRY_UNIQUE = "uq_entries_user_id"
 
 # 비울 수 없는 칸의 이름 ─ 응답 문구는 화면에 그대로 보인다 (ARCHITECTURE 3.1절)
 REQUIRED_FIELDS = {"status": "상태는", "playtime_minutes": "플레이타임은"}
+
+# 한 사람의 기록 상한 ─ 공개 가입이라 요청 제한만으로는 표가 끝없이 커질 수 있다 (decisions/0011)
+# 정확한 잠금은 걸지 않는다. 동시 요청으로 몇 개 넘쳐도 문제가 없는 값이다
+MAX_ENTRIES_PER_USER = 5000
 
 
 async def _get_my_entry_or_404(
@@ -154,6 +158,12 @@ async def create_entry(
     ensure_not_limited(entry_create_limiter, str(user.id))
     entry_create_limiter.hit(str(user.id))
 
+    if await count_entries(db, user.id) >= MAX_ENTRIES_PER_USER:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"기록은 최대 {MAX_ENTRIES_PER_USER:,}개까지 등록할 수 있습니다",
+        )
+
     # ① 없는 장르 id가 섞여 있으면 거절 ─ 게임 상태와 상관없이 항상 검사
     await _ensure_genres_exist(db, data.genre_ids)
 
@@ -162,13 +172,13 @@ async def create_entry(
     if data.steam_appid is not None:
         game, genre_ids = await _steam_game(db, http, user.id, data.steam_appid, data.genre_ids)
     else:
-        game = await find_or_create_game(db, data.title)
+        game = await find_or_create_game(db, data.title, owner_user_id=user.id)
 
     # ③ 이미 내 라이브러리에 있으면 거절 (DESIGN 3.3절 문구)
     if await entry_exists(db, user_id=user.id, game_id=game.id):
         raise _already_registered()
 
-    # ④ 장르가 빈 게임만 채운다 (DATA_MODEL 2.5절)
+    # ④ 장르가 빈 게임만 채운다 (DATA_MODEL 2.5절) ─ 직접 등록한 게임은 여기까지 왔으면 새 게임이다
     await attach_genres_if_empty(db, game.id, genre_ids)
 
     # ⑤ 보유 기록 만들기
@@ -273,10 +283,14 @@ async def update_my_entry(
             )
 
     # 장르를 보냈으면 연결 규칙을 그대로 적용 (DATA_MODEL 2.5절)
-    # 0개인 게임에만 채워지고, 이미 존재하는 경우 조용히 무시된다
+    # 내가 직접 등록한 게임은 통째로 바꾼다
+    # Steam 게임은 0개인 경우에만 채워지고, 이미 존재하는 경우 조용히 무시된다
     if genre_ids is not None:
         await _ensure_genres_exist(db, genre_ids)
-        await attach_genres_if_empty(db, entry.game_id, genre_ids)
+        if entry.game.owner_user_id == user.id:
+            await replace_genres(db, entry.game_id, genre_ids)
+        else:
+            await attach_genres_if_empty(db, entry.game_id, genre_ids)
 
     # setattr(객체, "이름", 값) = "객체.이름 = 값"과 같다
     # 변경할 항목이 그때그때 다르므로 이름을 String으로 받아 넣는다
@@ -299,11 +313,17 @@ async def delete_my_entry(
 ) -> None:
     """내 보유 기록을 삭제한다 (S-04의 ⋮ 메뉴)
 
-    게임(games)은 지우지 않는다 ─ 다른 유저가 사용하고 있는 공유 데이터이다.
+    Steam 게임은 지우지 않는다 ─ 다른 유저가 사용하고 있는 공유 데이터이다.
     비유: 도서관 대출 카드만 버리고 책은 서가에 그대로 둔다
+    직접 등록한 게임은 나만 쓰므로 함께 지운다 ─ 개인 서가의 책까지 치운다 (decisions/0011)
     """
-    entry = await _get_my_entry_or_404(db, user_id=user.id, entry_id=entry_id)
+    # 잠근다 ─ 두 탭이 동시에 지우면 늦은 쪽은 404. 잠금 순서는 수정과 같다(기록 → 게임)
+    entry = await _get_my_entry_or_404(db, user_id=user.id, entry_id=entry_id, for_update=True)
+    game_id = entry.game_id
 
     await db.delete(entry)
+    # entries.game_id가 RESTRICT라 기록이 먼저 DB에서 지워져야 게임을 지울 수 있다
+    await db.flush()
+    await delete_owned_game(db, game_id, owner_user_id=user.id)
     await db.commit()
     # 204는 본문이 없어야 하므로 아무것도 반환하지 않는다

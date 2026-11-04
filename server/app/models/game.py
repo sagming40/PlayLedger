@@ -1,12 +1,12 @@
 # ============================================================
 # games / genres / game_genres
-# 게임 마스터 데이터 ─ 모든 사용자가 공유한다 (DATA_MODEL 2.4절)
+# 게임 마스터 데이터 ─ Steam 게임은 공유, 직접 등록한 게임은 그 사람 것 (DATA_MODEL 2.4절)
 # ============================================================
 
 from datetime import date, datetime
 
 from sqlalchemy import (
-    Column, DateTime, ForeignKey, Index,
+    CheckConstraint, Column, DateTime, ForeignKey, Index,
     Integer, String, Table, func, text,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -50,17 +50,23 @@ class Genre(Base):
 class Game(Base):
     __tablename__ = "games"
 
-    # 수동 등록 게임(steam_appid 없음)끼리만 title_norm 중복을 금지한다 (DATA_MODEL 2.4절)
+    # 수동 등록 게임(steam_appid 없음)은 한 사람 안에서만 title_norm 중복을 금지한다 (DATA_MODEL 2.4절)
     # 비유: 주민번호(steam_appid)가 없는 손님은 이름으로만 구분이 가능하므로 동일한 이름이
     # 중복으로 적히면 구분할 방법이 없다. 주민번호가 있는 손님은 번호로 구분가능 하므로 이 규칙에서 제외시킨다.
     # UNIQUE '제약'이 아니라 UNIQUE '인덱스'로 만든다
     # ─ PostgreSQL 특성 상 제약에는 WHERE 절을 붙일 수 없다.
     __table_args__ = (
         Index(
-            "uq_games_title_norm_manual",
+            "uq_games_owner_title_norm_manual",
+            "owner_user_id",
             "title_norm",
             unique=True,
             postgresql_where=text("steam_appid IS NULL"),
+        ),
+        # 수동 게임은 반드시 주인이 있고, Steam 게임은 주인이 없다 (decisions/0011)
+        CheckConstraint(
+            "(steam_appid IS NULL) = (owner_user_id IS NOT NULL)",
+            name="owner_only_manual",
         ),
     )
 
@@ -75,6 +81,12 @@ class Game(Base):
 
     # 수동 등록 게임은 Steam ID가 없다
     steam_appid: Mapped[int | None] = mapped_column(unique=True)
+
+    # 직접 등록한 사람. Steam 게임은 모두가 같이 보는 행이라 비어 있다 (decisions/0011)
+    # 인덱스 ─ 계정을 지울 때 이 사람의 게임을 전체 탐색 없이 찾는다
+    owner_user_id: Mapped[int | None] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
 
     released_at: Mapped[date | None]
 
