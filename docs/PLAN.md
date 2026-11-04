@@ -281,6 +281,7 @@
 | 기술 요소 | Docker Compose(운영 구성), Nginx, HTTPS |
 
 **작업 목록**
+- [x] Tailwind 클래스 표준 표기로 정리 (VS Code 경고 88건 → 0건, 16px 화면 변화 없음) *(계획에 없던 작업)*
 - [ ] 배포 환경 결정 — 자가 서버 vs 클라우드. 이미 있는 도메인 `sagming.com` · Vultr 계정은 전역 설정 "공용 인프라" 참고
 - [ ] 서버 · 웹 Dockerfile
 - [ ] 운영용 Compose 구성
