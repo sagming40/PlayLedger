@@ -1,5 +1,5 @@
-import { ref } from 'vue'
-import { getEntry, updateEntry, type Entry, type EntryStatus } from '@/api/entries'
+import { getCurrentScope, onScopeDispose, ref } from 'vue'
+import { deleteEntry, getEntry, updateEntry, type Entry, type EntryStatus } from '@/api/entries'
 import { ApiError } from '@/api/errors'
 
 // 네트워크가 끊겨 SERVER 답 자체가 없을 때 (DESIGN 6장)
@@ -24,6 +24,11 @@ export function useEntryDetail() {
   const saveError = ref<string | null>(null)
   // 어느 칸의 저장이 실패했는지 ─ 실패 문구를 그 칸 옆에 보여 준다
   const failedField = ref<keyof QuickEdit | null>(null)
+  const deleteError = ref<string | null>(null)
+
+  // 삭제 답을 기다리는 사이 화면을 떠나면 그 답으로 사용자를 끌고 가면 안 된다
+  let disposed = false
+  if (getCurrentScope()) onScopeDispose(() => (disposed = true))
 
   // 마지막으로 부른 load의 번호 ─ 상세에서 상세로 빠르게 옮겨 다니면 앞 게임의 답이 늦게 와서 덮어쓸 수 있다
   // 번호표를 뽑아 두고, 답이 왔을 때 내 번호가 최신이 아니면 버린다
@@ -113,5 +118,33 @@ export function useEntryDetail() {
     return save({ review: review || null })
   }
 
-  return { entry, loading, loadError, notFound, saving, saveError, failedField, load, changeStatus, rate, saveReview }
+  /**
+   * 기록을 지운다 (DESIGN 3.4절). 성공하면 true ─ 화면이 라이브러리로 돌아간다
+   * saving을 같이 잠근다 ─ 상태 저장과 삭제가 겹치면 저장이 이미 지워진 행을 고치려다 실패한다
+   */
+  async function remove(): Promise<boolean> {
+    const id = entry.value?.id
+    if (id === undefined || saving.value) return false
+
+    saving.value = true
+    deleteError.value = null
+    try {
+      await deleteEntry(id)
+      return !disposed && entry.value?.id === id
+    } catch (e) {
+      if (disposed || entry.value?.id !== id) return false
+      // 다른 탭에서 먼저 지운 기록 ─ 지울 대상이 없다 (ARCHITECTURE 3.8절)
+      if (e instanceof ApiError && e.status === 404) {
+        entry.value = null
+        notFound.value = true
+        return false
+      }
+      deleteError.value = message(e)
+      return false
+    } finally {
+      saving.value = false
+    }
+  }
+
+  return { entry, loading, loadError, notFound, saving, saveError, failedField, deleteError, load, changeStatus, rate, saveReview, remove }
 }

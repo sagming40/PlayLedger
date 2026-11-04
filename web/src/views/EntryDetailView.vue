@@ -1,18 +1,20 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
-import { ChevronDown, ChevronLeft, Star } from '@lucide/vue'
+import { useRoute, useRouter } from 'vue-router'
+import { ChevronDown, ChevronLeft, EllipsisVertical, Star } from '@lucide/vue'
+import { DropdownMenuContent, DropdownMenuItem, DropdownMenuPortal, DropdownMenuRoot, DropdownMenuTrigger } from 'reka-ui'
 import type { EntryStatus } from '@/api/entries'
 import { useEntryDetail } from '@/composables/useEntryDetail'
 import { EMPTY_VALUE, SOURCE_LABEL, STATUS_LABEL, formatPlaytime, formatWon } from '@/lib/entry-display'
 import { canRate } from '@/lib/entry-form'
+import EntryDeleteDialog from '@/components/EntryDeleteDialog.vue'
 import GameCover from '@/components/GameCover.vue'
 import StatusDot from '@/components/StatusDot.vue'
 import { Button } from '@/components/ui/button'
 
-// S-04 게임 상세 (DESIGN 3.4절, 그림은 docs/mockups/Detail · DetailMobile)
-// ⋮(삭제) 메뉴는 PLAN M3의 삭제 작업에서 붙인다
+// S-04 게임 상세 (DESIGN 3.4절, 그림은 docs/mockups/Detail · DetailMobile · DeleteDialog)
 const route = useRoute()
+const router = useRouter()
 const detail = useEntryDetail()
 
 // 상세 → 상세로 옮겨 가도(주소의 id만 바뀜) 화면은 다시 만들어지지 않는다 ─ id를 지켜보다 다시 부른다
@@ -58,6 +60,28 @@ watch(
 function onStatusChange(event: Event) {
   detail.changeStatus((event.target as HTMLSelectElement).value as EntryStatus)
 }
+
+const deleteOpen = ref(false)
+// 대화상자가 닫히면 포커스를 ⋮로 돌려준다 ─ 메뉴는 이미 닫혀서 대화상자가 돌아갈 자리를 모른다
+const moreButton = ref<{ $el: HTMLElement } | null>(null)
+
+function askDelete() {
+  detail.deleteError.value = null
+  deleteOpen.value = true
+}
+
+async function confirmDelete() {
+  if (!(await detail.remove())) {
+    // 다른 탭에서 먼저 지웠으면 "찾을 수 없어요" 화면이 나오므로 대화상자도 닫는다. 그 밖의 실패는 열어 두고 이유를 보인다
+    if (detail.notFound.value) deleteOpen.value = false
+    return
+  }
+  deleteOpen.value = false
+  // 목록에서 왔으면 뒤로 간다 ─ ?status= 필터가 그대로 남고, 방문 기록에 지운 기록이 앞에 남지 않는다
+  const back = window.history.state?.back
+  if (typeof back === 'string' && router.resolve(back).name === 'library') router.back()
+  else router.replace({ name: 'library' })
+}
 </script>
 
 <template>
@@ -82,7 +106,7 @@ function onStatusChange(event: Event) {
     <!-- 위쪽을 얼마나 덮을지는 테마마다 다르다 ─ 라이트는 밝은 배경이라 더 덮어야 글자가 읽힌다 (목업 Detail) -->
     <div aria-hidden="true" class="bleed backdrop-fade absolute -top-5 h-[252px] [--fade-top:55%] md:h-[522px] dark:[--fade-top:25%]" />
 
-    <!-- 위쪽 줄 ─ 뒤로 · 수정 (목업 Detail · DetailMobile) -->
+    <!-- 위쪽 줄 ─ 뒤로 · 수정 · ⋮ (목업 Detail · DetailMobile) -->
     <div class="relative -mt-5 flex h-14 items-center justify-between md:mt-0 md:h-11">
       <RouterLink
         :to="{ name: 'library' }"
@@ -92,14 +116,45 @@ function onStatusChange(event: Event) {
         라이브러리
       </RouterLink>
       <!-- 모바일은 테두리 없이 글자만, 48rem부터 테두리 버튼 -->
-      <Button
-        v-if="entry"
-        as-child
-        variant="ghost"
-        class="-mr-3 h-11 px-3 text-[15px] font-semibold md:mr-0 md:h-10 md:border md:border-border md:bg-card md:px-4 md:text-sm md:font-medium"
-      >
-        <RouterLink :to="{ name: 'entry-edit', params: { id: entry.id } }">수정</RouterLink>
-      </Button>
+      <div v-if="entry" class="-mr-3 flex md:mr-0 md:gap-2">
+        <Button
+          as-child
+          variant="ghost"
+          class="h-11 px-3 text-[15px] font-semibold md:h-10 md:border md:border-border md:bg-card md:px-4 md:text-sm md:font-medium"
+        >
+          <RouterLink :to="{ name: 'entry-edit', params: { id: entry.id } }">수정</RouterLink>
+        </Button>
+        <!-- modal 끔 ─ 메뉴가 닫히면서 곧바로 대화상자가 열린다. 둘 다 화면을 잠그면 서로의 잠금 해제가 부딪친다 -->
+        <DropdownMenuRoot :modal="false">
+          <DropdownMenuTrigger as-child>
+            <Button
+              ref="moreButton"
+              type="button"
+              variant="ghost"
+              size="icon"
+              aria-label="더보기"
+              :disabled="detail.saving.value"
+              class="size-11 md:size-10 md:border md:border-border md:bg-card"
+            >
+              <EllipsisVertical class="size-5 md:size-[18px]" aria-hidden="true" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuPortal>
+            <DropdownMenuContent
+              align="end"
+              :side-offset="6"
+              class="z-40 min-w-32 rounded-[10px] border border-border bg-popover p-1 text-popover-foreground shadow-md"
+            >
+              <DropdownMenuItem
+                class="flex h-11 cursor-pointer items-center rounded-md px-3 text-[15px] text-destructive outline-none data-[highlighted]:bg-secondary"
+                @select="askDelete"
+              >
+                삭제
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenuPortal>
+        </DropdownMenuRoot>
+      </div>
     </div>
 
     <!-- 처음 불러오는 중 ─ 자리만 잡는다 (DESIGN 6장 뼈대) -->
@@ -289,6 +344,15 @@ function onStatusChange(event: Event) {
       </div>
 
       <span class="relative text-xs text-muted-foreground md:hidden">출처 · {{ SOURCE_LABEL[entry.source] }}</span>
+
+      <EntryDeleteDialog
+        v-model:open="deleteOpen"
+        :title="entry.game.title"
+        :deleting="detail.saving.value"
+        :error="detail.deleteError.value"
+        @confirm="confirmDelete"
+        @closed="moreButton?.$el?.focus()"
+      />
     </template>
   </div>
 </template>
