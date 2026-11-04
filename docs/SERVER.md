@@ -18,13 +18,14 @@
 
 ## 2. 평소에 쓰는 명령
 
-**배포** — `main`에 push하고 GitHub Actions의 `images`가 끝난 뒤(실패한 커밋은 이미지가 없다):
+**배포** — `main`에 push한 뒤 PC(저장소 폴더)에서. CI가 도는 중이면 끝날 때까지 기다린다:
 
 ```powershell
-# PC (저장소 폴더)
-git rev-parse HEAD            # 배포할 커밋 번호 확인
-ssh -t play "sudo play-release $(git rev-parse HEAD)"
+task deploy              # 미커밋 없음 → origin/main과 같음 → ci 성공 → play-release → 밖에서 /api/health
+task deploy -- -DryRun   # 확인까지만
 ```
+
+확인 하나라도 안 되면 이유를 말하고 멈춘다(`scripts/deploy.ps1`). Task가 없는 기기나 CI 결과와 상관없이 올려야 할 때는 직접 `ssh -t play "sudo play-release <전체 커밋>"`. 실패한 커밋은 이미지가 없어 서버가 받지 못하지만, `audit`만 실패한 커밋은 이미지가 있어서 `task deploy`만 멈춘다.
 
 **상태 · 로그** (서버):
 

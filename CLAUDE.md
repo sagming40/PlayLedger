@@ -102,6 +102,7 @@ PlayLedger: 사놓고 안 한 게임을 구매일 · 구매가 · 플레이타�
 ```powershell
 # 루트
 docker compose up -d                              # PostgreSQL
+task deploy                                       # 운영 배포 (push된 main, CI 통과한 커밋만. -- -DryRun은 확인만, SERVER 2절)
 
 # server/ (가상환경: .\venv\Scripts\Activate.ps1)
 pip install -r requirements-dev.txt               # 운영은 requirements.txt만

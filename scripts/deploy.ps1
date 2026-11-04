@@ -25,8 +25,8 @@ $Repo = 'sagming40/PlayLedger'
 $Site = 'https://play.sagming.com'
 # CI는 보통 2분 안에 끝난다(2026-11-04 다섯 번 100 ~ 132초)
 $CiWaitSeconds = 600
-# push 직후에는 CI 실행이 몇 초 동안 안 보인다. 이만큼 지나도 없으면 없는 것으로 본다
-$CiAppearSeconds = 90
+# push 직후에는 CI 실행이 한동안 API에 안 보인다(2026-11-05: 30초에 없고 60초에 보임). 이만큼 지나도 없으면 없는 것으로 본다
+$CiAppearSeconds = 180
 # 로그인 없는 GitHub API는 한 시간에 60번까지다. 30초 간격이면 10분을 다 기다려도 20번이다
 $PollSeconds = 30
 
