@@ -143,7 +143,7 @@ function toggleGenre(id: number) {
   </div>
 
   <!-- 평점 · 한줄평 ─ 끝난 게임에만 (DESIGN 3.3절) -->
-  <SurfacePanel v-if="showRating" class="flex flex-col gap-4 px-[22px] py-5">
+  <SurfacePanel v-if="showRating" class="flex flex-col gap-4 px-5.5 py-5">
     <div class="flex flex-col gap-2">
       <span id="rating-label" class="text-sm font-semibold">평점</span>
       <div role="group" aria-labelledby="rating-label" class="flex gap-0.5">

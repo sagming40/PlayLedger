@@ -71,7 +71,7 @@ function onKeydown(e: KeyboardEvent) {
       aria-label="고른 게임 해제"
       @click="unpick"
     >
-      <X class="size-[18px]" aria-hidden="true" />
+      <X class="size-4.5" aria-hidden="true" />
     </button>
   </div>
 
@@ -101,7 +101,7 @@ function onKeydown(e: KeyboardEvent) {
       class="absolute top-full right-0 left-0 z-20 mt-1 overflow-hidden rounded-[10px] border border-border bg-card shadow-lg"
     >
       <!-- mousedown.prevent ─ 누르는 순간 입력칸이 blur되어 목록이 먼저 닫히는 것을 막는다 -->
-      <ul v-if="search.results.value.length" id="title-options" role="listbox" class="max-h-[320px] overflow-y-auto">
+      <ul v-if="search.results.value.length" id="title-options" role="listbox" class="max-h-80 overflow-y-auto">
         <li
           v-for="(app, i) in search.results.value"
           :id="`title-option-${i}`"

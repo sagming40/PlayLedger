@@ -89,12 +89,12 @@ async function onSubmit() {
   <div class="relative flex min-h-screen items-center justify-center overflow-hidden bg-background text-foreground">
     <!-- 포스터 벽 ─ 장식이라 화면 읽기 프로그램에는 숨긴다 -->
     <div aria-hidden="true" class="absolute -top-10 -right-5 -left-5 grid grid-cols-7 gap-2.5 opacity-35 md:grid-cols-14 dark:opacity-75">
-      <div v-for="(hue, i) in tiles" :key="i" class="aspect-[2/3] rounded-md" :style="{ background: hue }" />
+      <div v-for="(hue, i) in tiles" :key="i" class="aspect-2/3 rounded-md" :style="{ background: hue }" />
     </div>
     <!-- 가운데만 진하게 덮는다 ─ 폼이 타일 위에서도 읽히게 -->
     <div aria-hidden="true" class="login-fade absolute inset-0" />
 
-    <main class="relative flex w-full max-w-[380px] flex-col gap-7 px-5 py-12">
+    <main class="relative flex w-full max-w-95 flex-col gap-7 px-5 py-12">
       <div class="flex flex-col gap-2.5">
         <div class="flex items-center gap-2.5">
           <span class="size-3 rounded-[3px] bg-primary" aria-hidden="true" />
@@ -118,7 +118,7 @@ async function onSubmit() {
             type="email"
             autocomplete="email"
             placeholder="you@example.com"
-            class="h-[46px] bg-card/85 px-3.5 text-[15px]"
+            class="h-11.5 bg-card/85 px-3.5 text-[15px]"
           />
         </FormField>
 
@@ -131,7 +131,7 @@ async function onSubmit() {
             type="text"
             autocomplete="nickname"
             aria-describedby="nickname-help"
-            class="h-[46px] bg-card/85 px-3.5 text-[15px]"
+            class="h-11.5 bg-card/85 px-3.5 text-[15px]"
           />
         </FormField>
 
@@ -144,7 +144,7 @@ async function onSubmit() {
             type="password"
             :autocomplete="isRegister ? 'new-password' : 'current-password'"
             :aria-describedby="isRegister ? 'password-help' : undefined"
-            class="h-[46px] bg-card/85 px-3.5 text-[15px]"
+            class="h-11.5 bg-card/85 px-3.5 text-[15px]"
           />
         </FormField>
 

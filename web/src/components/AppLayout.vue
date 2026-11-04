@@ -33,8 +33,8 @@ function isActive(name: string) {
   <div class="min-h-screen bg-background text-foreground">
     <!-- 메뉴 띠 ─ hidden(기본 숨김) + md:block(48rem부터 보임) (DESIGN 2.2절)
          sticky: 내려도 맨 위에 붙어 있다. 건물 층별 안내판처럼 어디서든 보이게 -->
-    <header class="sticky top-0 z-30 hidden h-[72px] border-b border-border bg-background md:block">
-      <div class="mx-auto flex h-full max-w-[1280px] items-center gap-6 px-10">
+    <header class="sticky top-0 z-30 hidden h-18 border-b border-border bg-background md:block">
+      <div class="mx-auto flex h-full max-w-7xl items-center gap-6 px-10">
         <RouterLink :to="{ name: 'library' }" aria-label="PlayLedger 홈" class="flex shrink-0 items-center gap-2.5">
           <span class="flex size-8 items-center justify-center rounded-[9px] bg-primary text-primary-foreground" aria-hidden="true">
             <Play class="size-4 fill-current" />
@@ -49,7 +49,7 @@ function isActive(name: string) {
             v-for="item in menu"
             :key="item.name"
             :to="{ name: item.name }"
-            class="flex h-9 items-center gap-[7px] rounded-full px-4 text-sm whitespace-nowrap transition-colors"
+            class="flex h-9 items-center gap-1.75 rounded-full px-4 text-sm whitespace-nowrap transition-colors"
             :class="
               isActive(item.name)
                 ? 'bg-primary font-bold text-primary-foreground'
@@ -74,7 +74,7 @@ function isActive(name: string) {
          100vw는 스크롤 막대 폭까지 포함해 가로 스크롤이 생긴다. 여백이 있으면 cqw가 그만큼 줄어드니 여백은 안쪽 main에 둔다 -->
     <div class="@container">
       <!-- ownTitle ─ 화면이 제목을 직접 그리는 경우(S-02 포스터 벽 안) 여기서는 그리지 않는다 -->
-      <header v-if="!route.meta.ownTitle" class="mx-auto flex max-w-[1280px] items-center justify-between px-5 pt-5 pb-1 md:px-10 md:pt-8">
+      <header v-if="!route.meta.ownTitle" class="mx-auto flex max-w-7xl items-center justify-between px-5 pt-5 pb-1 md:px-10 md:pt-8">
         <h1 class="text-2xl font-extrabold tracking-tight md:text-3xl">{{ route.meta.title }}</h1>
         <!-- 오른쪽은 화면별 동작 버튼(+ 등) 자리 -->
       </header>
@@ -82,7 +82,7 @@ function isActive(name: string) {
       <!-- pb-24: 모바일에서 하단 탭이 본문 마지막 줄을 덮지 않게 바닥을 띄운다 -->
       <main class="px-5 py-5 pb-24 md:px-10 md:pb-10">
         <!-- 1200 = 띠의 최대 폭 1280에서 좌우 여백 40씩을 뺀 값. 본문 왼쪽 끝이 로고와 맞는다 -->
-        <div class="mx-auto max-w-[1200px]">
+        <div class="mx-auto max-w-300">
           <RouterView />
         </div>
       </main>
@@ -97,7 +97,7 @@ function isActive(name: string) {
         class="flex flex-1 flex-col items-center justify-center gap-0.5 text-[11px]"
         :class="isActive(item.name) ? 'font-semibold text-brand-text' : 'text-muted-foreground'"
       >
-        <component :is="item.icon" class="size-[22px]" aria-hidden="true" />
+        <component :is="item.icon" class="size-5.5" aria-hidden="true" />
         {{ item.label }}
       </RouterLink>
     </nav>

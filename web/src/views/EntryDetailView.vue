@@ -90,7 +90,7 @@ async function confirmDelete() {
          레이아웃의 본문 폭 제한을 거슬러 화면 끝까지 깐다 (LibraryView의 wall-bleed와 같은 방법) -->
     <div
       aria-hidden="true"
-      class="bleed absolute -top-5 h-[250px] overflow-hidden bg-secondary md:h-[520px] md:[&_img]:scale-110 md:[&_img]:blur-md"
+      class="bleed absolute -top-5 h-62.5 overflow-hidden bg-secondary md:h-130 md:[&_img]:scale-110 md:[&_img]:blur-md"
     >
       <template v-if="entry">
         <!-- Steam 커버는 460px 폭이라 넓은 화면에 늘리면 거칠다 ─ 48rem부터 흐리게 깔고, 또렷한 커버는 본문 카드가 맡는다 -->
@@ -104,7 +104,7 @@ async function confirmDelete() {
       </template>
     </div>
     <!-- 위쪽을 얼마나 덮을지는 테마마다 다르다 ─ 라이트는 밝은 배경이라 더 덮어야 글자가 읽힌다 (목업 Detail) -->
-    <div aria-hidden="true" class="bleed backdrop-fade absolute -top-5 h-[252px] [--fade-top:55%] md:h-[522px] dark:[--fade-top:25%]" />
+    <div aria-hidden="true" class="bleed backdrop-fade absolute -top-5 h-63 [--fade-top:55%] md:h-130.5 dark:[--fade-top:25%]" />
 
     <!-- 위쪽 줄 ─ 뒤로 · 수정 · ⋮ (목업 Detail · DetailMobile) -->
     <div class="relative -mt-5 flex h-14 items-center justify-between md:mt-0 md:h-11">
@@ -112,7 +112,7 @@ async function confirmDelete() {
         :to="{ name: 'library' }"
         class="-ml-2.5 inline-flex h-11 items-center gap-1.5 px-2.5 text-sm text-muted-foreground hover:text-foreground md:ml-0 md:px-0"
       >
-        <ChevronLeft class="size-[18px]" aria-hidden="true" />
+        <ChevronLeft class="size-4.5" aria-hidden="true" />
         라이브러리
       </RouterLink>
       <!-- 모바일은 테두리 없이 글자만, 48rem부터 테두리 버튼 -->
@@ -136,7 +136,7 @@ async function confirmDelete() {
               :disabled="detail.saving.value"
               class="size-11 md:size-10 md:border md:border-border md:bg-card"
             >
-              <EllipsisVertical class="size-5 md:size-[18px]" aria-hidden="true" />
+              <EllipsisVertical class="size-5 md:size-4.5" aria-hidden="true" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuPortal>
@@ -146,7 +146,7 @@ async function confirmDelete() {
               class="z-40 min-w-32 rounded-[10px] border border-border bg-popover p-1 text-popover-foreground shadow-md"
             >
               <DropdownMenuItem
-                class="flex h-11 cursor-pointer items-center rounded-md px-3 text-[15px] text-destructive outline-none data-[highlighted]:bg-secondary"
+                class="flex h-11 cursor-pointer items-center rounded-md px-3 text-[15px] text-destructive outline-none data-highlighted:bg-secondary"
                 @select="askDelete"
               >
                 삭제
@@ -162,7 +162,7 @@ async function confirmDelete() {
       v-if="detail.loading.value && !entry"
       role="status"
       aria-label="게임 정보를 불러오는 중"
-      class="relative flex flex-col gap-4 pt-24 md:pt-[120px]"
+      class="relative flex flex-col gap-4 pt-24 md:pt-30"
     >
       <div class="h-6 w-28 animate-pulse rounded bg-secondary" />
       <div class="h-10 w-2/3 animate-pulse rounded bg-secondary" />
@@ -186,9 +186,9 @@ async function confirmDelete() {
 
     <template v-else-if="entry">
       <!-- 제목 · 장르 · 상태 -->
-      <section class="relative flex flex-wrap items-end gap-8 pt-24 md:pt-[120px]">
+      <section class="relative flex flex-wrap items-end gap-8 pt-24 md:pt-30">
         <!-- 또렷한 커버 ─ 48rem부터. 모바일은 배경이 커버 역할을 한다 (목업 DetailMobile) -->
-        <div class="hidden aspect-[460/215] max-w-[560px] flex-[1_1_420px] items-end overflow-hidden rounded-[14px] bg-secondary md:flex">
+        <div class="hidden aspect-460/215 max-w-140 flex-[1_1_420px] items-end overflow-hidden rounded-[14px] bg-secondary md:flex">
           <GameCover v-slot="{ initials }" :title="entry.game.title" :cover-url="entry.game.cover_url">
             <span class="p-5 text-[30px] font-extrabold tracking-[-0.02em] text-muted-foreground/50" aria-hidden="true">
               {{ initials }}
@@ -201,12 +201,12 @@ async function confirmDelete() {
             <span
               v-for="genre in entry.game.genres"
               :key="genre.id"
-              class="inline-flex h-6 items-center rounded-md bg-secondary px-2.5 text-xs font-semibold text-muted-foreground md:h-[26px]"
+              class="inline-flex h-6 items-center rounded-md bg-secondary px-2.5 text-xs font-semibold text-muted-foreground md:h-6.5"
             >
               {{ genre.name }}
             </span>
           </div>
-          <h1 class="text-[30px] leading-[1.15] font-extrabold tracking-[-0.03em] break-words md:text-[40px] md:leading-[1.1]">
+          <h1 class="text-[30px] leading-[1.15] font-extrabold tracking-[-0.03em] wrap-break-word md:text-[40px] md:leading-[1.1]">
             {{ entry.game.title }}
           </h1>
 
@@ -220,7 +220,7 @@ async function confirmDelete() {
                 :value="entry.status"
                 :disabled="detail.saving.value"
                 :aria-busy="detail.saving.value"
-                class="h-[46px] w-full appearance-none rounded-[10px] border border-border bg-card pr-10 pl-[30px] text-[15px] font-semibold text-foreground disabled:opacity-60 md:h-11 md:w-auto md:min-w-40"
+                class="h-11.5 w-full appearance-none rounded-[10px] border border-border bg-card pr-10 pl-7.5 text-[15px] font-semibold text-foreground disabled:opacity-60 md:h-11 md:w-auto md:min-w-40"
                 @change="onStatusChange"
               >
                 <option v-for="s in STATUSES" :key="s" :value="s">{{ STATUS_LABEL[s] }}</option>
@@ -236,35 +236,35 @@ async function confirmDelete() {
         </div>
       </section>
 
-      <div class="relative grid max-w-[1180px] grid-cols-1 gap-3 md:grid-cols-[repeat(auto-fit,minmax(320px,1fr))] md:gap-5">
+      <div class="relative grid max-w-295 grid-cols-1 gap-3 md:grid-cols-[repeat(auto-fit,minmax(320px,1fr))] md:gap-5">
         <!-- 기록 ─ 모바일은 카드 없이 바로 놓는다 (목업 DetailMobile) -->
-        <section class="flex flex-col gap-3 md:gap-[18px] md:rounded-[14px] md:border md:border-border md:bg-card md:p-6">
+        <section class="flex flex-col gap-3 md:gap-4.5 md:rounded-[14px] md:border md:border-border md:bg-card md:p-6">
           <h2 class="hidden text-[15px] font-bold text-muted-foreground md:block">기록</h2>
           <dl class="grid grid-cols-3 gap-2.5 md:gap-4">
             <div>
               <dt class="text-xs text-muted-foreground">구매일</dt>
               <!-- 날짜 문자열을 그대로 쓴다 ─ Date로 읽으면 한국 시간으로 하루 전날이 될 수 있다 (CLAUDE.md 함정 "날짜와 시각") -->
-              <dd class="mt-[3px] text-[15px] font-bold md:mt-1 md:text-lg">{{ entry.purchased_at ?? EMPTY_VALUE }}</dd>
+              <dd class="mt-0.75 text-[15px] font-bold md:mt-1 md:text-lg">{{ entry.purchased_at ?? EMPTY_VALUE }}</dd>
             </div>
             <div>
               <dt class="text-xs text-muted-foreground">구매가</dt>
-              <dd class="mt-[3px] text-[15px] font-bold md:mt-1 md:text-lg">
+              <dd class="mt-0.75 text-[15px] font-bold md:mt-1 md:text-lg">
                 {{ entry.purchase_price === null ? EMPTY_VALUE : `${formatWon(entry.purchase_price)}원` }}
               </dd>
             </div>
             <div>
               <dt class="text-xs text-muted-foreground">플레이타임</dt>
-              <dd class="mt-[3px] text-[15px] font-bold md:mt-1 md:text-lg">{{ formatPlaytime(entry.playtime_minutes) }}</dd>
+              <dd class="mt-0.75 text-[15px] font-bold md:mt-1 md:text-lg">{{ formatPlaytime(entry.playtime_minutes) }}</dd>
             </div>
           </dl>
 
           <!-- 시간당 비용 ─ 서버 계산값. 강조는 포인트 테두리 + 옅은 바탕 (DESIGN 4.4절) -->
           <div
-            class="flex items-baseline justify-between gap-3 rounded-xl border border-brand-line bg-brand-tint px-4 py-3.5 md:px-5 md:py-[18px]"
+            class="flex items-baseline justify-between gap-3 rounded-xl border border-brand-line bg-brand-tint px-4 py-3.5 md:px-5 md:py-4.5"
           >
             <span class="text-[13px] text-muted-foreground md:text-sm">시간당 비용</span>
             <span v-if="entry.cost_per_hour !== null" class="text-2xl font-extrabold tracking-[-0.02em] text-brand-text md:text-[30px]">
-              {{ formatWon(entry.cost_per_hour) }}<span class="ml-[3px] text-[13px] font-semibold md:ml-1 md:text-[15px]">원/h</span>
+              {{ formatWon(entry.cost_per_hour) }}<span class="ml-0.75 text-[13px] font-semibold md:ml-1 md:text-[15px]">원/h</span>
             </span>
             <!-- 플레이타임 0 · 구매가 없음 ─ 계산하지 않는다 (DESIGN 3.4절, REQUIREMENTS 5.1절) -->
             <span v-else class="text-2xl font-extrabold text-muted-foreground md:text-[30px]">{{ EMPTY_VALUE }}</span>
@@ -275,7 +275,7 @@ async function confirmDelete() {
         <section
           v-if="ratingVisible"
           aria-labelledby="rating-heading"
-          class="flex flex-col gap-2.5 rounded-xl border border-border bg-card px-4 py-3.5 md:gap-[18px] md:rounded-[14px] md:p-6"
+          class="flex flex-col gap-2.5 rounded-xl border border-border bg-card px-4 py-3.5 md:gap-4.5 md:rounded-[14px] md:p-6"
         >
           <h2 id="rating-heading" class="sr-only text-[15px] font-bold text-muted-foreground md:not-sr-only">평가</h2>
 
@@ -294,7 +294,7 @@ async function confirmDelete() {
                 @click="detail.rate(n)"
               >
                 <Star
-                  class="size-[22px] md:size-[26px]"
+                  class="size-5.5 md:size-6.5"
                   :class="entry.rating !== null && n <= entry.rating ? 'fill-brand-text text-brand-text' : 'text-muted-foreground'"
                   stroke-width="1.5"
                   aria-hidden="true"
@@ -334,7 +334,9 @@ async function confirmDelete() {
             </div>
           </form>
           <div v-else-if="entry.review" class="flex items-start justify-between gap-3">
-            <blockquote class="min-w-0 text-[15px] leading-normal break-words md:border-l-2 md:border-border md:py-1 md:pl-4 md:text-lg">
+            <blockquote
+              class="min-w-0 text-[15px] leading-normal wrap-break-word md:border-l-2 md:border-border md:py-1 md:pl-4 md:text-lg"
+            >
               "{{ entry.review }}"
             </blockquote>
             <Button type="button" variant="ghost" class="-mr-2 h-9 shrink-0 text-muted-foreground" @click="startReview">고치기</Button>

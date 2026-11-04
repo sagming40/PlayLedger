@@ -61,7 +61,7 @@ function toggle(key: string) {
   <!-- 처음 불러오는 중 ─ 자리만 잡는다 (DESIGN 6장 뼈대) -->
   <div v-if="loading && !stats" role="status" aria-label="통계를 불러오는 중" class="flex flex-col gap-3.5 md:gap-6">
     <div class="stat-cards">
-      <div v-for="i in 4" :key="i" class="h-[88px] animate-pulse rounded-xl bg-secondary md:h-[104px] md:rounded-[14px]" />
+      <div v-for="i in 4" :key="i" class="h-22 animate-pulse rounded-xl bg-secondary md:h-26 md:rounded-[14px]" />
     </div>
     <div class="h-56 animate-pulse rounded-xl bg-secondary md:rounded-[14px]" />
   </div>
@@ -83,7 +83,7 @@ function toggle(key: string) {
       <div
         v-for="card in cards"
         :key="card.label"
-        class="flex flex-col gap-0.5 rounded-xl border px-4 py-3.5 md:gap-1 md:rounded-[14px] md:px-[22px] md:py-5"
+        class="flex flex-col gap-0.5 rounded-xl border px-4 py-3.5 md:gap-1 md:rounded-[14px] md:px-5.5 md:py-5"
         :class="card.loud ? 'border-brand-line bg-brand-tint' : 'border-border bg-card'"
       >
         <span class="text-[28px] font-extrabold tracking-[-0.03em] md:text-[38px]" :class="card.loud ? 'text-brand-text' : ''">
@@ -99,7 +99,7 @@ function toggle(key: string) {
         v-for="list in lists"
         :key="list.key"
         :aria-labelledby="`${list.key}-title`"
-        class="flex min-w-0 flex-col gap-1 rounded-xl px-4 py-3.5 md:gap-2 md:rounded-[14px] md:px-6 md:py-[22px]"
+        class="flex min-w-0 flex-col gap-1 rounded-xl px-4 py-3.5 md:gap-2 md:rounded-[14px] md:px-6 md:py-5.5"
       >
         <h2 :id="`${list.key}-title`" class="mb-1 text-[15px] font-bold md:mb-1.5 md:text-base">{{ list.title }}</h2>
         <p v-if="!list.rows.length" class="py-3 text-sm text-muted-foreground">{{ list.empty }}</p>
@@ -111,7 +111,7 @@ function toggle(key: string) {
             >
               <span class="hidden w-5 shrink-0 text-sm font-bold text-muted-foreground md:block">{{ i + 1 }}</span>
               <span
-                class="flex h-[30px] w-16 shrink-0 items-center justify-center overflow-hidden rounded-[5px] bg-secondary md:h-10 md:w-[86px] md:rounded-md"
+                class="flex h-7.5 w-16 shrink-0 items-center justify-center overflow-hidden rounded-[5px] bg-secondary md:h-10 md:w-21.5 md:rounded-md"
               >
                 <GameCover v-slot="{ initials }" :title="row.title" :cover-url="row.cover_url">
                   <span class="text-xs font-extrabold text-muted-foreground/50" aria-hidden="true">{{ initials }}</span>
@@ -139,7 +139,7 @@ function toggle(key: string) {
     <!-- 장르별 완주율 -->
     <SurfacePanel
       aria-labelledby="genre-title"
-      class="flex flex-col gap-3 rounded-xl px-4 py-3.5 md:gap-4 md:rounded-[14px] md:px-6 md:py-[22px]"
+      class="flex flex-col gap-3 rounded-xl px-4 py-3.5 md:gap-4 md:rounded-[14px] md:px-6 md:py-5.5"
     >
       <h2 id="genre-title" class="text-[15px] font-bold md:text-base">장르별 완주율</h2>
       <p v-if="!stats.genres.length" class="py-3 text-sm text-muted-foreground">장르를 고른 게임이 없어요</p>

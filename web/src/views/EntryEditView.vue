@@ -38,13 +38,13 @@ async function onSubmit() {
 </script>
 
 <template>
-  <div class="flex max-w-[760px] flex-col gap-6">
+  <div class="flex max-w-190 flex-col gap-6">
     <RouterLink
       :to="{ name: 'entry-detail', params: { id: route.params.id } }"
       class="inline-flex h-11 items-center gap-1.5 self-start text-sm text-muted-foreground hover:text-foreground"
       @click.prevent="backToDetail"
     >
-      <ChevronLeft class="size-[18px]" aria-hidden="true" />
+      <ChevronLeft class="size-4.5" aria-hidden="true" />
       게임 상세
     </RouterLink>
 
@@ -73,7 +73,7 @@ async function onSubmit() {
     <template v-else-if="form && edit.entry.value">
       <h1 class="text-[34px] font-extrabold tracking-tight">게임 수정</h1>
 
-      <form class="flex flex-col gap-[26px]" @submit.prevent="onSubmit">
+      <form class="flex flex-col gap-6.5" @submit.prevent="onSubmit">
         <FormField id="title" label="제목" help="제목은 고칠 수 없어요. 잘못 등록했다면 삭제하고 다시 등록해 주세요">
           <Input
             id="title"
@@ -102,8 +102,8 @@ async function onSubmit() {
         <p v-if="edit.errorMessage.value" role="alert" class="text-sm text-destructive">{{ edit.errorMessage.value }}</p>
 
         <div class="flex justify-end gap-2.5 border-t border-border pt-2">
-          <Button type="button" variant="outline" class="mt-2 h-[46px] px-[18px] text-[15px]" @click="backToDetail">취소</Button>
-          <Button type="submit" class="mt-2 h-[46px] px-[22px] text-[15px] font-bold" :disabled="!edit.canSubmit.value">
+          <Button type="button" variant="outline" class="mt-2 h-11.5 px-4.5 text-[15px]" @click="backToDetail">취소</Button>
+          <Button type="submit" class="mt-2 h-11.5 px-5.5 text-[15px] font-bold" :disabled="!edit.canSubmit.value">
             {{ edit.submitting.value ? '저장 중…' : '저장' }}
           </Button>
         </div>

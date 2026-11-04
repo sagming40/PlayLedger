@@ -23,7 +23,7 @@ import { toast } from '@/lib/toast'
           :transition="{ duration: 0.18, ease: 'easeOut' }"
           class="flex h-11 items-center gap-2 rounded-[10px] border border-border bg-popover px-4 text-sm font-semibold text-popover-foreground shadow-md"
         >
-          <CircleCheck class="size-[18px] text-status-cleared" aria-hidden="true" />
+          <CircleCheck class="size-4.5 text-status-cleared" aria-hidden="true" />
           {{ toast.text }}
         </Motion>
       </AnimatePresence>

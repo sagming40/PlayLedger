@@ -8,7 +8,7 @@ const props = defineProps<{ class?: HTMLAttributes['class'] }>()
 </script>
 
 <template>
-  <section :class="cn('rounded-[14px] border border-border bg-card px-6 py-[22px]', props.class)">
+  <section :class="cn('rounded-[14px] border border-border bg-card px-6 py-5.5', props.class)">
     <slot />
   </section>
 </template>

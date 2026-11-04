@@ -68,18 +68,18 @@ async function onSubmit() {
 </script>
 
 <template>
-  <div class="flex max-w-[760px] flex-col gap-6">
+  <div class="flex max-w-190 flex-col gap-6">
     <RouterLink
       :to="{ name: 'library' }"
       class="inline-flex h-11 items-center gap-1.5 self-start text-sm text-muted-foreground hover:text-foreground"
     >
-      <ChevronLeft class="size-[18px]" aria-hidden="true" />
+      <ChevronLeft class="size-4.5" aria-hidden="true" />
       라이브러리
     </RouterLink>
 
     <h1 class="text-[34px] font-extrabold tracking-tight">게임 등록</h1>
 
-    <form class="flex flex-col gap-[26px]" @submit.prevent="onSubmit">
+    <form class="flex flex-col gap-6.5" @submit.prevent="onSubmit">
       <FormField id="title" label="제목" required>
         <SteamTitleField v-model:title="title" v-model:steam-app="steamApp" />
       </FormField>
@@ -103,10 +103,10 @@ async function onSubmit() {
       <p v-if="errorMessage" role="alert" class="text-sm text-destructive">{{ errorMessage }}</p>
 
       <div class="flex justify-end gap-2.5 border-t border-border pt-2">
-        <Button as-child variant="outline" class="mt-2 h-[46px] px-[18px] text-[15px]">
+        <Button as-child variant="outline" class="mt-2 h-11.5 px-4.5 text-[15px]">
           <RouterLink :to="{ name: 'library' }">취소</RouterLink>
         </Button>
-        <Button type="submit" class="mt-2 h-[46px] px-[22px] text-[15px] font-bold" :disabled="!canSubmit">
+        <Button type="submit" class="mt-2 h-11.5 px-5.5 text-[15px] font-bold" :disabled="!canSubmit">
           {{ submitting ? '저장 중…' : '저장' }}
         </Button>
       </div>

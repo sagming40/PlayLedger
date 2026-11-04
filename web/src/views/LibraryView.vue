@@ -109,11 +109,11 @@ onBeforeUnmount(() => {
          -mr-2: 44px 버튼이 본문 오른쪽 끝보다 살짝 나가 목업의 오른쪽 여백 12px에 맞는다
          -mb-3.5: 목록과의 간격을 목업처럼 좁힌다 (바깥 gap 20 - 14 = 6) -->
     <div class="-mt-5 -mb-3.5 md:hidden">
-      <div class="-mr-2 flex h-[60px] items-center justify-between">
+      <div class="-mr-2 flex h-15 items-center justify-between">
         <h1 class="text-[22px] font-extrabold tracking-[-0.02em]">라이브러리</h1>
         <Button as-child size="icon" class="size-11">
           <RouterLink :to="{ name: 'entry-new' }" aria-label="게임 등록">
-            <Plus class="size-[22px]" aria-hidden="true" />
+            <Plus class="size-5.5" aria-hidden="true" />
           </RouterLink>
         </Button>
       </div>
@@ -121,13 +121,13 @@ onBeforeUnmount(() => {
     </div>
 
     <!-- 포스터 벽 + 제목 ─ 48rem부터. 레이아웃의 본문 폭 제한을 거슬러 화면 끝까지 깐다 (wall-bleed) -->
-    <section class="wall-bleed relative -mt-5 hidden h-[280px] flex-col justify-end overflow-hidden md:flex">
+    <section class="wall-bleed relative -mt-5 hidden h-70 flex-col justify-end overflow-hidden md:flex">
       <div aria-hidden="true" class="absolute -top-6 right-0 left-0 grid grid-cols-12 gap-2 px-2">
         <template v-if="wall.length">
           <div
             v-for="(game, i) in wall"
             :key="i"
-            class="flex aspect-[2/3] items-end overflow-hidden rounded-md bg-secondary opacity-70 dark:opacity-90"
+            class="flex aspect-2/3 items-end overflow-hidden rounded-md bg-secondary opacity-70 dark:opacity-90"
           >
             <GameCover v-slot="{ initials }" :title="game.title" :cover-url="game.cover_url">
               <span class="p-2 text-[11px] leading-tight font-extrabold text-muted-foreground/60">{{ initials }}</span>
@@ -136,7 +136,7 @@ onBeforeUnmount(() => {
         </template>
         <template v-else>
           <!-- 0개 ─ 커버가 들어올 자리를 점선으로 보여준다 (목업 LibraryEmpty) -->
-          <div v-for="i in 24" :key="i" class="aspect-[2/3] rounded-md border border-dashed border-input" />
+          <div v-for="i in 24" :key="i" class="aspect-2/3 rounded-md border border-dashed border-input" />
         </template>
       </div>
       <!-- 아래로 갈수록 배경색으로 사라진다 -->
@@ -144,7 +144,7 @@ onBeforeUnmount(() => {
 
       <!-- 벽은 끝까지 깔려도 제목은 본문 왼쪽 끝에 맞춘다 -->
       <!-- 등록 버튼은 메뉴 띠에 있다 (DESIGN 2.2절) -->
-      <div class="relative mx-auto flex w-full max-w-[1280px] flex-col gap-1.5 px-10 pb-2">
+      <div class="relative mx-auto flex w-full max-w-7xl flex-col gap-1.5 px-10 pb-2">
         <h1 class="text-[40px] font-extrabold tracking-tight">라이브러리</h1>
         <EntrySummary :total="list.libraryTotal.value" :backlog="list.backlogTotal.value" class="text-[15px]" />
       </div>
@@ -159,14 +159,14 @@ onBeforeUnmount(() => {
       ref="chipRow"
       role="group"
       aria-label="상태 필터"
-      class="-mx-5 -mb-1 flex scroll-px-5 gap-2 overflow-x-auto px-5 whitespace-nowrap [scrollbar-width:none] md:mx-0 md:mb-0 md:flex-wrap md:overflow-visible md:px-0 [&::-webkit-scrollbar]:hidden"
+      class="-mx-5 -mb-1 flex scroll-px-5 gap-2 overflow-x-auto px-5 whitespace-nowrap scrollbar-none md:mx-0 md:mb-0 md:flex-wrap md:overflow-visible md:px-0 [&::-webkit-scrollbar]:hidden"
     >
       <button
         v-for="chip in CHIPS"
         :key="chip.key ?? 'all'"
         type="button"
         :aria-pressed="list.status.value === chip.key"
-        class="inline-flex h-9 shrink-0 items-center gap-[7px] rounded-full border px-3.5 text-sm transition-colors"
+        class="inline-flex h-9 shrink-0 items-center gap-1.75 rounded-full border px-3.5 text-sm transition-colors"
         :class="
           list.status.value === chip.key
             ? 'border-muted-foreground bg-secondary font-semibold text-foreground'
@@ -175,7 +175,7 @@ onBeforeUnmount(() => {
         @click="selectStatus(chip.key)"
       >
         <!-- 점은 48rem부터 ─ 모바일 칩은 글자만 (목업 LibraryMobile) -->
-        <StatusDot v-if="chip.key" :status="chip.key" class="hidden size-[7px] md:inline-block" />
+        <StatusDot v-if="chip.key" :status="chip.key" class="hidden size-1.75 md:inline-block" />
         {{ chip.label }}
       </button>
     </div>
@@ -188,7 +188,7 @@ onBeforeUnmount(() => {
         :key="i"
         class="flex items-center gap-3.5 border-b border-border py-2.5 md:flex-col md:items-stretch md:gap-0 md:overflow-hidden md:rounded-xl md:border md:bg-card md:py-0"
       >
-        <div class="aspect-[460/215] w-28 shrink-0 animate-pulse rounded-lg bg-secondary md:w-auto md:rounded-none" />
+        <div class="aspect-460/215 w-28 shrink-0 animate-pulse rounded-lg bg-secondary md:w-auto md:rounded-none" />
         <div class="flex min-w-0 flex-1 flex-col gap-2 md:flex-none md:p-3.5">
           <div class="h-4 w-2/3 animate-pulse rounded bg-secondary" />
           <div class="h-3 w-1/2 animate-pulse rounded bg-secondary" />
@@ -209,7 +209,7 @@ onBeforeUnmount(() => {
       <p class="text-[15px] text-muted-foreground">산 게임을 하나 등록하면 방치일수부터 세기 시작해요</p>
       <Button as-child class="mt-2 h-12 px-5.5 text-[15px] font-bold">
         <RouterLink :to="{ name: 'entry-new' }">
-          <Plus class="size-[18px]" aria-hidden="true" />
+          <Plus class="size-4.5" aria-hidden="true" />
           게임 추가하기
         </RouterLink>
       </Button>
@@ -229,7 +229,7 @@ onBeforeUnmount(() => {
           >
             <!-- 커버 자리 ─ 비율은 Steam header 이미지(460×215)와 같다 -->
             <div
-              class="flex aspect-[460/215] w-28 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-secondary md:w-auto md:rounded-none"
+              class="flex aspect-460/215 w-28 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-secondary md:w-auto md:rounded-none"
             >
               <GameCover v-slot="{ initials }" :title="entry.game.title" :cover-url="entry.game.cover_url">
                 <span class="text-lg font-extrabold tracking-tight text-muted-foreground/40 md:text-[34px]" aria-hidden="true">
@@ -241,7 +241,7 @@ onBeforeUnmount(() => {
               <span class="truncate text-[15px] font-semibold">{{ entry.game.title }}</span>
               <!-- 상태는 점 + 글자 (DESIGN 4.1절 ─ 색만으로 구분하지 않는다) -->
               <span class="flex items-center gap-1.5 text-[13px] text-muted-foreground">
-                <StatusDot :status="entry.status" class="size-[7px]" />
+                <StatusDot :status="entry.status" class="size-1.75" />
                 <span class="text-foreground">{{ STATUS_LABEL[entry.status] }}</span>
                 <template v-if="cardMetric(entry, today).text">
                   ·

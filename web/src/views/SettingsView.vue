@@ -34,12 +34,12 @@ async function onLogout() {
 </script>
 
 <template>
-  <div class="flex max-w-[720px] flex-col gap-5">
+  <div class="flex max-w-180 flex-col gap-5">
     <!-- 계정 -->
     <SurfacePanel class="flex items-center gap-4" aria-labelledby="account-title">
       <div
         aria-hidden="true"
-        class="flex size-[52px] shrink-0 items-center justify-center rounded-full border border-brand-line bg-brand-tint text-xl font-extrabold text-brand-text"
+        class="flex size-13 shrink-0 items-center justify-center rounded-full border border-brand-line bg-brand-tint text-xl font-extrabold text-brand-text"
       >
         {{ initial }}
       </div>
@@ -88,13 +88,10 @@ async function onLogout() {
             disabled
             placeholder="7656119…"
             aria-describedby="steam-help"
-            class="h-[46px] min-w-0 flex-[1_1_260px] rounded-[10px] border border-border bg-background px-3.5 text-[15px] opacity-60"
+            class="h-11.5 min-w-0 flex-[1_1_260px] rounded-[10px] border border-border bg-background px-3.5 text-[15px] opacity-60"
           />
           <!-- 곧 생길 기능이라 흐리게 지우지 않고 글자색만 낮춘다 (목업 Settings) -->
-          <Button
-            variant="secondary"
-            disabled
-            class="h-[46px] border-border px-4.5 font-semibold text-muted-foreground disabled:opacity-100"
+          <Button variant="secondary" disabled class="h-11.5 border-border px-4.5 font-semibold text-muted-foreground disabled:opacity-100"
             >지금 동기화</Button
           >
         </div>
@@ -116,7 +113,7 @@ async function onLogout() {
     <div class="pt-1">
       <Button
         variant="outline"
-        class="h-[46px] border-brand-line bg-transparent px-5 font-semibold text-brand-text hover:bg-brand-tint hover:text-brand-text dark:border-brand-line dark:bg-transparent"
+        class="h-11.5 border-brand-line bg-transparent px-5 font-semibold text-brand-text hover:bg-brand-tint hover:text-brand-text dark:border-brand-line dark:bg-transparent"
         :disabled="loggingOut"
         @click="onLogout"
       >
