@@ -21,19 +21,6 @@
   --color-status-cleared: var(--status-cleared);
   --color-status-on-hold: var(--status-on-hold);
   --color-status-dropped: var(--status-dropped);
-  --color-sidebar-ring: var(--sidebar-ring);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar: var(--sidebar);
-  --color-chart-5: var(--chart-5);
-  --color-chart-4: var(--chart-4);
-  --color-chart-3: var(--chart-3);
-  --color-chart-2: var(--chart-2);
-  --color-chart-1: var(--chart-1);
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
@@ -92,19 +79,6 @@
   --status-cleared: #16a34a;
   --status-on-hold: #ca8a04;
   --status-dropped: #b4b4be;
-  --chart-1: #d12e34;
-  --chart-2: #2563eb;
-  --chart-3: #16a34a;
-  --chart-4: #ca8a04;
-  --chart-5: #7a7a86;
-  --sidebar: #f6f6f8;
-  --sidebar-foreground: #17171b;
-  --sidebar-primary: #d12e34;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: rgb(209 46 52 / 0.08);
-  --sidebar-accent-foreground: #b4232a;
-  --sidebar-border: #e2e2e8;
-  --sidebar-ring: rgb(209 46 52 / 0.4);
 }
 
 .dark {
@@ -134,19 +108,6 @@
   --status-cleared: #22c55e;
   --status-on-hold: #eab308;
   --status-dropped: #5e5e68;
-  --chart-1: #d12e34;
-  --chart-2: #3b82f6;
-  --chart-3: #22c55e;
-  --chart-4: #eab308;
-  --chart-5: #9a9aa6;
-  --sidebar: #0e0e11;
-  --sidebar-foreground: #f2f2f5;
-  --sidebar-primary: #d12e34;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: rgb(209 46 52 / 0.14);
-  --sidebar-accent-foreground: #ff7276;
-  --sidebar-border: #2c2c35;
-  --sidebar-ring: rgb(209 46 52 / 0.55);
 }
 
 @layer base {
@@ -155,5 +116,24 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+  /* 키보드로 다닐 때 어디 있는지 보이게. 전역에 두어 빠뜨리는 링크 · 버튼이 없게 한다 (shadcn 부품은 자기 ring을 쓴다) */
+  a:focus-visible,
+  button:not([data-slot]):focus-visible {
+    outline: 2px solid var(--brand-text);
+    outline-offset: 2px;
+  }
+  /* 화면 전환 때 코드가 옮긴 포커스다 ─ 큰 테두리를 그리지 않는다 */
+  main:focus {
+    outline: none;
+  }
+}
+
+/* iOS Safari는 16px보다 작은 입력칸을 누르면 화면을 확대한다. 데스크톱 글자 크기는 그대로 둔다 */
+@media (max-width: 47.99rem) {
+  input,
+  select,
+  textarea {
+    font-size: 16px;
   }
 }

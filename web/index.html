@@ -3,8 +3,18 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- viewport-fit=cover ─ 하단 탭이 아이폰 홈 표시줄 자리까지 깔리게. 안쪽 여백은 AppLayout이 준다 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>PLAYLEDGER</title>
+    <meta
+      name="description"
+      content="사놓고 안 한 게임을 구매일 · 구매가 · 플레이타임으로 기록하고 방치일수 · 시간당 비용 · 완주율로 보여 주는 서비스"
+    />
+    <meta name="theme-color" content="#0e0e11" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="PLAYLEDGER" />
+    <meta property="og:description" content="사놓고 안 한 게임, 이제 숫자로 관리하자" />
     <!-- 앱(Vue)이 뜨기 전에 테마부터 입힌다 ─ 늦게 입히면 다크를 고른 사람에게 흰 화면이 번쩍인다
          규칙은 src/lib/theme.ts와 같다. 바꿀 때는 둘 다 고친다 (키 이름 'pl-theme' 포함) -->
     <script>

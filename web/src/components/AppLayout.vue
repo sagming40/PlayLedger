@@ -78,7 +78,7 @@ function isActive(name: string) {
       </header>
 
       <!-- pb-24: 모바일에서 하단 탭이 본문 마지막 줄을 덮지 않게 바닥을 띄운다 -->
-      <main class="px-5 py-5 pb-24 md:px-10 md:pb-10">
+      <main class="px-5 py-5 pb-[calc(6rem+env(safe-area-inset-bottom))] md:px-10 md:pb-10">
         <!-- 1200 = 띠의 최대 폭 1280에서 좌우 여백 40씩을 뺀 값. 본문 왼쪽 끝이 로고와 맞는다 -->
         <div class="mx-auto max-w-300">
           <RouterView />
@@ -87,7 +87,10 @@ function isActive(name: string) {
     </div>
 
     <!-- 하단 탭 ─ md:hidden(48rem부터 숨김) 화면 아래에 고정 -->
-    <nav aria-label="주 메뉴" class="fixed inset-x-0 bottom-0 flex h-16 border-t border-border bg-background md:hidden">
+    <nav
+      aria-label="주 메뉴"
+      class="fixed inset-x-0 bottom-0 flex h-[calc(4rem+env(safe-area-inset-bottom))] border-t border-border bg-background pb-[env(safe-area-inset-bottom)] md:hidden"
+    >
       <RouterLink
         v-for="item in menu"
         :key="item.name"
