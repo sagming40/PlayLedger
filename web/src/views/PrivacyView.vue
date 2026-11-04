@@ -32,6 +32,7 @@ const backTo = computed(() => (auth.isAuthenticated ? '/settings' : '/login'))
         <li>입력한 내용을 다른 회사나 사람에게 넘기거나 팔지 않고, 광고에 쓰지 않아요</li>
         <li>Steam 게임을 고르면 서버가 Steam에 게임 번호만 물어봐요. 내 계정 정보는 보내지 않아요</li>
         <li>커버 이미지는 브라우저가 Steam 서버에서 직접 받아요. 이때 Steam에 접속 IP가 전달돼요</li>
+        <li>글꼴은 브라우저가 Google Fonts에서 받아요. 이때 Google에 접속 IP가 전달돼요</li>
         <li>접속 IP는 비밀번호 대입을 막는 요청 제한과 서버 접속 기록에 쓰여요</li>
       </ul>
     </section>

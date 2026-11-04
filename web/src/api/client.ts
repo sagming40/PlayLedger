@@ -1,7 +1,7 @@
 import { ApiError, toApiError } from './errors'
 
 // 모든 API는 /api로 시작한다 (ARCHITECTURE 3.1절)
-// 개발 → Vite / 운영 → Nginx가 이 접두사만 SERVER로 넘긴다
+// 개발 → Vite / 운영 → Caddy가 이 접두사만 SERVER로 넘긴다
 const BASE_URL = '/api'
 
 // access TOKEN은 MEMORY에만 넣어둔다 (ARCHITECTURE 3.2절)
