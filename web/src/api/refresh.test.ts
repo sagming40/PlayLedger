@@ -64,6 +64,47 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
+describe('탭 사이 재발급 (ARCHITECTURE 3.3절)', () => {
+  it('재발급은 열쇠를 받은 뒤에만 보낸다 ─ 앞 탭이 끝나기 전에는 쿠키를 쓰지 않는다', async () => {
+    const server = fakeServer({ valid: ['new'], refresh: () => json(200, { access_token: 'new' }) })
+    let openDoor!: () => void
+    const door = new Promise<void>((resolve) => (openDoor = resolve))
+    const lockRequest = vi.fn(async (_name: string, work: () => Promise<unknown>) => {
+      await door
+      return work()
+    })
+    vi.stubGlobal('navigator', { locks: { request: lockRequest } })
+
+    const refreshed = refreshAccessToken()
+    await Promise.resolve()
+    expect(lockRequest).toHaveBeenCalledWith('pl-refresh', expect.any(Function))
+    expect(server.refreshCount()).toBe(0)
+
+    openDoor()
+    await expect(refreshed).resolves.toBe(true)
+    expect(server.refreshCount()).toBe(1)
+  })
+
+  it('잠금이 없는 환경(http)에서도 재발급은 된다', async () => {
+    const server = fakeServer({ valid: ['new'], refresh: () => json(200, { access_token: 'new' }) })
+    vi.stubGlobal('navigator', {})
+    await expect(refreshAccessToken()).resolves.toBe(true)
+    expect(server.refreshCount()).toBe(1)
+  })
+})
+
+describe('요청 시간 제한', () => {
+  it('제한 시간을 넘기면 연결 실패와 구분되는 문구로 끝난다', async () => {
+    const fetchMock = vi.fn().mockRejectedValue(new DOMException('시간 초과', 'TimeoutError'))
+    vi.stubGlobal('fetch', fetchMock)
+    const error = await request('/entries').catch((e: unknown) => e)
+    expect(error).toBeInstanceOf(ApiError)
+    expect((error as ApiError).status).toBe(0)
+    expect((error as ApiError).message).toContain('응답하지 않습니다')
+    expect(fetchMock.mock.calls[0]![1].signal).toBeInstanceOf(AbortSignal)
+  })
+})
+
 describe('401 처리 4원칙 (ARCHITECTURE 3.3절)', () => {
   it('만료된 TOKEN이면 재발급 후 새 TOKEN으로 원래 요청을 다시 보낸다', async () => {
     const server = fakeServer({ valid: ['new'], refresh: () => json(200, { access_token: 'new' }) })

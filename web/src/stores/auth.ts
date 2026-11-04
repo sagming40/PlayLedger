@@ -14,6 +14,9 @@ export const useAuthStore = defineStore('auth', () => {
   // 비유: 출근 도장을 아직 찍지 않은 것과, 찍어보니 결근인 것은 엄연히 다르다
   const isReady = ref(false)
 
+  // 복원이 서버 문제로 실패했다 ─ 세션이 끝난 것과 다르다. 로그인 화면이 다시 시도를 함께 보여 준다
+  const restoreFailed = ref(false)
+
   // ─── 파생값 ─────────────────────────────────────────────
   // 로그인 여부는 TOKEN이 아니라 user로 판단한다
   // access TOKEN은 15분마다 사라지지만 그때도 로그인 상태는 유지된다
@@ -59,6 +62,7 @@ export const useAuthStore = defineStore('auth', () => {
           // TOKEN만 남으면 login()에서 막은 "반쯤 로그인된 상태"가 여기서 생기므로 같이 비운다
           setAccessToken(null)
           user.value = null
+          restoreFailed.value = true
         } finally {
           isReady.value = true
           restoring = null
@@ -85,6 +89,7 @@ export const useAuthStore = defineStore('auth', () => {
     }
     // 로그인했다면 로그인 여부는 이미 아는 상태다
     isReady.value = true
+    restoreFailed.value = false
     sessionEnd.value = null
   }
 
@@ -96,9 +101,11 @@ export const useAuthStore = defineStore('auth', () => {
   async function logout() {
     try {
       await authApi.logout()
+    } catch {
+      // 오프라인 등 ─ 던지지 않는다. 쿠키는 남지만 이 화면에서는 로그아웃한 것으로 끝낸다
+      // "LOGOUT 실패"라는 상태를 사용자에게 만들어주지 않기 위해서이다
     } finally {
       // SERVER 호출 성공/실패 여부와 관계없이 이쪽은 반드시 비운다 (ARCHITECTURE 3.5절)
-      // "LOGOUT 실패"라는 상태를 사용자에게 만들어주지 않기 위해서이다
       setAccessToken(null)
       // user보다 먼저 적는다 ─ App.vue는 user가 비는 순간 이 값을 읽는다
       sessionEnd.value = 'logout'
@@ -114,5 +121,5 @@ export const useAuthStore = defineStore('auth', () => {
     user.value = null
   }
 
-  return { user, isReady, isAuthenticated, sessionEnd, restore, login, register, logout, deleteAccount }
+  return { user, isReady, restoreFailed, isAuthenticated, sessionEnd, restore, login, register, logout, deleteAccount }
 })

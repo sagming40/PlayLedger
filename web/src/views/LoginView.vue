@@ -12,6 +12,10 @@ const router = useRouter()
 const route = useRoute()
 const auth = useAuthStore()
 
+function reloadPage() {
+  window.location.reload()
+}
+
 // ─── 화면 상태 ─────────────────────────────────────────
 // ref = "값이 바뀌면 화면이 알아서 따라 바뀌는 상자"
 // 비유: 전광판에 연결된 숫자판. 숫자판을 바꾸면 전광판이 저절로 바뀐다
@@ -108,6 +112,16 @@ async function onSubmit() {
 
       <!-- @submit.prevent ─ form의 기본 동작(페이지 새로고침)을 막고 내 함수만 부른다
            div가 아닌 form을 사용하는 이유: Enter키 제출과 비밀번호 관리자가 공짜로 따라온다 -->
+      <!-- 세션이 끝난 게 아니라 서버에 못 닿았다 ─ 쿠키가 살아 있으면 다시 시도만으로 돌아온다 -->
+      <div
+        v-if="auth.restoreFailed"
+        role="alert"
+        class="flex items-center justify-between gap-3 rounded-lg bg-secondary px-3.5 py-2.5 text-sm"
+      >
+        서버에 연결하지 못해 로그인 상태를 확인하지 못했어요
+        <Button type="button" variant="outline" class="h-9 shrink-0" @click="reloadPage">다시 시도</Button>
+      </div>
+
       <p v-if="auth.sessionEnd === 'deleted'" role="status" class="rounded-lg bg-secondary px-3.5 py-2.5 text-sm">
         계정을 삭제했어요. 그동안 고마웠어요.
       </p>

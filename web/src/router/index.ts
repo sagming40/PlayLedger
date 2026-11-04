@@ -1,6 +1,9 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
+import { nextTick } from 'vue'
 import AppLayout from '@/components/AppLayout.vue'
+import { handleAppError } from '@/lib/app-errors'
+import { rememberLibrary } from '@/lib/library-return'
 import { authGuard } from './guard'
 
 // meta에 어떤 값이 들어갈 수 있는지 TypeScript에게 알려준다
@@ -22,14 +25,14 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/login',
     name: 'login',
-    meta: { public: true },
+    meta: { public: true, title: '로그인' },
     component: () => import('@/views/LoginView.vue'),
   },
   {
     // 가입 전에도 읽을 수 있어야 한다 (DESIGN 3.6절)
     path: '/privacy',
     name: 'privacy',
-    meta: { public: true },
+    meta: { public: true, title: '개인정보 안내' },
     component: () => import('@/views/PrivacyView.vue'),
   },
 
@@ -85,16 +88,43 @@ const routes: RouteRecordRaw[] = [
 
   // 위 주소 중 어디에도 해당되지 않는 주소는 전부 이 곳으로 떨어진다
   // 반드시 목록 맨 끝 부분에 둘 것 ─ 위에서부터 훑어 내려오다 먼저 걸리는 주소를 사용한다
-  { path: '/:pathMatch(.*)*', redirect: '/library' },
+  {
+    path: '/:pathMatch(.*)*',
+    name: 'not-found',
+    meta: { public: true, title: '페이지를 찾을 수 없어요' },
+    component: () => import('@/views/NotFoundView.vue'),
+  },
 ]
 
 const router = createRouter({
   // 주소를 /library의 형태처럼 깔끔하게 표기한다 (# 없이)
   history: createWebHistory(),
   routes,
+  // 뒤로가기는 보던 자리로, 새 화면은 맨 위로. 필터처럼 주소 뒤쪽만 바뀌면 그대로 둔다
+  scrollBehavior(to, from, saved) {
+    if (saved) return saved
+    return to.path === from.path ? false : { top: 0 }
+  },
 })
 
 // 모든 화면 이동이 이 문지기를 먼저 거친다 (guard.ts)
 router.beforeEach(authGuard)
+
+// 화면 조각을 받지 못했을 때 ─ 새 버전 배포 직후 열어 둔 탭 (lib/app-errors.ts)
+router.onError((error, to) => handleAppError(error, to.fullPath))
+
+router.afterEach((to, from) => {
+  document.title = to.meta.title ? `${to.meta.title} · PLAYLEDGER` : 'PLAYLEDGER'
+  if (to.name === 'library') rememberLibrary(to.fullPath)
+
+  // 화면을 옮기면 키보드 · 화면 읽기 프로그램의 위치도 새 화면으로 옮긴다
+  // 그대로 두면 사라진 링크 자리에서 맴돈다. 처음 열 때와 필터 변경은 빼고
+  if (from.matched.length === 0 || to.path === from.path) return
+  nextTick(() => {
+    const main = document.querySelector('main')
+    main?.setAttribute('tabindex', '-1')
+    main?.focus({ preventScroll: true })
+  })
+})
 
 export default router

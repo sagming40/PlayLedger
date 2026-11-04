@@ -3,10 +3,16 @@ import { watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { loginRouteAfterSessionEnd } from '@/router/guard'
+import { Button } from '@/components/ui/button'
+import { appError } from '@/lib/app-errors'
 
 const auth = useAuthStore()
 const route = useRoute()
 const router = useRouter()
+
+function reloadPage() {
+  window.location.reload()
+}
 
 // 로그인 상태가 끝나면(직접 로그아웃 · 재발급 실패) 로그인 화면으로 보낸다
 // 라우터 가드는 "화면을 옮길 때"만 돌아서, 가만히 있는 화면에서는 아무도 보내주지 않는다
@@ -34,4 +40,14 @@ watch(
     불러오는 중…
   </div>
   <RouterView v-else />
+
+  <!-- 예상 못 한 오류 ─ 화면은 그대로 두고 위에 알린다 (lib/app-errors.ts) -->
+  <div
+    v-if="appError"
+    role="alert"
+    class="fixed inset-x-0 top-0 z-50 flex items-center justify-center gap-3 border-b border-border bg-popover px-4 py-2.5 text-sm text-popover-foreground"
+  >
+    {{ appError }}
+    <Button variant="outline" class="h-9" @click="reloadPage">새로고침</Button>
+  </div>
 </template>

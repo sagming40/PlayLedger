@@ -22,6 +22,10 @@ let refreshing: Promise<boolean> | null = null
 // client.ts가 스토어 · 라우터를 직접 import하면 순환이 생기므로 등록받는다
 let onAuthFailure: (() => void) | null = null
 
+// 이 시간 안에 답이 없으면 끊는다. 무한 로딩보다 "다시 시도"가 낫다
+// 등록은 Steam을 기다려도 5초 안에 끝나므로(main.py timeout) 넉넉하다
+const REQUEST_TIMEOUT_MS = 20_000
+
 // 401이 와도 재발급하지 않는 경로 (ARCHITECTURE 3.3절 ②원칙)
 // login의 401은 자격 증명 오류, refresh의 401은 세션 만료 ─ 재발급하면 스스로를 부르는 순환이 된다
 const NO_REFRESH_PATHS = new Set(['/auth/login', '/auth/refresh'])
@@ -55,12 +59,27 @@ async function sendOnce(path: string, options: RequestOptions, token: string | n
       method,
       headers,
       body: body === undefined ? undefined : JSON.stringify(body),
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     })
-  } catch {
+  } catch (e) {
+    if (e instanceof DOMException && e.name === 'TimeoutError')
+      throw new ApiError(0, '서버가 응답하지 않습니다. 잠시 후 다시 시도해 주세요')
     // SERVER가 꺼져 있거나 INTERNET이 끊긴 경우. RESPONSES 자체가 없어서 STATUS CODE도 없다
     // 0은 "HTTP RESPONSES이 아니다"라는 표시로 사용한다 (DESIGN 6장 NETWORK ERROR)
     throw new ApiError(0, '연결에 실패했습니다')
   }
+}
+
+/**
+ * 탭끼리 줄을 세운다 (ARCHITECTURE 3.3절) ─ 아래 refreshing은 탭 하나 안에서만 통한다
+ * 두 탭이 같은 쿠키로 동시에 재발급하면 뒤의 것이 재사용으로 판정되어 전부 로그아웃된다
+ * 앞 탭이 끝난 뒤 보내면 브라우저가 새 쿠키를 실으므로 정상 교체가 된다
+ * 비유: 화장실 열쇠가 하나뿐인 층. 열쇠를 받은 사람만 들어간다
+ * navigator.locks는 HTTPS · localhost에서만 있다
+ */
+function oneTabAtATime<T>(work: () => Promise<T>): Promise<T> {
+  if (!navigator.locks) return work()
+  return navigator.locks.request('pl-refresh', work) as Promise<T>
 }
 
 async function doRefresh(): Promise<boolean> {
@@ -93,7 +112,7 @@ async function doRefresh(): Promise<boolean> {
  */
 export function refreshAccessToken(): Promise<boolean> {
   if (!refreshing) {
-    refreshing = doRefresh().finally(() => {
+    refreshing = oneTabAtATime(doRefresh).finally(() => {
       refreshing = null
     })
   }
