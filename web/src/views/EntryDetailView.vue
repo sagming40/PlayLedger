@@ -108,7 +108,7 @@ async function confirmDelete() {
     <div class="relative -mt-5 flex h-14 items-center justify-between md:mt-0 md:h-11">
       <RouterLink
         :to="libraryPath()"
-        class="-ml-2.5 inline-flex h-11 items-center gap-1.5 px-2.5 text-sm text-muted-foreground hover:text-foreground md:ml-0 md:px-0"
+        class="-ml-2.5 inline-flex h-11 items-center gap-1.5 px-2.5 text-sm text-foreground md:ml-0 md:px-0"
       >
         <ChevronLeft class="size-4.5" aria-hidden="true" />
         라이브러리
@@ -361,11 +361,14 @@ async function confirmDelete() {
   right: calc(50% - 50cqw);
 }
 
-/* 커버가 아래로 갈수록 배경색으로 사라진다 (목업 Detail backdropFade). 맨 위 덮는 정도는 --fade-top */
+/* 커버가 아래로 갈수록 배경색으로 사라진다 (목업 Detail backdropFade). 덮는 정도는 --fade-top
+   맨 위 줄(뒤로 · 수정 · ⋮) 뒤만 더 진하게 덮는다 ─ 노란 커버에서 글자가 안 보였다 (2026-11-04 실제 폰에서 확인) */
 .backdrop-fade {
   background: linear-gradient(
     180deg,
-    color-mix(in oklab, var(--background) var(--fade-top), transparent) 0%,
+    color-mix(in oklab, var(--background) 80%, transparent) 0,
+    color-mix(in oklab, var(--background) 80%, transparent) 3.5rem,
+    color-mix(in oklab, var(--background) var(--fade-top), transparent) 6.5rem,
     color-mix(in oklab, var(--background) 75%, transparent) 55%,
     var(--background) 100%
   );
