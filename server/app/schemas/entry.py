@@ -6,6 +6,7 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, computed_field, field_validator, model_validator
 
+from app.core.metrics import cost_per_hour
 from app.core.normalize import normalize_title
 from app.schemas.game import GameRead
 
@@ -93,18 +94,8 @@ class EntryRead(BaseModel):
     @computed_field
     @property
     def cost_per_hour(self) -> int | None:
-        """시간당 비용(원) = 구매가 ÷ 플레이타임(시간) (REQUIREMENTS 5.1절)
-
-        플레이타임이 0이거나 구매가가 없으면 계산할 수 없다 → None (화면은 '—')
-        무료 게임(0원)은 0원/h ─ 계산할 수 없는 게 아니라 정말 0이다
-        """
-        if self.purchase_price is None or self.playtime_minutes == 0:
-            return None
-        # 정수로만 계산해 원 단위로 반올림(0.5는 올림)한다
-        # round()는 0.5를 짝수 쪽으로 보내고(은행가 반올림), 시간으로 먼저 나누면 소수 오차가 끼어든다
-        # 구매가 × 60 ÷ 분 = 구매가 ÷ 시간. 분자에 분의 절반을 더하고 나누면 반올림이 된다
-        minutes = self.playtime_minutes
-        return (self.purchase_price * 60 * 2 + minutes) // (minutes * 2)
+        """시간당 비용(원). 계산식은 core/metrics.py 한 곳에 있다 ─ 통계 화면과 숫자가 같아야 한다"""
+        return cost_per_hour(self.purchase_price, self.playtime_minutes)
 
 
 class EntryListResponse(BaseModel):
