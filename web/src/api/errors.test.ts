@@ -9,9 +9,13 @@ describe('toApiError', () => {
     expect(err.issues).toEqual([])
   })
 
-  it('500은 detail이 영문이므로 고정 문구로 바꾼다', () => {
-    const err = toApiError(500, { detail: 'Internal Server Error' })
-    expect(err.message).not.toContain('Internal')
+  it('500도 서버의 한국어 문장을 그대로 쓴다', () => {
+    const err = toApiError(500, { detail: '서버에 문제가 생겼습니다. 잠시 후 다시 시도해 주세요' })
+    expect(err.message).toContain('서버에 문제가')
+  })
+
+  it('프록시가 만든 502처럼 detail이 없으면 고정 문구', () => {
+    expect(toApiError(502, null).message).toContain('잠시 후')
   })
 
   it('422 배열에서 입력칸과 규칙만 뽑아낸다', () => {
@@ -22,22 +26,12 @@ describe('toApiError', () => {
           type: 'string_too_short',
           loc: ['body', 'password'],
           msg: 'String should have at least 8 characters',
-          input: '123',
-          ctx: { min_length: 8 },
         },
       ],
     })
-    expect(err.issues).toEqual([{ field: 'password', rule: 'string_too_short', ctx: { min_length: 8 } }])
+    expect(err.issues).toEqual([{ field: 'password', rule: 'string_too_short' }])
     // 배열을 그대로 문장에 넣으면 화면에 [object Object]가 뜬다
     expect(err.message).not.toContain('object')
-  })
-
-  it('ctx가 없는 오류도 처리한다', () => {
-    // missing 처럼 기준값이 없는 오류엔 ctx가 붙지 않는다
-    const err = toApiError(422, {
-      detail: [{ type: 'missing', loc: ['body', 'email'], msg: 'Field required' }],
-    })
-    expect(err.issues[0]).toEqual({ field: 'email', rule: 'missing', ctx: undefined })
   })
 
   it('본문이 없거나 모양이 달라도 터지지 않는다', () => {

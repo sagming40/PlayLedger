@@ -292,11 +292,11 @@ describe('상태 변경', () => {
     const { d, held } = await loaded(entry(7))
 
     const p = d.changeStatus('PLAYING')
-    held[1]!.reply(json(500, { detail: 'Internal Server Error' }))
+    held[1]!.reply(json(500, { detail: '서버에 문제가 생겼습니다. 잠시 후 다시 시도해 주세요' }))
     await p
 
     expect(d.entry.value?.status).toBe('CLEARED')
-    expect(d.saveError.value).toBe('요청을 처리하지 못했습니다. 잠시 후 다시 시도해 주세요.')
+    expect(d.saveError.value).toBe('서버에 문제가 생겼습니다. 잠시 후 다시 시도해 주세요')
     expect(d.saving.value).toBe(false)
     expect(d.failedField.value).toBe('status')
   })

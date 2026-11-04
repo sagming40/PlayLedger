@@ -133,6 +133,9 @@ export function buildUpdateBody(form: EntryEditForm, initial: EntryEditForm): En
 }
 
 const FIELD_LABEL: Record<string, string> = {
+  email: '이메일',
+  password: '비밀번호',
+  nickname: '닉네임',
   title: '제목',
   purchased_at: '구매일',
   purchase_price: '구매가',

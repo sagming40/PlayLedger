@@ -84,6 +84,11 @@ describe('buildCreateBody', () => {
 })
 
 describe('issuesMessage', () => {
+  it('가입 폼도 어느 칸인지 알려 준다', () => {
+    expect(issuesMessage([{ field: 'nickname', rule: 'string_too_short' }])).toContain('닉네임')
+    expect(issuesMessage([{ field: 'password', rule: 'string_too_short' }])).toContain('비밀번호')
+  })
+
   it('입력칸 이름을 한국어로 모으고, 모르는 칸이면 null', () => {
     expect(
       issuesMessage([

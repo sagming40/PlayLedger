@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { issuesMessage } from '@/lib/entry-form'
 import { useAuthStore } from '@/stores/auth'
 import { safeRedirect } from '@/router/guard'
 import { ApiError } from '@/api/errors'
@@ -81,7 +82,8 @@ async function onSubmit() {
   } catch (e) {
     // SERVER가 준 detail은 그대로 보여줄 수 있는 한국어 문장이다 (ARCHITECTURE 3.1절)
     // ApiError가 아닌 것(코드 버그 등)까지 사용자에게 날것으로 보이면 안 되므로 갈라둔다
-    errorMessage.value = e instanceof ApiError ? e.message : '알 수 없는 오류가 발생했습니다'
+    // 422 배열이면 어느 칸인지 알려 준다 ─ "다시 확인해 주세요"만으로는 어디를 고칠지 모른다
+    errorMessage.value = e instanceof ApiError ? (issuesMessage(e.issues) ?? e.message) : '알 수 없는 오류가 발생했습니다'
   } finally {
     // 성공이든 실패든 잠금은 반드시 푼다 ─ 스토어 logout의 finally와 같은 이유
     submitting.value = false

@@ -91,7 +91,7 @@ export function updateEntry(id: number, body: EntryUpdateBody) {
   return request<Entry>(`/entries/${id}`, { method: 'PATCH', body })
 }
 
-// DELETE /api/entries/:id ─ 204. 내 기록만 지운다, 게임은 다른 사람도 쓰므로 남는다
+// DELETE /api/entries/:id ─ 204. Steam 게임은 다른 사람도 쓰므로 남고, 직접 등록한 게임은 함께 지워진다
 export function deleteEntry(id: number) {
   return request<void>(`/entries/${id}`, { method: 'DELETE' })
 }

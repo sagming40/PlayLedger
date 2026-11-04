@@ -58,8 +58,12 @@ function isActive(name: string) {
             {{ item.label }}
           </RouterLink>
         </nav>
-        <!-- 등록 화면에서 또 등록 버튼을 보여 줄 이유가 없다 -->
-        <Button v-if="route.name !== 'entry-new'" as-child class="ml-auto h-10 shrink-0 px-4 text-sm font-semibold">
+        <!-- 등록 · 수정 화면(S-03)에서 또 등록 버튼을 보여 줄 이유가 없다 (DESIGN 2.2절) -->
+        <Button
+          v-if="route.name !== 'entry-new' && route.name !== 'entry-edit'"
+          as-child
+          class="ml-auto h-10 shrink-0 px-4 text-sm font-semibold"
+        >
           <RouterLink :to="{ name: 'entry-new' }">
             <Plus class="size-4" aria-hidden="true" />
             게임 등록

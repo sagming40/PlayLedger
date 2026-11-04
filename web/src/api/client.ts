@@ -144,6 +144,8 @@ async function send<T>(path: string, options: RequestOptions, retried: boolean):
       if (renewed) return send<T>(path, options, true)
     }
     // 재발급 실패, 또는 새 TOKEN으로도 401 ─ 로그인 상태를 비운다
+    // 재시도까지 401이면 TOKEN이 남아 있다. 스토어는 비워졌다고 믿으므로 여기서 함께 비운다
+    accessToken = null
     onAuthFailure?.()
   }
 

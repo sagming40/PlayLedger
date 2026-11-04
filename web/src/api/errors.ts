@@ -2,7 +2,6 @@
 export interface FieldIssue {
   field: string // 어느 입력칸인지 ('email', 'password')
   rule: string // 무슨 규칙을 어겼는지 ('string_too_short')
-  ctx?: Record<string, unknown> // 규칙의 기준값. 존재하지 않는 오류도 있다
 }
 
 // SERVER 4xx · 5xx로 답했을 때 던지는 오류
@@ -30,7 +29,6 @@ export function toApiError(status: number, body: unknown): ApiError {
 
   // ① 문자열 ─ SERVER가 한국어로 써준 문장. 그대로 화면에 사용할 수 있다 (ARCHITECTURE 3.1절)
   if (typeof detail === 'string') {
-    if (status >= 500) return new ApiError(status, FALLBACK_MESSAGE)
     return new ApiError(status, detail)
   }
 
@@ -38,13 +36,12 @@ export function toApiError(status: number, body: unknown): ApiError {
   // msg는 영문이기 때문에 화면에 띄우지 못한다. 어느 칸에서 무슨 규칙이 깨졌는지만 뽑아둔다
   if (Array.isArray(detail)) {
     const issues: FieldIssue[] = detail.map((item) => {
-      const raw = item as { loc?: unknown[]; type?: string; ctx?: Record<string, unknown> }
+      const raw = item as { loc?: unknown[]; type?: string }
       // loc은 ["body", "password"]처럼 경로이다. 마지막 칸이 입력란 이름
       const loc = Array.isArray(raw.loc) ? raw.loc : []
       return {
         field: String(loc[loc.length - 1] ?? ''),
         rule: raw.type ?? 'unknown',
-        ctx: raw.ctx,
       }
     })
     return new ApiError(status, '입력한 내용을 다시 확인해 주세요', issues)
