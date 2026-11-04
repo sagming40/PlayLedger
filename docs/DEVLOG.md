@@ -9,10 +9,10 @@
 |---|---|
 | 단계 | **M4** ✅ 2026-11-04 (`v1.0.0` 태그는 아직 안 찍음). 다음은 **M5** ⬜ 배포 (`PLAN` M5) |
 | 진행 중 | 없음 |
-| 다음에 할 일 | 사용자가 `web/`에서 `npm install @internationalized/date@3.12.4`를 치면 `package.json` · 잠금 파일을 커밋한다. `v1.0.0` 태그를 언제 찍을지 묻는다(말하기 전에는 찍지 않는다). 그다음 **M5**. 코드 쓰기 전에 "자동으로 할까, 직접 칠래?"를 먼저 묻는다. 서버는 공용 인프라(전역 설정)를 먼저 본다 |
+| 다음에 할 일 | `v1.0.0` 태그를 언제 찍을지 묻는다(말하기 전에는 찍지 않는다). 그다음 **M5**. 코드 쓰기 전에 "자동으로 할까, 직접 칠래?"를 먼저 묻는다. 서버는 공용 인프라(전역 설정)를 먼저 본다 |
 | 판단이 남은 것 | 모바일 첫 줄이 요약 줄 도착 때 24px 밀리는 것 |
 | M5 전에 | 라우터 `onError` 없음 ─ 화면 모듈을 못 받으면 안내 없이 빈 화면 ([DEVLOG_M2](archive/DEVLOG_M2.md) 2026-11-03 (7)). `npm audit` 15건(moderate) ─ 전부 ESLint 계열의 `minimatch` 경유이고 호환되는 수정 버전이 아직 없다. M5 전에 다시 본다. `--force` 금지 ([DEVLOG_M4](archive/DEVLOG_M4.md) 2026-11-04 (5)) |
-| 기기별로 할 일 | **집 PC(데스크톱 A)**: `git pull` → `web/`에서 `npm ci` (`motion-v` · `echarts` 추가, `vite` · `vitest` 올림). 마이그레이션 변화 없음. 확인은 `pytest`(105건) · `npm test`(179건). **노트북**: `git pull` → `docker compose up -d` → `server/`에서 `pip install -r requirements.txt` · `alembic upgrade head` → `server/.env`에 `STEAM_API_KEY` → `python -m app.scripts.sync_steam_apps` → `web/`에서 `npm ci` → 전역 설정(`~/.claude/CLAUDE.md`)에 "작업 방식" · "문서 체계" 절 추가 (원본은 회사 PC `~/.claude/CLAUDE.md`, 사본 `G:\내 드라이브\_private\.claude\desktop_cm_CLAUDE.md`). 선택: `git config blame.ignoreRevsFile .git-blame-ignore-revs` |
+| 기기별로 할 일 | **집 PC(데스크톱 A)**: `git pull` → `web/`에서 `npm ci` (`motion-v` · `echarts` · `@internationalized/date` 추가, `vite` · `vitest` 올림). 마이그레이션 변화 없음. 확인은 `pytest`(105건) · `npm test`(179건). **노트북**: `git pull` → `docker compose up -d` → `server/`에서 `pip install -r requirements.txt` · `alembic upgrade head` → `server/.env`에 `STEAM_API_KEY` → `python -m app.scripts.sync_steam_apps` → `web/`에서 `npm ci` → 전역 설정(`~/.claude/CLAUDE.md`)에 "작업 방식" · "문서 체계" 절 추가 (원본은 회사 PC `~/.claude/CLAUDE.md`, 사본 `G:\내 드라이브\_private\.claude\desktop_cm_CLAUDE.md`). 선택: `git config blame.ignoreRevsFile .git-blame-ignore-revs` |
 | 집 PC에만 있는 것 | 개발 DB의 확인용 계정 1개 · 기록 3개(Hollow Knight · 예시 게임 2개). 계정 값은 저장소에 없다(세션 임시 폴더). `.claude/launch.json`(Claude 앱 미리보기로 API · 프론트를 띄우는 설정)은 이 PC의 절대 경로가 들어 있어 커밋하지 않고 `.git/info/exclude`에 넣었다 ─ 다른 기기에서 Claude가 미리보기를 쓰려면 그 기기에서 새로 만든다 |
 | 회사 PC에만 있는 것 | 화면 전후 픽셀 비교 스크립트는 저장소에 없다(세션 임시 폴더). 다른 기기에서 필요하면 방법을 보고 새로 만든다 ([DEVLOG_M2](archive/DEVLOG_M2.md) 2026-11-03 (6) · (7)) |
 
