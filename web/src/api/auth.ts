@@ -39,3 +39,8 @@ export function logout() {
 export function me() {
   return request<User>('/auth/me')
 }
+
+// 비밀번호를 한 번 더 받는다 (S-06). 204 ─ 돌려받을 본문이 없다
+export function deleteAccount(password: string) {
+  return request<void>('/auth/me', { method: 'DELETE', body: { password } })
+}

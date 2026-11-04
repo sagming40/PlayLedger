@@ -108,6 +108,10 @@ async function onSubmit() {
 
       <!-- @submit.prevent ─ form의 기본 동작(페이지 새로고침)을 막고 내 함수만 부른다
            div가 아닌 form을 사용하는 이유: Enter키 제출과 비밀번호 관리자가 공짜로 따라온다 -->
+      <p v-if="auth.sessionEnd === 'deleted'" role="status" class="rounded-lg bg-secondary px-3.5 py-2.5 text-sm">
+        계정을 삭제했어요. 그동안 고마웠어요.
+      </p>
+
       <form class="flex flex-col gap-4" @submit.prevent="onSubmit">
         <FormField id="email" label="이메일" dense>
           <!-- v-model ─ 입력칸과 email 상자를 양쪽으로 묶는다
@@ -161,6 +165,9 @@ async function onSubmit() {
         <button type="button" class="h-11 px-1 font-semibold text-brand-text hover:underline" @click="switchMode">
           {{ isRegister ? '로그인' : '가입' }}
         </button>
+      </p>
+      <p v-if="isRegister" class="-mt-4 text-center text-[13px] text-muted-foreground">
+        가입 전에 <RouterLink to="/privacy" class="font-semibold text-brand-text hover:underline">개인정보 안내</RouterLink>를 확인해 주세요
       </p>
     </main>
   </div>

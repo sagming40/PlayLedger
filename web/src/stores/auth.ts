@@ -22,7 +22,8 @@ export const useAuthStore = defineStore('auth', () => {
   // 로그인 상태가 어떻게 끝났는가 ─ App.vue가 로그인 화면으로 보낼 때 구분한다
   // 'logout'  = 사용자가 직접 로그아웃 → 로그인 화면으로만 (돌아갈 주소를 기억하지 않는다)
   // 'expired' = 쓰는 도중 세션이 끝남 → 보던 주소를 기억해서, 다시 로그인하면 그 자리로
-  const sessionEnd = ref<'logout' | 'expired' | null>(null)
+  // 'deleted' = 계정을 지움 → 로그인 화면으로만, 지워졌다는 안내와 함께
+  const sessionEnd = ref<'logout' | 'expired' | 'deleted' | null>(null)
 
   // 재발급까지 실패하면 client.ts가 이 함수를 부른다 (ARCHITECTURE 3.3절)
   // TOKEN은 client.ts가 이미 비웠다. 여기서는 화이트보드만 지운다
@@ -105,5 +106,13 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  return { user, isReady, isAuthenticated, sessionEnd, restore, login, register, logout }
+  async function deleteAccount(password: string) {
+    // logout과 달리 실패하면 그대로 던진다 ─ 틀린 비밀번호로 로그아웃되면 안 된다
+    await authApi.deleteAccount(password)
+    setAccessToken(null)
+    sessionEnd.value = 'deleted'
+    user.value = null
+  }
+
+  return { user, isReady, isAuthenticated, sessionEnd, restore, login, register, logout, deleteAccount }
 })

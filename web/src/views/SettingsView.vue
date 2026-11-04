@@ -5,6 +5,8 @@ import { useThemeStore } from '@/stores/theme'
 import type { ThemePreference } from '@/lib/theme'
 import SurfacePanel from '@/components/SurfacePanel.vue'
 import { Button } from '@/components/ui/button'
+import AccountDeleteDialog from '@/components/AccountDeleteDialog.vue'
+import { ApiError } from '@/api/errors'
 
 const auth = useAuthStore()
 const theme = useThemeStore()
@@ -29,6 +31,29 @@ async function onLogout() {
     await auth.logout()
   } finally {
     loggingOut.value = false
+  }
+}
+
+// 계정 삭제 (DESIGN 3.6절)
+const deleteOpen = ref(false)
+const deleting = ref(false)
+const deleteError = ref<string | null>(null)
+
+function openDelete() {
+  deleteError.value = null
+  deleteOpen.value = true
+}
+
+async function onDelete(password: string) {
+  deleting.value = true
+  deleteError.value = null
+  try {
+    // 성공하면 App.vue가 로그인 화면으로 보낸다 ─ 로그아웃과 같다
+    await auth.deleteAccount(password)
+  } catch (e) {
+    deleteError.value = e instanceof ApiError ? e.message : '삭제하지 못했어요. 잠시 후 다시 시도해 주세요.'
+  } finally {
+    deleting.value = false
   }
 }
 </script>
@@ -120,5 +145,16 @@ async function onLogout() {
         {{ loggingOut ? '로그아웃 중…' : '로그아웃' }}
       </Button>
     </div>
+
+    <!-- 눈에 띄지 않게 맨 아래 ─ 자주 쓰지 않고 되돌릴 수 없다 -->
+    <div class="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-5">
+      <RouterLink to="/privacy" class="inline-flex h-11 items-center text-sm font-semibold text-muted-foreground hover:underline"
+        >개인정보 안내</RouterLink
+      >
+      <Button variant="ghost" class="h-11 px-3 text-sm font-semibold text-destructive hover:text-destructive" @click="openDelete"
+        >계정 삭제</Button
+      >
+    </div>
+    <AccountDeleteDialog v-model:open="deleteOpen" :deleting="deleting" :error="deleteError" @confirm="onDelete" />
   </div>
 </template>

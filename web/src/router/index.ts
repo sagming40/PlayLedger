@@ -25,6 +25,13 @@ const routes: RouteRecordRaw[] = [
     meta: { public: true },
     component: () => import('@/views/LoginView.vue'),
   },
+  {
+    // 가입 전에도 읽을 수 있어야 한다 (DESIGN 3.6절)
+    path: '/privacy',
+    name: 'privacy',
+    meta: { public: true },
+    component: () => import('@/views/PrivacyView.vue'),
+  },
 
   // 레이아웃 안쪽 ─ 부모가 껍데기를 그리고 자식이 그 안에 들어간다
   {

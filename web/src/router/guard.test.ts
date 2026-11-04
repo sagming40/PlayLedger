@@ -196,6 +196,10 @@ describe('로그인 상태가 끝났을 때', () => {
     expect(loginRouteAfterSessionEnd('logout', '/settings')).toEqual({ name: 'login' })
   })
 
+  it('계정을 지웠으면 돌아갈 주소를 기억하지 않는다', () => {
+    expect(loginRouteAfterSessionEnd('deleted', '/settings')).toEqual({ name: 'login' })
+  })
+
   it('세션이 저절로 끝나면 보던 주소를 기억한다', () => {
     expect(loginRouteAfterSessionEnd('expired', '/library?status=BACKLOG')).toEqual({
       name: 'login',
