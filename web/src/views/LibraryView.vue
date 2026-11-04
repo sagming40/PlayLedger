@@ -2,47 +2,79 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Gamepad2, Plus } from '@lucide/vue'
-import type { EntryStatus } from '@/api/entries'
+import type { EntrySort, EntryStatus, Genre } from '@/api/entries'
+import { listGenres } from '@/api/genres'
 import { useEntryList } from '@/composables/useEntryList'
-import { STATUS_LABEL, cardMetric, parseStatusFilter } from '@/lib/entry-display'
+import { DEFAULT_SORT, SORT_LABEL, STATUS_LABEL, cardMetric, parseGenreFilter, parseSort, parseStatusFilter } from '@/lib/entry-display'
 import { STATUSES } from '@/lib/entry-form'
 import EntrySummary from '@/components/EntrySummary.vue'
 import GameCover from '@/components/GameCover.vue'
 import StatusDot from '@/components/StatusDot.vue'
 import { Button } from '@/components/ui/button'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 // S-02 라이브러리 (DESIGN 3.2절, 그림은 docs/mockups/Library · LibraryMobile · LibraryEmpty)
 const list = useEntryList()
 const route = useRoute()
 const router = useRouter()
 
-// 상태 필터는 주소가 원본이다 (DESIGN 2.1절) ─ 새로고침 · 뒤로가기 · 즐겨찾기로 들어와도 같은 목록
-// 칩은 주소만 바꾸고, 목록은 주소를 지켜보다 다시 부른다. 두 곳에서 따로 부르면 한 번 바꿀 때 두 번 불린다
+// 필터 · 정렬은 주소가 원본이다 (DESIGN 2.1절) ─ 새로고침 · 뒤로가기 · 즐겨찾기로 들어와도 같은 목록
+// 칩 · 선택 칸은 주소만 바꾸고, 목록은 주소를 지켜보다 다시 부른다. 두 곳에서 따로 부르면 한 번 바꿀 때 두 번 불린다
 watch(
-  () => route.query.status,
-  (value) => {
-    const filter = parseStatusFilter(value)
-    if (filter === undefined) {
-      // 모르는 값(?status=abc) ─ 전체 보기로 고쳐 쓴다. 고친 주소가 다시 이 watch를 부른다
-      router.replace({ query: withoutStatus() })
+  () => [route.query.status, route.query.genre, route.query.sort],
+  () => {
+    const status = parseStatusFilter(route.query.status)
+    const genre = parseGenreFilter(route.query.genre)
+    const sort = parseSort(route.query.sort)
+    if (status === undefined || genre === undefined || sort === undefined) {
+      // 모르는 값(?status=abc) ─ 그 값만 지운다. 고친 주소가 다시 이 watch를 부른다
+      const rest = { ...route.query }
+      if (status === undefined) delete rest.status
+      if (genre === undefined) delete rest.genre
+      if (sort === undefined) delete rest.sort
+      router.replace({ query: rest })
       return
     }
-    list.setStatus(filter)
+    list.setFilters({ status, genre, sort })
   },
   { immediate: true },
 )
 
-// 칩 ─ null이 전체. replace: 칩을 누를 때마다 방문 기록이 쌓이면 뒤로가기로 라이브러리를 못 빠져나간다
-function selectStatus(next: EntryStatus | null) {
-  router.replace({ query: next ? { ...withoutStatus(), status: next } : withoutStatus() })
+// 주소의 한 값만 바꾼다. null이면 지운다. 다른 값은 그대로 둔다
+// replace: 누를 때마다 방문 기록이 쌓이면 뒤로가기로 라이브러리를 못 빠져나간다
+function setQuery(key: 'status' | 'genre' | 'sort', value: string | null) {
+  const rest = { ...route.query }
+  if (value === null) delete rest[key]
+  else rest[key] = value
+  router.replace({ query: rest })
 }
 
-// 주소의 다른 값(나중에 붙을 ?sort= 등)은 그대로 두고 status만 뺀다
-function withoutStatus() {
-  const rest = { ...route.query }
-  delete rest.status
-  return rest
+function selectStatus(next: EntryStatus | null) {
+  setQuery('status', next)
 }
+
+function selectSort(next: EntrySort) {
+  setQuery('sort', next === DEFAULT_SORT ? null : next)
+}
+
+// reka Select는 빈 값을 못 쓴다 ─ '전체'를 이 값으로 둔다
+const ALL_GENRES = 'all'
+function selectGenre(next: string) {
+  setQuery('genre', next === ALL_GENRES ? null : next)
+}
+
+// 장르 칸의 목록 ─ 못 불러와도 목록은 볼 수 있으니 칸만 숨긴다
+const genres = ref<Genre[]>([])
+onMounted(async () => {
+  try {
+    genres.value = await listGenres()
+  } catch {
+    return
+  }
+  // 고정 목록에 없는 ?genre=999 ─ 숫자라 위에서 못 걸렀다. 칸에 보일 이름이 없으니 전체로 고친다
+  if (list.genre.value !== null && !genres.value.some((g) => g.id === list.genre.value)) setQuery('genre', null)
+})
+
 // 모바일 칩 줄은 가로 스크롤이라, 주소로 ?status=DROPPED처럼 끝쪽 칩이 골라진 채 들어오면 눌린 칩이 화면 밖에 있다
 // 고른 칩이 바뀔 때마다 보이는 곳으로 당긴다. block: 'nearest' ─ 페이지가 위아래로 움직이지 않게
 const chipRow = ref<HTMLElement | null>(null)
@@ -150,34 +182,66 @@ onBeforeUnmount(() => {
       </div>
     </section>
 
-    <!-- 상태 필터 ─ 전체 + 5상태 (DESIGN 3.2절). 라이브러리가 통째로 비었으면 거를 것이 없어 숨긴다
+    <div v-if="!list.isEmpty.value" class="flex flex-col gap-2.5 md:flex-row md:flex-wrap md:items-center md:justify-between md:gap-3">
+      <!-- 상태 필터 ─ 전체 + 5상태 (DESIGN 3.2절). 라이브러리가 통째로 비었으면 거를 것이 없어 숨긴다
          선택된 칩은 무채색 ─ 활성 메뉴의 빨강과 겹치지 않게 (DESIGN 4.4절, decisions/0010)
          모바일은 한 줄 가로 스크롤 ─ 본문 여백만큼 양옆으로 넓혀 칩이 화면 끝에서 잘려 보이게 한다 (목업 LibraryMobile) -->
-    <!-- 스크롤 막대는 숨긴다 ─ 칩이 화면 끝에서 잘려 보이는 것으로 더 있다는 걸 알 수 있다 -->
-    <div
-      v-if="!list.isEmpty.value"
-      ref="chipRow"
-      role="group"
-      aria-label="상태 필터"
-      class="-mx-5 -mb-1 flex scroll-px-5 gap-2 overflow-x-auto px-5 whitespace-nowrap scrollbar-none md:mx-0 md:mb-0 md:flex-wrap md:overflow-visible md:px-0 [&::-webkit-scrollbar]:hidden"
-    >
-      <button
-        v-for="chip in CHIPS"
-        :key="chip.key ?? 'all'"
-        type="button"
-        :aria-pressed="list.status.value === chip.key"
-        class="inline-flex h-9 shrink-0 items-center gap-1.75 rounded-full border px-3.5 text-sm transition-colors"
-        :class="
-          list.status.value === chip.key
-            ? 'border-muted-foreground bg-secondary font-semibold text-foreground'
-            : 'border-border font-medium text-muted-foreground hover:text-foreground'
-        "
-        @click="selectStatus(chip.key)"
+      <!-- 스크롤 막대는 숨긴다 ─ 칩이 화면 끝에서 잘려 보이는 것으로 더 있다는 걸 알 수 있다 -->
+      <div
+        ref="chipRow"
+        role="group"
+        aria-label="상태 필터"
+        class="-mx-5 -mb-1 flex scroll-px-5 gap-2 overflow-x-auto px-5 whitespace-nowrap scrollbar-none md:mx-0 md:mb-0 md:flex-wrap md:overflow-visible md:px-0 [&::-webkit-scrollbar]:hidden"
       >
-        <!-- 점은 48rem부터 ─ 모바일 칩은 글자만 (목업 LibraryMobile) -->
-        <StatusDot v-if="chip.key" :status="chip.key" class="hidden size-1.75 md:inline-block" />
-        {{ chip.label }}
-      </button>
+        <button
+          v-for="chip in CHIPS"
+          :key="chip.key ?? 'all'"
+          type="button"
+          :aria-pressed="list.status.value === chip.key"
+          class="inline-flex h-9 shrink-0 items-center gap-1.75 rounded-full border px-3.5 text-sm transition-colors"
+          :class="
+            list.status.value === chip.key
+              ? 'border-muted-foreground bg-secondary font-semibold text-foreground'
+              : 'border-border font-medium text-muted-foreground hover:text-foreground'
+          "
+          @click="selectStatus(chip.key)"
+        >
+          <!-- 점은 48rem부터 ─ 모바일 칩은 글자만 (목업 LibraryMobile) -->
+          <StatusDot v-if="chip.key" :status="chip.key" class="hidden size-1.75 md:inline-block" />
+          {{ chip.label }}
+        </button>
+      </div>
+
+      <!-- 장르 · 정렬 (DESIGN 3.2절, 목업 Library 오른쪽 칸). 칸이 많아 칩 대신 고르는 칸으로 둔다 -->
+      <div class="flex gap-2">
+        <Select
+          v-if="genres.length"
+          :model-value="list.genre.value === null ? ALL_GENRES : String(list.genre.value)"
+          @update:model-value="(v) => selectGenre(String(v))"
+        >
+          <SelectTrigger
+            aria-label="장르 필터"
+            class="min-w-0 flex-1 rounded-lg bg-card text-[13px] data-[size=default]:h-9 md:w-32 md:flex-none dark:bg-card"
+          >
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem :value="ALL_GENRES" class="h-11 md:h-9">전체 장르</SelectItem>
+            <SelectItem v-for="g in genres" :key="g.id" :value="String(g.id)" class="h-11 md:h-9">{{ g.name }}</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select :model-value="list.sort.value" @update:model-value="(v) => selectSort(v as EntrySort)">
+          <SelectTrigger
+            aria-label="정렬"
+            class="min-w-0 flex-1 rounded-lg bg-card text-[13px] data-[size=default]:h-9 md:w-36 md:flex-none dark:bg-card"
+          >
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem v-for="(label, key) in SORT_LABEL" :key="key" :value="key" class="h-11 md:h-9">{{ label }}</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
     </div>
 
     <!-- 첫 로딩 ─ 뼈대 -->
@@ -216,7 +280,9 @@ onBeforeUnmount(() => {
     </div>
 
     <!-- 이 상태의 게임만 없다 ─ 필터를 바꾸면 되니 안내만 (DESIGN 5장) -->
-    <p v-else-if="list.isFilterEmpty.value" class="py-16 text-center text-[15px] text-muted-foreground">해당 상태의 게임이 없습니다</p>
+    <p v-else-if="list.isFilterEmpty.value" class="py-16 text-center text-[15px] text-muted-foreground">
+      {{ list.genre.value === null ? '해당 상태의 게임이 없습니다' : '조건에 맞는 게임이 없습니다' }}
+    </p>
 
     <!-- 목록 -->
     <template v-else>

@@ -1,7 +1,7 @@
 // 보유 기록을 화면에 보일 글자로 바꾸는 규칙 (DESIGN 3.2 · 4.1 · 4.2절)
 // 계산은 SERVER가 하는 것이 원칙이지만(S-05), 목록 카드의 방치일수 · 시간 표기는 화면 표시 변환이라 여기서 한다
 
-import type { Entry, EntryStatus } from '@/api/entries'
+import type { Entry, EntrySort, EntryStatus } from '@/api/entries'
 
 export const STATUS_LABEL: Record<EntryStatus, string> = {
   BACKLOG: '미시작',
@@ -80,6 +80,31 @@ export function parseStatusFilter(value: unknown): EntryStatus | null | undefine
   if (raw === undefined || raw === null || raw === '') return null
   // in이 아니라 hasOwn ─ in은 'toString' 같은 객체 기본 속성까지 '있다'고 답한다
   return typeof raw === 'string' && Object.hasOwn(STATUS_LABEL, raw) ? (raw as EntryStatus) : undefined
+}
+
+// 정렬 칸 (DESIGN 3.2절). 첫 값이 기본값 ─ 주소에 적지 않는다
+export const SORT_LABEL: Record<EntrySort, string> = {
+  updated: '최근 수정순',
+  purchased: '구매일순',
+  title: '제목순',
+  playtime: '플레이타임순',
+}
+export const DEFAULT_SORT: EntrySort = 'updated'
+
+/** 주소의 ?sort= → 정렬. 없으면 기본값, 모르는 값이면 undefined (parseStatusFilter와 같은 규칙) */
+export function parseSort(value: unknown): EntrySort | undefined {
+  const raw = Array.isArray(value) ? value[0] : value
+  if (raw === undefined || raw === null || raw === '') return DEFAULT_SORT
+  return typeof raw === 'string' && Object.hasOwn(SORT_LABEL, raw) ? (raw as EntrySort) : undefined
+}
+
+/** 주소의 ?genre= → 장르 id. 없으면 null(전체), 숫자가 아니거나 integer 범위 밖이면 undefined ─ SERVER로 보내면 422다 */
+export function parseGenreFilter(value: unknown): number | null | undefined {
+  const raw = Array.isArray(value) ? value[0] : value
+  if (raw === undefined || raw === null || raw === '') return null
+  if (typeof raw !== 'string' || !/^[1-9]\d{0,9}$/.test(raw)) return undefined
+  const id = Number(raw)
+  return id <= 2_147_483_647 ? id : undefined
 }
 
 // S-04 출처 표시 (DESIGN 3.4절)

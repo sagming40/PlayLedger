@@ -38,8 +38,12 @@ export interface EntryListResponse {
   total: number // 조건에 맞는 전체 개수 ─ items는 이번 페이지만
 }
 
+export type EntrySort = 'updated' | 'purchased' | 'title' | 'playtime'
+
 export interface ListParams {
   status?: EntryStatus
+  genre?: number
+  sort?: EntrySort
   limit?: number
   offset?: number
 }
@@ -62,10 +66,12 @@ export function createEntry(body: EntryCreateBody) {
   return request<Entry>('/entries', { method: 'POST', body })
 }
 
-// GET /api/entries ─ 최근 수정순 (DESIGN 3.2절 정렬 기본값, SERVER가 정렬한다)
+// GET /api/entries ─ 정렬 · 필터는 SERVER가 한다. 정렬 기본값은 최근 수정순 (DESIGN 3.2절)
 export function listEntries(params: ListParams = {}) {
   const query = new URLSearchParams()
   if (params.status) query.set('status', params.status)
+  if (params.genre !== undefined) query.set('genre', String(params.genre))
+  if (params.sort) query.set('sort', params.sort)
   if (params.limit !== undefined) query.set('limit', String(params.limit))
   if (params.offset !== undefined) query.set('offset', String(params.offset))
   const qs = query.toString()
