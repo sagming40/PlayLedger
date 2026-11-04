@@ -39,9 +39,7 @@ function isActive(name: string) {
           <span class="flex size-8 items-center justify-center rounded-[9px] bg-primary text-primary-foreground" aria-hidden="true">
             <Play class="size-4 fill-current" />
           </span>
-          <!-- 띠 안의 부품은 px 크기라 필요한 폭도 px로 정해져 있는데, 48rem은 루트 글꼴이 작은 기기에서 632px까지 내려간다
-               그래서 글자는 rem이 아니라 px 기준으로 숨겨 메뉴와 등록 버튼이 겹치지 않게 한다 -->
-          <span class="hidden text-base font-extrabold tracking-[0.04em] min-[760px]:inline">PLAYLEDGER</span>
+          <span class="text-base font-extrabold tracking-[0.04em]">PLAYLEDGER</span>
         </RouterLink>
         <nav aria-label="주 메뉴" class="flex shrink-0 gap-1 rounded-full border border-border bg-card p-1">
           <!-- 활성 메뉴만 포인트 색으로 채운다 (DESIGN 4.4절) -->
