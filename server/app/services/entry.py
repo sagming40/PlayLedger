@@ -10,11 +10,22 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.models.entry import Entry
-from app.models.game import Game
+from app.models.game import Game, game_genres
 
 # 목록 조회의 최대 개수 ─ 화면이 20개씩 불러온다 (DESIGN 3.2절)
 # 상한을 정해두지 않으면 limit=999999로 요청해 DB를 통으로 긁어갈 수 있다
 MAX_LIMIT = 100
+
+# 정렬 기준 (DESIGN 3.2절). 구매일은 오래된 것부터 ─ 이 앱이 보여 주려는 "오래 묵힌 게임"이 먼저 온다
+# 구매일을 모르는 기록은 맨 뒤로 ─ PostgreSQL은 오름차순이면 NULL을 맨 뒤에 두지만 의도를 코드에 적는다
+SORT_ORDER = {
+    "updated": (Entry.updated_at.desc(),),
+    "purchased": (Entry.purchased_at.asc().nulls_last(),),
+    # lower ─ 대소문자를 섞어 적어도 같은 자리에 온다. "C" ─ DB 설치 설정에 따라 순서가 달라지지 않게 글자 코드 순으로 고정한다
+    # 코드 순이면 영문 다음에 한글이 오고, 한글끼리는 가나다순이다
+    "title": (func.lower(Game.title).collate("C").asc(),),
+    "playtime": (Entry.playtime_minutes.desc(),),
+}
 
 
 # 함수 매개변수의 * = "*" 뒤부터는 반드시 이름을 붙여 넘겨야함
@@ -65,6 +76,8 @@ async def list_entries(
     *,
     user_id: int,
     status: str | None = None,
+    genre_id: int | None = None,
+    sort: str = "updated",
     limit: int = 20,
     offset: int = 0,
 ) -> tuple[list[Entry], int]:
@@ -78,20 +91,26 @@ async def list_entries(
     conditions = [Entry.user_id == user_id]
     if status is not None:
         conditions.append(Entry.status == status)
+    if genre_id is not None:
+        # 장르는 게임에 붙는다 ─ 조인하면 조건에 맞는 행이 늘 수 있어 "이 장르의 게임 중 하나인가"로 묻는다
+        conditions.append(
+            Entry.game_id.in_(select(game_genres.c.game_id).where(game_genres.c.genre_id == genre_id))
+        )
 
     # ① 전체 개수 ─ row를 가져오지 않고 count만 한다
     total = await db.scalar(
         select(func.count()).select_from(Entry).where(*conditions)
     )
 
-    # ② 이번 페이지 ─ 최근 수정순 (DESIGN 3.2절 정렬 default값)
-    # id를 2번째 기준으로 두는 이유: updated_at이 동일 row끼리 순서가 매번 달라질 수 있다
+    # ② 이번 페이지 ─ 정렬 기본값은 최근 수정순 (DESIGN 3.2절)
+    # id를 마지막 기준으로 두는 이유: 값이 동일한 row끼리 순서가 매번 달라질 수 있다
     # 즉, 1페이지와 2페이지에 동일한 기록이 겹치거나 빠지는 경우가 발생한다
     stmt = (
         select(Entry)
+        .join(Game, Game.id == Entry.game_id)
         .where(*conditions)
         .options(selectinload(Entry.game).selectinload(Game.genres))
-        .order_by(Entry.updated_at.desc(), Entry.id.desc())
+        .order_by(*SORT_ORDER[sort], Entry.id.desc())
         .limit(limit)
         .offset(offset)
     )

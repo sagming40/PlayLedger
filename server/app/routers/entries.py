@@ -1,6 +1,8 @@
 # app/routers/entries.py
 # 보유 기록 API ─ 등록 · 목록 · 단건 · 수정 · 삭제
 
+from typing import Literal
+
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.exc import IntegrityError
@@ -192,6 +194,9 @@ async def list_my_entries(
     # Query(...) = 주소 뒤 ?status=BACKLOG&limit=20 부분을 받는다
     # ge/le로 범위를 강제한다 ─ limit=0이나 음수 offset은 상태 코드 422
     status_filter: EntryStatus | None = Query(default=None, alias="status"),
+    # 없는 장르 id는 에러가 아니라 빈 목록이다 ─ 찾는 조건에 맞는 게임이 없을 뿐이다
+    genre: int | None = Query(default=None, ge=1, le=INT_MAX),
+    sort: Literal["updated", "purchased", "title", "playtime"] = "updated",
     limit: int = Query(default=20, ge=1, le=MAX_LIMIT),
     offset: int = Query(default=0, ge=0),
     db: AsyncSession = Depends(get_db),
@@ -203,7 +208,7 @@ async def list_my_entries(
     함수 안에서는 fastapi의 status 모듈과 이름이 겹치지 않게 status_filter로 부른다
     """
     items, total = await list_entries(
-        db, user_id=user.id, status=status_filter, limit=limit, offset=offset
+        db, user_id=user.id, status=status_filter, genre_id=genre, sort=sort, limit=limit, offset=offset
     )
     return EntryListResponse(items=items, total=total)
 
