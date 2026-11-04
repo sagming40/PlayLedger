@@ -76,7 +76,7 @@ erDiagram
 | `users` | 사용자 계정. Discord로만 가입한 계정은 비밀번호가 없음 |
 | `refresh_tokens` | 발급한 refresh 토큰 (로그아웃 · 강제 만료용) |
 | `oauth_accounts` | 외부 로그인 연결 (provider, provider_user_id) *(구현 전, M11)* |
-| `games` | 게임 마스터 데이터 (제목, 정규화 제목, steam_appid) |
+| `games` | 게임 마스터 데이터 (제목, 정규화 제목, steam_appid, 직접 등록한 사람) |
 | `genres` | 장르 |
 | `game_genres` | 게임-장르 다대다 연결 |
 | `entries` | 사용자별 보유 기록 (구매일, 구매가, 상태, 평점, 플레이타임) |
@@ -90,6 +90,7 @@ erDiagram
 |---|:---:|---|
 | USERS → ENTRIES | 1:N | 사용자 1명이 보유 기록 여러 개를 가진다 |
 | USERS → WISHLIST_ITEMS | 1:N | 사용자 1명이 관심 게임 여러 개를 가진다 |
+| USERS → GAMES | 1:N | 직접 등록한 게임의 주인. Steam 게임은 주인이 없다 |
 | USERS → REFRESH_TOKENS | 1:N | 기기·브라우저마다 로그인 토큰이 따로 발급된다 |
 | USERS → OAUTH_ACCOUNTS | 1:N | 외부 로그인 서비스별로 하나씩 연결된다 |
 | GAMES → ENTRIES / WISHLIST_ITEMS | 1:N | 게임 1개가 여러 사용자의 기록·위시리스트에 등장한다 |
@@ -116,7 +117,7 @@ erDiagram
 
 | 부모 삭제 시 | 자식 테이블 | 규칙 |
 |---|---|---|
-| 사용자 삭제 | `refresh_tokens`, `oauth_accounts`, `entries`, `wishlist_items` | CASCADE (함께 삭제) |
+| 사용자 삭제 | `refresh_tokens`, `oauth_accounts`, `entries`, `wishlist_items`, `games`(직접 등록) | CASCADE (함께 삭제). `entries.game_id`가 RESTRICT라 계정 삭제는 기록 → 게임 → 계정 순서로 지운다 (`services/auth.py`) |
 | 보유 기록 삭제 | `play_sessions` | CASCADE |
 | 게임 삭제 | `entries`, `wishlist_items` | RESTRICT (참조 중이면 삭제 거부) |
 | 게임·장르 삭제 | `game_genres` | CASCADE |
@@ -165,8 +166,8 @@ rotation으로 폐기된 토큰이 다시 들어온다면, 누군가 옛 토큰�
 
 ### 2.4 `games`
 
-게임 자체의 정보. **모든 사용자가 공유하는 마스터 데이터**다.
-사용자가 몇 명이든 사이버펑크 2077은 이 테이블에 한 행만 존재한다.
+게임 자체의 정보. **Steam 게임은 모든 사용자가 공유**한다. 사용자가 몇 명이든 Steam의 사이버펑크 2077은 이 테이블에 한 행만 존재한다.
+직접 등록한 게임은 만든 사람의 것이라 같은 제목이어도 사람마다 행이 따로다 ([decisions/0011](decisions/0011-manual-games-per-user.md)).
 
 컬럼은 `server/app/models/game.py`. `title`은 화면에 표시할 제목, `title_norm`은 서버가 항상 계산하는 중복 판별용 값이다.
 
