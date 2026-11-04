@@ -3,6 +3,7 @@ import { effectScope } from 'vue'
 import { useEntryDetail } from './useEntryDetail'
 import { setAccessToken } from '@/api/client'
 import type { Entry } from '@/api/entries'
+import { toast } from '@/lib/toast'
 
 // S-04 상세 불러오기 · 상태 변경 (DESIGN 3.4 · 4.3 · 6장)
 // 늦게 온 답 · 실패 · 다른 탭에서 지운 기록을 가짜 SERVER로 만든다
@@ -65,6 +66,7 @@ describe('삭제', () => {
     held[0]!.reply(json(204))
     expect(await removing).toBe(true)
     expect(detail.saving.value).toBe(false)
+    expect(toast.value?.text).toBe('삭제했어요')
   })
 
   it('두 번 눌러도 한 번만 보낸다', async () => {
@@ -103,6 +105,16 @@ describe('삭제', () => {
     expect(await removing).toBe(false)
     expect(detail.entry.value?.id).toBe(1)
     expect(detail.deleteError.value).not.toBeNull()
+    expect(toast.value).toBeNull()
+  })
+
+  it('상세 화면에서 바로 고치는 값은 알리지 않는다 ─ 값이 눈앞에서 바뀐다', async () => {
+    const { held, detail } = await openedDetail()
+    const saving = detail.changeStatus('PLAYING')
+    await flush()
+    held[0]!.reply(json(200, entry(1, { status: 'PLAYING' })))
+    await saving
+    expect(toast.value).toBeNull()
   })
 
   it('네트워크가 끊기면 연결 실패로 알린다', async () => {
@@ -120,6 +132,8 @@ describe('삭제', () => {
     expect(await removing).toBe(false)
     expect(detail.notFound.value).toBe(true)
     expect(detail.entry.value).toBeNull()
+    // 이번 요청이 지운 것이 아니다
+    expect(toast.value).toBeNull()
   })
 
   it('답을 기다리는 사이 화면을 떠나면 성공해도 끌고 가지 않는다', async () => {
@@ -154,6 +168,7 @@ describe('삭제', () => {
 
 beforeEach(() => {
   setAccessToken('t1')
+  toast.value = null
 })
 
 afterEach(() => {

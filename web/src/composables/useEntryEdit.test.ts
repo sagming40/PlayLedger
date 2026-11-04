@@ -3,6 +3,7 @@ import { effectScope } from 'vue'
 import { useEntryEdit } from './useEntryEdit'
 import { setAccessToken } from '@/api/client'
 import type { Entry } from '@/api/entries'
+import { toast } from '@/lib/toast'
 
 // S-03 수정 모드 (DESIGN 3.3 · 4.3절)
 // 바뀐 칸만 보내는지 · 실패 · 늦게 온 답 · 다른 탭에서 지운 기록을 가짜 SERVER로 만든다
@@ -61,6 +62,7 @@ function sentBody(held: { init?: RequestInit }[]) {
 
 beforeEach(() => {
   setAccessToken('t1')
+  toast.value = null
 })
 
 afterEach(() => {
@@ -118,6 +120,8 @@ describe('저장', () => {
     const { held, edit } = await opened()
     expect(await edit.submit()).toBe(true)
     expect(held).toHaveLength(0)
+    // 저장한 게 없으니 저장했다고 알리지 않는다
+    expect(toast.value).toBeNull()
   })
 
   it('바꾼 칸만 보낸다 ─ 폼을 연 사이 다른 기기에서 고친 칸을 덮어쓰지 않게', async () => {
@@ -128,8 +132,11 @@ describe('저장', () => {
     expect(held[0]!.init?.method).toBe('PATCH')
     expect(held[0]!.url).toContain('/entries/1')
     expect(sentBody(held)).toEqual({ purchase_price: 50000 })
+    // 답이 오기 전에는 알리지 않는다
+    expect(toast.value).toBeNull()
     held[0]!.reply(json(200, entry(1)))
     expect(await saving).toBe(true)
+    expect(toast.value?.text).toBe('저장했어요')
   })
 
   it('클리어 → 플레이중으로 저장해도 평점 · 한줄평을 보내지 않는다 (DESIGN 4.3절)', async () => {
@@ -194,6 +201,7 @@ describe('저장', () => {
     expect(edit.form.value?.price).toBe('1')
     expect(edit.errorMessage.value).not.toBe('')
     expect(edit.canSubmit.value).toBe(true)
+    expect(toast.value).toBeNull()
   })
 
   it('Pydantic 422는 영문 대신 칸 이름으로 알린다 (ARCHITECTURE 3.9절)', async () => {
@@ -239,6 +247,8 @@ describe('저장', () => {
     scope.stop()
     held[0]!.reply(json(200, entry(1)))
     expect(await saving).toBe(false)
+    // 끌고 가지는 않지만 저장은 됐으니 알린다
+    expect(toast.value?.text).toBe('저장했어요')
   })
 
   it('저장 답을 기다리는 사이 다른 게임으로 옮기면 돌아가지 않는다', async () => {
