@@ -301,23 +301,23 @@
 - [x] 계정 삭제 (API · S-06), 개인정보 안내, 수집 항목 문구 정정
 
 *B. 화면 · 세션*
-- [ ] 탭 여러 개 동시 재발급으로 로그아웃되는 문제
-- [ ] 화면 모듈 · 렌더 오류 안내, 요청 타임아웃, 복원 중 일시 장애 구분, 로그아웃 실패 처리
-- [ ] 스크롤 복귀, 필터 유지 복귀, 수정 중 이탈 확인
-- [ ] 포커스 표시, 탭 제목, 화면 전환 안내
-- [ ] iOS 입력 확대, 터치 44px, 안전 영역, 404 화면, 공유 메타, 내부 용어 제거
-- [ ] 안 쓰는 부품 · 토큰 삭제
+- [x] 탭 여러 개 동시 재발급으로 로그아웃되는 문제
+- [x] 화면 모듈 · 렌더 오류 안내, 요청 타임아웃, 복원 중 일시 장애 구분, 로그아웃 실패 처리
+- [x] 스크롤 복귀, 필터 유지 복귀, 수정 중 이탈 확인
+- [x] 포커스 표시, 탭 제목, 화면 전환 안내
+- [x] iOS 입력 확대, 터치 44px, 안전 영역, 404 화면, 공유 메타, 내부 용어 제거
+- [x] 안 쓰는 부품 · 토큰 삭제
 
 *C. 구조 · 테스트*
 - [x] 인증 판단을 `services/auth.py`로 분리
-- [ ] 빠진 서버 테스트 (인증 실패 경로 · 쿠키 속성 · 수정 경계 · Steam 실패 · 스크립트)
-- [ ] 화면 분기 로직을 분리해 테스트
+- [x] 빠진 서버 테스트 (인증 실패 경로 · 쿠키 속성 · 수정 경계 · Steam 실패 · 스크립트)
+- [x] 이번에 더한 화면 분기(오류 처리 · 이탈 확인 · 재발급 잠금)를 테스트. 기존 화면을 쪼개는 리팩터링은 하지 않았다
 
 *D. 공개 준비 · 문서*
-- [ ] `LICENSE`, `requirements-dev.txt` 분리, 운영 `.env` 예시
-- [ ] CI: Ubuntu 고정 · `alembic check` · 취약점 검사
-- [ ] README 실행 순서 · 진행 상태, ARCHITECTURE · DATA_MODEL · CLAUDE 함정 어긋남
-- [ ] 프록시 결정 (Nginx / Caddy) 기록과 M5 작업 목록 다시 쓰기
+- [x] `LICENSE`, `requirements-dev.txt` 분리 (운영 `.env` 예시는 구성이 정해지는 M5로)
+- [x] CI: Ubuntu 고정 · `alembic check` · 취약점 검사
+- [x] README 실행 순서 · 진행 상태, ARCHITECTURE · DATA_MODEL · CLAUDE 함정 어긋남
+- [x] 프록시 결정 ([decisions/0012](decisions/0012-caddy-proxy.md))과 M5 작업 목록 다시 쓰기
 
 **완료 기준**
 - [ ] `pytest` · `npm test` · CI 통과, 고치기 전 실패를 확인한 재현 테스트가 통과
@@ -332,26 +332,33 @@
 
 | 항목 | 내용 |
 |---|---|
-| 목표 | 폰 브라우저로 어디서든 접속해 실제로 쓸 수 있는 상태 |
-| 기술 요소 | Docker Compose(운영 구성), Nginx, HTTPS |
+| 목표 | 폰 브라우저로 어디서든 접속해 실제로 쓸 수 있는 상태. 데이터를 잃어도 되돌릴 수 있는 상태 |
+| 기술 요소 | Docker Compose(운영 구성), Caddy([decisions/0012](decisions/0012-caddy-proxy.md)), HTTPS |
+| 참고 | `cbt-journal` 저장소 `deploy/` · `docs/SERVER.md`. 계정 · 도메인은 전역 설정 "공용 인프라"를 먼저 본다 |
 
 **작업 목록**
 - [x] Tailwind 클래스 표준 표기로 정리 (VS Code 경고 88건 → 0건, 16px 화면 변화 없음) *(계획에 없던 작업)*
-- [ ] 배포 환경 결정 — 자가 서버 vs 클라우드. 이미 있는 도메인 `sagming.com` · Vultr 계정은 전역 설정 "공용 인프라" 참고
-- [ ] 서버 · 웹 Dockerfile
-- [ ] 운영용 Compose 구성
-- [ ] Nginx 설정 (`/` 정적 파일, `/api` 프록시, SPA fallback `try_files $uri $uri/ /index.html` — 없으면 `/library` 등에서 새로고침할 때마다 404. `DEVLOG` 2026-09-29 발견 사항)
-- [ ] HTTPS 인증서
-- [ ] Inter · Noto Sans KR 폰트 내장 여부 검토 (현재 구글 서버에서 로드 — 오프라인 · 외부 요청 이슈. Noto Sans KR은 `DESIGN` 4.4절에서 추가됨)
-- [ ] 운영용 `.env`
-- [ ] `README` 실행 방법 작성
-- [ ] LICENSE 추가
-- [ ] 클린룸 검증 (다른 PC에서 새로 클론)
+- [x] LICENSE 추가, `README` 개발 실행 방법 정리, `requirements-dev.txt` 분리 (M4.5)
+- [ ] 서버 결정 — 11월은 Vultr 크레딧, 12월부터 AWS (전역 "서버 이사 계획"). 하위 주소 `play.sagming.com`, DNS만(회색 구름)
+- [ ] API Dockerfile (`requirements.txt`만, 비 root, `uvicorn --workers 1`). 요청 제한이 프로세스 메모리에 있어 워커를 늘리면 제한이 그만큼 늘어난다
+- [ ] 화면 빌드를 Caddy가 내주는 구성, 운영 Compose
+- [ ] Caddyfile: `/api` 프록시, SPA fallback(`try_files {path} /index.html`, 없으면 `/library` 새로고침이 404), 압축, 해시 파일 장기 캐시 · `index.html` 캐시 금지, 보안 헤더(HSTS · CSP · nosniff · Referrer-Policy)
+- [ ] uvicorn `--proxy-headers --forwarded-allow-ips`를 Caddy로 한정 — 안 하면 모든 사용자가 한 IP로 묶여 요청 제한이 서로를 막고, 넓게 열면 헤더로 IP를 속일 수 있다. 다른 IP 둘로 실제 확인
+- [ ] 운영 `.env` 예시 (`ENABLE_DOCS=false`, 새 JWT 비밀, DB 비밀번호). 비밀값 · 서버 IP는 문서에 적지 않는다
+- [ ] 배포 순서 스크립트: 백업 → `alembic upgrade head` → 교체 → `/api/health` 확인. 실패 시 되돌리는 방법
+- [ ] Steam 미러 첫 실행 (`sync_steam_apps`), M9 전까지 다시 돌리는 주기 정하기
+- [ ] DB 매일 백업 + 서버 밖 보관 + **복구 리허설**(빈 DB에 되살려 기록 수 대조)
+- [ ] 헬스체크 감시, 로그 회전, 디스크 여유 확인
+- [ ] Inter · Noto Sans KR 내장 검토 — 지금은 Google Fonts라 접속 IP가 Google로 간다(개인정보 안내에 적어 둠). 내장하면 안내 문구도 고친다
+- [ ] 배포 후 `개인정보 안내` 다시 대조 (백업 보관 기간, 호스팅 업체)
+- [ ] `SERVER.md` 작성, 클린룸 검증 (다른 PC에서 새로 클론)
 
 **완료 기준**
-- [ ] 폰 데이터(LTE)로 접속해 로그인 · 게임 등록이 됨
-- [ ] 다른 PC에서 클론해 `README`만 보고 `docker compose up`으로 실행됨
-- [ ] 클린룸 검증에서 발견된 문제가 모두 수정됨
+- [ ] 폰 데이터(LTE)로 접속해 가입 · 로그인 · 게임 등록 · 계정 삭제가 됨
+- [ ] `/library`에서 새로고침해도 화면이 나옴, `/docs`는 404
+- [ ] 다른 IP 둘에서 요청 제한이 따로 세어짐
+- [ ] 백업으로 빈 DB를 되살려 기록 수가 같음
+- [ ] 다른 PC에서 클론해 `README`만 보고 실행됨, 클린룸 검증에서 발견된 문제가 모두 수정됨
 
 > PulseGrid의 클린룸 검증에서 4건의 문제가 발견됐다. 같은 방식으로 검증한다.
 

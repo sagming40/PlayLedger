@@ -7,7 +7,6 @@
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=flat-square&logo=fastapi&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=flat-square&logo=postgresql&logoColor=white)
-![Redis](https://img.shields.io/badge/Redis-DC382D?style=flat-square&logo=redis&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat-square&logo=docker&logoColor=white)
 
 스팀 세일 때마다 게임을 사지만 실제로 플레이하는 비율은 그보다 훨씬 낮습니다.
@@ -16,9 +15,8 @@
 PlayLedger는 보유 목록이 아니라 **소비 이력**을 기록합니다.
 언제 얼마에 샀고, 얼마나 했고, 얼마나 방치했는지를 숫자로 환산해서 보여줍니다.
 
-> **개발 중입니다.** 진행 상황은 [개발 계획](docs/PLAN.md)에 있습니다.
+> **v1.0 마무리 단계입니다.** 기록 · 상태 관리 · 통계까지 구현했고 배포를 준비하고 있습니다. 진행 상황은 [개발 계획](docs/PLAN.md)에 있습니다.
 >
-> Vue 3 + FastAPI 스택으로 재설계했습니다. 인증과 보유 기록 CRUD를 API로 구현했고, 핵심 규칙을 자동 테스트로 보호하며 push마다 CI가 검증합니다.
 > React Native + Django로 진행하던 이전 버전은 [`v0-rn-django`](../../tree/v0-rn-django) 태그에 보존되어 있습니다.
 
 ---
@@ -101,9 +99,9 @@ PlayLedger가 하는 일이 그것입니다.
 
 ```mermaid
 flowchart LR
-    User["👤 브라우저<br/>데스크톱 · 모바일"] -->|"HTTPS"| Nginx["Nginx"]
-    Nginx -->|"/"| Web["Vue 3<br/>화면"]
-    Nginx -->|"/api"| API["FastAPI<br/>인증 · 계산 · 병합"]
+    User["👤 브라우저<br/>데스크톱 · 모바일"] -->|"HTTPS"| Caddy["Caddy"]
+    Caddy -->|"/"| Web["Vue 3<br/>화면"]
+    Caddy -->|"/api"| API["FastAPI<br/>인증 · 계산 · 병합"]
     API --> DB[("PostgreSQL")]
     API --> Redis[("Redis<br/>작업 큐")]
     Worker["⏰ 워커<br/>자동 동기화"] --> Redis
@@ -137,9 +135,9 @@ flowchart LR
 | | JWT, OAuth 2.0 | 인증 (이메일 로그인 + Discord) |
 | | httpx | Steam API 호출 |
 | 데이터 | PostgreSQL | 영구 저장 |
-| | Redis | 자동 동기화 작업 큐 |
+| | Redis | 자동 동기화 작업 큐 (v2.0 예정, 아직 안 씀) |
 | 테스트 · 운영 | pytest, GitHub Actions | 자동 테스트, CI |
-| | Docker Compose, Nginx | 실행 환경, 배포 |
+| | Docker Compose, Caddy | 실행 환경, 배포 |
 
 기술별 선택 이유는 [결정 기록 0002](docs/decisions/0002-stack-switch.md)에 있습니다.
 
@@ -197,8 +195,7 @@ playledger/
 └── docker-compose.yml
 ```
 
-> 계획 구조입니다. `core/`, `alembic/`처럼 이미 만들어진 폴더도 있고,
-> 나머지는 필요한 마일스톤에서 생성합니다.
+> 자세한 구조와 요청 흐름은 [아키텍처](docs/ARCHITECTURE.md)에 있습니다.
 
 ---
 
@@ -243,18 +240,19 @@ playledger/
 **최초 1회 — 클론 직후**
 
 ```powershell
-# server/
+# 1. 루트 ─ DB 비밀번호를 정하고 DB를 띄운다 (Docker 필요)
+Copy-Item .env.example .env   # POSTGRES_PASSWORD 채우기
+docker compose up -d
+
+# 2. server/ ─ 비밀번호는 루트 .env와 같게, JWT 비밀은 32자 이상 (안내는 .env.example)
 python -m venv venv
 .\venv\Scripts\Activate.ps1
-pip install -r requirements.txt
+pip install -r requirements-dev.txt   # 운영은 requirements.txt만
 Copy-Item .env.example .env   # 값 채우기
 alembic upgrade head
 
-# web/
-npm install
-
-# 루트
-Copy-Item .env.example .env   # 값 채우기
+# 3. web/
+npm ci
 ```
 
 **Steam 게임 검색을 쓰려면 — 기기마다 1회 (`server/`)**

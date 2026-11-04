@@ -45,3 +45,6 @@ desktop.ini
 !**/.vscode/extensions.json
 # 루트 settings.json은 공유한다 ─ 목업(.dc.html)을 기기 3대에서 똑같이 읽게 하는 프로젝트 설정만 둔다
 !/.vscode/settings.json
+
+# Claude Code 작업 폴더 (세션 worktree 등)
+.claude/

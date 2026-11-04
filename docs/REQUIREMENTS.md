@@ -31,7 +31,7 @@
 | 외부 API | Steam Web API 연동, 외부 데이터와 로컬 데이터 병합 |
 | 비동기 작업 | Redis 기반 작업 큐로 주기적 동기화 |
 | DB 설계 | 다대다 관계, 정규화, 사용자-데이터 관계 모델링 (PostgreSQL) |
-| 테스트·운영 | pytest 자동 테스트, GitHub Actions CI, Docker Compose, Nginx 배포 |
+| 테스트·운영 | pytest 자동 테스트, GitHub Actions CI, Docker Compose, Caddy 배포 |
 
 ### 1.3 기존 프로젝트와의 관계
 

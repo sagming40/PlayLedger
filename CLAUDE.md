@@ -93,7 +93,7 @@ PlayLedger: 사놓고 안 한 게임을 구매일 · 구매가 · 플레이타�
 - DB 구조는 Alembic으로 맞춘다: `git pull` 후 항상 `alembic upgrade head`
   - 마이그레이션 파일은 **모델을 고친 기기에서만** 만든다. 파일명은 `alembic.ini`의 `file_template` 규칙(`날짜_시각_설명`)을 따른다
   - autogenerate 결과는 그대로 믿지 말고 읽어 보고, `alembic upgrade head --sql`로 실제 SQL을 확인한 다음 커밋한다
-- 패키지를 추가하거나 버전을 올렸으면 `requirements.txt` · `package-lock.json`을 같이 커밋하고, 다른 기기에서 할 일(`pip install -r requirements.txt`, `npm ci`)을 DEVLOG "현재 상태"에 적는다
+- 패키지를 추가하거나 버전을 올렸으면 `requirements.txt`(테스트용은 `requirements-dev.txt`) · `package-lock.json`을 같이 커밋하고, 다른 기기에서 할 일(`pip install -r requirements-dev.txt`, `npm ci`)을 DEVLOG "현재 상태"에 적는다
 
 ## 자주 쓰는 명령
 포트: DB `5434` · API `8001` · 프론트 `5173`
@@ -103,7 +103,7 @@ PlayLedger: 사놓고 안 한 게임을 구매일 · 구매가 · 플레이타�
 docker compose up -d                              # PostgreSQL
 
 # server/ (가상환경: .\venv\Scripts\Activate.ps1)
-pip install -r requirements.txt
+pip install -r requirements-dev.txt               # 운영은 requirements.txt만
 alembic upgrade head
 uvicorn app.main:app --reload --port 8001         # http://localhost:8001/docs
 pytest                                            # 테스트 전용 DB 사용

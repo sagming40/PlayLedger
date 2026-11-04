@@ -14,7 +14,7 @@ flowchart TB
     User["사용자<br/>데스크톱 · 모바일 브라우저"]
 
     subgraph Host["서버 (Docker Compose)"]
-        Nginx["Nginx<br/>리버스 프록시"]
+        Caddy["Caddy<br/>리버스 프록시"]
         Web["Vue 빌드 결과물<br/>정적 파일"]
         API["FastAPI<br/>인증 · 계산 · 병합"]
         Worker["작업 워커<br/>자동 동기화 (M9)"]
@@ -25,9 +25,9 @@ flowchart TB
     Steam["Steam Web API"]
     Discord["Discord OAuth"]
 
-    User -->|"HTTPS"| Nginx
-    Nginx -->|"/"| Web
-    Nginx -->|"/api"| API
+    User -->|"HTTPS"| Caddy
+    Caddy -->|"/"| Web
+    Caddy -->|"/api"| API
     API --> DB
     API --> Redis
     Worker --> Redis
@@ -54,7 +54,7 @@ flowchart LR
 
 **같은 출처(Same-Origin) 원칙**
 
-운영에서는 Nginx가, 개발에서는 Vite 프록시가 화면과 API를 같은 주소 아래로 묶는다.
+운영에서는 Caddy가, 개발에서는 Vite 프록시가 화면과 API를 같은 주소 아래로 묶는다.
 브라우저 입장에서 둘이 한 사이트처럼 보이므로 CORS 설정이 필요 없고,
 refresh 토큰 쿠키도 추가 설정 없이 자동으로 첨부된다.
 
@@ -150,7 +150,7 @@ API 키와 클라이언트 시크릿은 서버 밖으로 나가지 않는다. �
 
 ### 3.1 공통 규약
 
-**기본 경로** · 모든 API는 `/api`로 시작한다. (1장 ─ Nginx · Vite 프록시가 이 접두사로 화면과 서버를 가른다)
+**기본 경로** · 모든 API는 `/api`로 시작한다. (1장 ─ Caddy · Vite 프록시가 이 접두사로 화면과 서버를 가른다)
 
 **형식** · 요청 · 응답 본문은 JSON, 인코딩은 UTF-8이다.
 
@@ -243,6 +243,8 @@ refresh 토큰은 사용할 때마다 교체되므로(rotation), 동일한 토�
 뒤늦게 도착한 쪽은 이미 폐기된 토큰을 제시한 것이 된다.
 서버는 이를 **탈취 신호로 간주해 해당 사용자의 모든 토큰을 폐기**하며,
 그 결과 정상 사용자가 로그아웃된다. (4.1절 재사용 감지)
+탭 하나 안에서는 진행 중인 약속을 함께 기다리고, 탭 사이에서는 `navigator.locks`로 줄을 세운다.
+앞 탭이 끝난 뒤 보내면 브라우저가 새 쿠키를 실어 보내므로 정상 교체가 된다. (두 탭 동시 새로고침: 잠금 없이 3번째에 로그아웃, 잠금으로 10번 유지. 2026-11-04)
 
 **④ 분기의 판단은 상태 코드와 요청 경로로만 한다.**
 응답의 `detail` 문구는 사용자에게 표시하기 위한 값이며, 조건 분기의 기준으로 삼지 않는다.
