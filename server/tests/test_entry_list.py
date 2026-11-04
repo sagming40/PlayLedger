@@ -97,7 +97,7 @@ async def test_missing_genre_is_empty_list(client, seeded):
 
 
 async def test_genre_filter_does_not_show_other_users(client, auth_headers, seeded):
-    """게임의 장르는 공유지만 남의 기록은 나오지 않는다"""
+    """같은 장르를 골라도 남의 기록은 나오지 않는다"""
     b = await auth_headers(B_EMAIL)
     assert await titles(client, b, genre=ACTION) == []
     await create(client, b, "다른 사람 게임", genre_ids=[ACTION])

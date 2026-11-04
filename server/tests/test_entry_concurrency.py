@@ -13,10 +13,11 @@ from app.routers import entries
 
 EMAIL = "alice@example.com"
 
-# 잠금을 기다리는 DELETE가 있는지 DB에게 직접 묻는다
+# 잠금을 기다리는 삭제가 있는지 DB에게 직접 묻는다
+# 삭제도 기록을 FOR UPDATE로 먼저 읽는다 ─ 이 쿼리를 기다리는 쪽은 수정이 잡은 잠금 뒤에 선 삭제뿐이다
 WAITING_DELETES = text(
     "SELECT count(*) FROM pg_stat_activity "
-    "WHERE wait_event_type = 'Lock' AND query ILIKE 'DELETE FROM entries%'"
+    "WHERE wait_event_type = 'Lock' AND query ILIKE '%FROM entries%FOR UPDATE%'"
 )
 
 

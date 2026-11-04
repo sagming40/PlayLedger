@@ -113,8 +113,7 @@ async def test_other_users_entry_is_not_deletable(client, auth_headers):
 async def test_same_game_can_be_registered_by_both_users(client, auth_headers):
     """중복 방지는 '한 사용자 안에서'다. 다른 사용자까지 막으면 그건 버그다.
 
-    UNIQUE가 (user_id, game_id)가 아니라 game_id 하나로 걸려 있다면 여기서 409가 난다.
-    games는 모두가 공유하는 마스터 데이터이고 entries는 개인 것 — 그 경계를 지키는 테스트.
+    직접 등록한 게임은 사람마다 행이 따로다 (decisions/0011). 공유되는 Steam 게임은 test_steam.py
     """
     a = await auth_headers(A_EMAIL)
     b = await auth_headers(B_EMAIL)
@@ -122,11 +121,12 @@ async def test_same_game_can_be_registered_by_both_users(client, auth_headers):
     a_entry = await create_entry(client, a, "Hollow Knight")
     b_entry = await create_entry(client, b, "  hollow knight  ")  # 정규화되면 같은 게임
 
-    # 게임 행은 공유, 보유 기록은 별개
-    assert a_entry["game"]["id"] == b_entry["game"]["id"], (a_entry, b_entry)
+    # 게임 행도 보유 기록도 별개
+    assert a_entry["game"]["id"] != b_entry["game"]["id"], (a_entry, b_entry)
     assert a_entry["id"] != b_entry["id"], (a_entry, b_entry)
-    # 공유 게임의 제목은 먼저 등록한 A가 적은 그대로다 ─ B의 입력이 남의 데이터를 바꾸지 않는다
-    assert b_entry["game"]["title"] == "Hollow Knight", b_entry
+    # 각자 적은 그대로다 ─ B의 입력이 남의 데이터를 바꾸지 않고, A의 표기도 B에게 보이지 않는다
+    assert a_entry["game"]["title"] == "Hollow Knight", a_entry
+    assert b_entry["game"]["title"] == "hollow knight", b_entry
 
     res = await client.get("/api/entries", headers=a)
     assert res.json()["total"] == 1, res.json()

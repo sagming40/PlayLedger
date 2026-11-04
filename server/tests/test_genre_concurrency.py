@@ -29,7 +29,7 @@ async def test_second_request_is_ignored_when_first_fills_genres(session_factory
     """
     # ── 준비: Genre가 0개인 Game을 1개 생성하여 commit
     async with session_factory() as setup:
-        game = Game(title="Concurrency Test", title_norm="concurrencytest")
+        game = Game(title="Concurrency Test", title_norm="concurrencytest", steam_appid=1)
         setup.add(game)
         await setup.commit()
         game_id = game.id

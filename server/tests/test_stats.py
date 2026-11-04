@@ -236,18 +236,20 @@ async def test_requires_login(client):
 
 
 async def test_other_users_entries_are_not_counted(client, auth_headers, session_factory):
-    """같은 게임(공유 데이터)을 둘이 가져도 숫자는 각자의 것이다"""
+    """같은 제목을 둘이 가져도 숫자와 장르는 각자의 것이다"""
     await seeded(client, auth_headers, session_factory, email=A_EMAIL)
     b = await auth_headers(B_EMAIL)
-    entry = await create_entry(client, b, "[예시] 황금 도시", status="DROPPED", purchase_price=1, playtime_minutes=60)
+    entry = await create_entry(
+        client, b, "[예시] 황금 도시", status="DROPPED", purchase_price=1, playtime_minutes=60, genre_ids=[1]
+    )
     stats = await get_stats(client, b)
     assert stats["total"] == 1
     assert stats["backlog"] == 0
     assert stats["completion_rate"] == 0.0
     assert stats["longest_idle"] == []
     assert [g["entry_id"] for g in stats["highest_cost"]] == [entry["id"]]
-    # 게임에 붙은 장르는 공유지만 세는 것은 B의 기록뿐이다
-    assert {g["name"]: g["total"] for g in stats["genres"]} == {"액션": 1, "RPG": 1}
+    # A가 붙인 장르가 B에게 따라오지 않는다
+    assert {g["name"]: g["total"] for g in stats["genres"]} == {"액션": 1}
 
 
 async def test_stats_survive_concurrent_delete(client, auth_headers, session_factory):
