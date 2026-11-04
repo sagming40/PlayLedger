@@ -1,5 +1,14 @@
 import { describe, it, expect, vi } from 'vitest'
-import { cardMetric, formatPlaytime, formatWon, idleDays, parseStatusFilter, titleInitials } from './entry-display'
+import {
+  cardMetric,
+  formatPlaytime,
+  formatWon,
+  idleDays,
+  parseGenreFilter,
+  parseSort,
+  parseStatusFilter,
+  titleInitials,
+} from './entry-display'
 
 // 카드에 보이는 글자 (DESIGN 3.2 · 4.2절)
 // "오늘"을 고정해서 날짜가 바뀌어도 결과가 같게 한다
@@ -111,5 +120,24 @@ describe('주소의 상태 필터 (DESIGN 2.1절)', () => {
 
   it('여러 개가 오면 첫 값만 본다', () => {
     expect(parseStatusFilter(['PLAYING', 'CLEARED'])).toBe('PLAYING')
+  })
+})
+
+describe('주소의 정렬 · 장르 값', () => {
+  it('정렬: 없으면 기본값, 모르는 값은 undefined', () => {
+    expect(parseSort(undefined)).toBe('updated')
+    expect(parseSort('')).toBe('updated')
+    expect(parseSort('title')).toBe('title')
+    expect(parseSort(['playtime', 'title'])).toBe('playtime')
+    expect(parseSort('price')).toBeUndefined()
+    expect(parseSort('toString')).toBeUndefined()
+  })
+
+  it('장르: 없으면 null, SERVER가 422로 답할 값은 undefined', () => {
+    expect(parseGenreFilter(undefined)).toBeNull()
+    expect(parseGenreFilter('3')).toBe(3)
+    expect(parseGenreFilter(['3', '4'])).toBe(3)
+    expect(parseGenreFilter('2147483647')).toBe(2147483647)
+    for (const bad of ['0', '-1', '2147483648', '1.5', 'abc', '03']) expect(parseGenreFilter(bad)).toBeUndefined()
   })
 })

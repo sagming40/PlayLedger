@@ -294,3 +294,78 @@ describe('상태 필터 (DESIGN 3.2 · 5장)', () => {
     expect(calls).toHaveLength(0)
   })
 })
+
+describe('장르 필터 · 정렬 (REQUIREMENTS F-03, DESIGN 3.2절)', () => {
+  const pageCalls = (calls: string[]) => calls.filter((c) => c.includes('limit=20'))
+
+  it('고른 값을 첫 페이지와 추가 페이지 요청에 같이 보낸다', async () => {
+    const { calls } = fakeServer(45)
+    const list = useEntryList()
+    await list.setFilters({ status: 'PLAYING', genre: 3, sort: 'title' })
+    await list.loadMore()
+    const pages = pageCalls(calls)
+    expect(pages).toHaveLength(2)
+    for (const url of pages) {
+      expect(url).toContain('status=PLAYING')
+      expect(url).toContain('genre=3')
+      expect(url).toContain('sort=title')
+    }
+    expect(pages[1]).toContain('offset=20')
+  })
+
+  it('기본 정렬은 주소에 적지 않는다', async () => {
+    const { calls } = fakeServer(1)
+    const list = useEntryList()
+    await list.setFilters({ status: null, genre: null, sort: 'updated' })
+    expect(pageCalls(calls)[0]).not.toContain('sort=')
+  })
+
+  it('장르를 걸면 요약 줄 개수를 목록 total로 대신하지 않는다', async () => {
+    const { calls } = fakeServer(5, 2)
+    const list = useEntryList()
+    await list.setFilters({ status: null, genre: 3, sort: 'updated' })
+    const counts = calls.filter((c) => c.includes('limit=1&') || c.endsWith('limit=1'))
+    expect(counts.some((c) => !c.includes('status=') && !c.includes('genre='))).toBe(true)
+    expect(counts.some((c) => c.includes('status=BACKLOG') && !c.includes('genre='))).toBe(true)
+    expect(list.libraryTotal.value).toBe(5)
+    expect(list.backlogTotal.value).toBe(2)
+  })
+
+  it('정렬을 바꾸면 앞 목록을 비우고 첫 페이지부터 다시 받는다', async () => {
+    fakeServer(45)
+    const list = useEntryList()
+    await list.setFilters({ status: null, genre: null, sort: 'updated' })
+    await list.loadMore()
+    expect(list.items.value).toHaveLength(40)
+    const loading = list.setFilters({ status: null, genre: null, sort: 'playtime' })
+    expect(list.items.value).toHaveLength(0)
+    await loading
+    expect(list.items.value).toHaveLength(20)
+  })
+
+  it('장르만 걸어 비면 "필터 결과 없음", 라이브러리가 비면 "빈 상태"', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => json(200, { items: [], total: url.includes('genre=') ? 0 : 5 })),
+    )
+    const list = useEntryList()
+    await list.setFilters({ status: null, genre: 3, sort: 'updated' })
+    expect(list.isFilterEmpty.value).toBe(true)
+    expect(list.isEmpty.value).toBe(false)
+
+    fakeServer(0)
+    const empty = useEntryList()
+    await empty.setFilters({ status: null, genre: 3, sort: 'updated' })
+    expect(empty.isEmpty.value).toBe(true)
+    expect(empty.isFilterEmpty.value).toBe(false)
+  })
+
+  it('같은 값을 다시 고르면 다시 부르지 않는다', async () => {
+    const { calls } = fakeServer(3)
+    const list = useEntryList()
+    await list.setFilters({ status: null, genre: 3, sort: 'title' })
+    calls.length = 0
+    await list.setFilters({ status: null, genre: 3, sort: 'title' })
+    expect(calls).toHaveLength(0)
+  })
+})
