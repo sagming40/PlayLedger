@@ -340,12 +340,12 @@
 - [x] Tailwind 클래스 표준 표기로 정리 (VS Code 경고 88건 → 0건, 16px 화면 변화 없음) *(계획에 없던 작업)*
 - [x] LICENSE 추가, `README` 개발 실행 방법 정리, `requirements-dev.txt` 분리 (M4.5)
 - [ ] 서버 결정 — 11월은 Vultr 크레딧, 12월부터 AWS (전역 "서버 이사 계획"). 하위 주소 `play.sagming.com`, DNS만(회색 구름)
-- [ ] API Dockerfile (`requirements.txt`만, 비 root, `uvicorn --workers 1`). 요청 제한이 프로세스 메모리에 있어 워커를 늘리면 제한이 그만큼 늘어난다
-- [ ] 화면 빌드를 Caddy가 내주는 구성, 운영 Compose
-- [ ] Caddyfile: `/api` 프록시, SPA fallback(`try_files {path} /index.html`, 없으면 `/library` 새로고침이 404), 압축, 해시 파일 장기 캐시 · `index.html` 캐시 금지, 보안 헤더(HSTS · CSP · nosniff · Referrer-Policy)
+- [x] API Dockerfile (`requirements.txt`만, 비 root, `uvicorn --workers 1`). 요청 제한이 프로세스 메모리에 있어 워커를 늘리면 제한이 그만큼 늘어난다
+- [x] 화면 빌드를 Caddy가 내주는 구성, 운영 Compose
+- [x] Caddyfile: `/api` 프록시, SPA fallback(`try_files {path} /index.html`, 없으면 `/library` 새로고침이 404), 압축, 해시 파일 장기 캐시 · `index.html` 캐시 금지, 보안 헤더(HSTS · CSP · nosniff · Referrer-Policy)
 - [ ] uvicorn `--proxy-headers --forwarded-allow-ips`를 Caddy로 한정 — 안 하면 모든 사용자가 한 IP로 묶여 요청 제한이 서로를 막고, 넓게 열면 헤더로 IP를 속일 수 있다. 다른 IP 둘로 실제 확인
-- [ ] 운영 `.env` 예시 (`ENABLE_DOCS=false`, 새 JWT 비밀, DB 비밀번호). 비밀값 · 서버 IP는 문서에 적지 않는다
-- [ ] 배포 순서 스크립트: 백업 → `alembic upgrade head` → 교체 → `/api/health` 확인. 실패 시 되돌리는 방법
+- [x] 운영 `.env` 예시 (`ENABLE_DOCS=false`, 새 JWT 비밀, DB 비밀번호). 비밀값 · 서버 IP는 문서에 적지 않는다
+- [x] 배포 순서 스크립트: 백업 → `alembic upgrade head` → 교체 → `/api/health` 확인. 실패 시 되돌리는 방법
 - [ ] Steam 미러 첫 실행 (`sync_steam_apps`), M9 전까지 다시 돌리는 주기 정하기
 - [ ] DB 매일 백업 + 서버 밖 보관 + **복구 리허설**(빈 DB에 되살려 기록 수 대조)
 - [ ] 헬스체크 감시, 로그 회전, 디스크 여유 확인
@@ -356,7 +356,7 @@
 
 **완료 기준**
 - [ ] 폰 데이터(LTE)로 접속해 가입 · 로그인 · 게임 등록 · 계정 삭제가 됨
-- [ ] `/library`에서 새로고침해도 화면이 나옴, `/docs`는 404
+- [ ] `/library`에서 새로고침해도 화면이 나옴, `/docs`에 API 문서가 없음(Caddy가 /api만 넘겨 앱의 없는 주소 화면이 나온다), `/api/docs`는 404
 - [ ] 다른 IP 둘에서 요청 제한이 따로 세어짐
 - [ ] 백업으로 빈 DB를 되살려 기록 수가 같음
 - [ ] 다른 PC에서 클론해 `README`만 보고 실행됨, 클린룸 검증에서 발견된 문제가 모두 수정됨

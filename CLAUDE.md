@@ -17,6 +17,7 @@ PlayLedger: 사놓고 안 한 게임을 구매일 · 구매가 · 플레이타�
 | 클라이언트가 지킬 인증 계약 · 에러 응답 규칙은? | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) 3장 (엔드포인트 목록은 Swagger `/docs`) |
 | DB는 어떻게 생겼고 왜? | [`docs/DATA_MODEL.md`](docs/DATA_MODEL.md) (컬럼은 `server/app/models/` · `server/alembic/versions/`) |
 | 화면은 어떻게 생겼고 왜? 색 · 테마는? | [`docs/DESIGN.md`](docs/DESIGN.md) (색 · 테마는 4.4절), 그림은 [`docs/mockups/`](docs/mockups/README.md) |
+| 운영 서버 세팅 · 배포 · 백업 · 복구는? | [`docs/SERVER.md`](docs/SERVER.md) |
 | 이게 뭐고 어떻게 실행해? | [`README.md`](README.md) |
 | 작업할 때 항상 지킬 규칙은? | 이 파일 |
 
