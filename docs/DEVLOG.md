@@ -9,11 +9,11 @@
 |---|---|
 | 단계 | **v1.0.0** 태그 2026-11-04 (M4.5 ✅). 다음은 **M5** ⬜ 배포 (`PLAN` M5) |
 | 진행 중 | 없음 |
-| 다음에 할 일 | **M5**. 코드 쓰기 전에 "자동으로 할까, 직접 칠래?"를 먼저 묻는다. 서버는 공용 인프라(전역 설정)를 먼저 본다. 실제 휴대폰 확인(iOS 입력 확대 · 안전 영역)은 M5 완료 기준의 LTE 접속 때 함께 본다 |
+| 다음에 할 일 | **M5** 시작. 코드 쓰기 전에 "자동으로 할까, 직접 칠래?"를 먼저 묻는다(아직 안 정함). 큰 작업이니 설계 · 진행 순서 · 필요한 설치 목록을 먼저 보여 준다. 서버는 전역 설정 "공용 인프라"와 `cbt-journal`의 `deploy/` · `docs/SERVER.md`를 먼저 본다. **Vultr 크레딧이 2026-11-30에 끝난다** ─ 11월 안에 배포 연습. 실제 휴대폰 확인(iOS 입력 확대 · 안전 영역)은 M5 완료 기준의 LTE 접속 때 함께 본다 |
 | 판단이 남은 것 | 모바일 첫 줄이 요약 줄 도착 때 24px 밀리는 것. S-05 방치 일수 색(180일 미만도 포인트 색). 개인정보 안내 문구(법률 검토 안 받음) |
-| 기기별로 할 일 | **집 PC · 노트북**: `git pull` → `server/`에서 `pip install -r requirements-dev.txt` · `alembic upgrade head`(직접 등록 게임 분리 마이그레이션) → `web/`에서 `npm ci`. 확인은 `pytest`(310건) · `npm test`(202건). `JWT_SECRET_KEY`가 32자 미만이면 서버가 뜨지 않는다 |
+| 기기별로 할 일 | **집 PC · 노트북** (이번 변경을 아직 안 받음): `git pull` → DB 컨테이너 켜기(`docker compose up -d`) → `server/`에서 `pip install -r requirements-dev.txt`(PyJWT · certifi · dnspython 버전 올림, 테스트 패키지 파일 분리) · `alembic upgrade head`(직접 등록 게임을 사람별로 나누는 마이그레이션, 기록 없는 수동 게임은 지워진다) → `web/`에서 `npm ci`. `server/.env`의 `JWT_SECRET_KEY`가 32자 미만이면 서버가 뜨지 않는다 ─ 안내는 `.env.example`. 확인은 `pytest`(310건) · `npm test`(202건). **회사 PC**: 할 일 없음 |
 | 집 PC에만 있는 것 | 개발 DB의 확인용 계정 1개 · 기록 3개(Hollow Knight · 예시 게임 2개). 계정 값은 저장소에 없다(세션 임시 폴더). `.claude/launch.json`(Claude 앱 미리보기로 API · 프론트를 띄우는 설정)은 이 PC의 절대 경로가 들어 있어 커밋하지 않고 `.git/info/exclude`에 넣었다 ─ 다른 기기에서 Claude가 미리보기를 쓰려면 그 기기에서 새로 만든다 |
-| 회사 PC에만 있는 것 | 화면 전후 픽셀 비교 스크립트는 저장소에 없다(세션 임시 폴더). 다른 기기에서 필요하면 방법을 보고 새로 만든다 ([DEVLOG_M2](archive/DEVLOG_M2.md) 2026-11-03 (6) · (7)) |
+| 회사 PC에만 있는 것 | `.claude/worktrees/brave-hawking-fc3e7c` ─ `npm audit` 세션의 worktree. main에 병합됐고 변경 없음, 지워도 된다. 헤드리스 Edge 확인 스크립트(픽셀 비교 · 두 탭 재발급 · 계정 삭제 흐름)는 저장소에 없다(세션 임시 폴더). 필요하면 방법을 보고 새로 만든다 ([DEVLOG_M4.5](archive/DEVLOG_M4.5.md) 검증, [DEVLOG_M2](archive/DEVLOG_M2.md) 2026-11-03 (6) · (7)) |
 
 ## 작성 규칙
 
