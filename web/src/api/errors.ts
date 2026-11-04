@@ -20,7 +20,7 @@ export class ApiError extends Error {
   }
 }
 
-// 500의 detail은 FastAPI default라 영문이다. 화면에는 이 문장을 대신 사용한다
+// detail을 읽지 못하는 응답(프록시가 만든 502 · 504 HTML 등)에는 이 문장을 대신 사용한다
 const FALLBACK_MESSAGE = '요청을 처리하지 못했습니다. 잠시 후 다시 시도해 주세요.'
 
 // 응답 본문을 보고 알맞은 ApiError를 만들어준다

@@ -161,7 +161,7 @@ describe('저장', () => {
     await saving
   })
 
-  it('새로 고른 장르가 있을 때만 장르를 보낸다', async () => {
+  it('장르를 바꿨을 때만 장르를 보낸다', async () => {
     const { held, edit } = await opened()
     edit.form.value!.genreIds = [1, 3]
     const saving = edit.submit()

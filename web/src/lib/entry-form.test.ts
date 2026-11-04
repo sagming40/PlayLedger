@@ -141,6 +141,33 @@ describe('entryToEditForm', () => {
   })
 })
 
+describe('수정 폼의 장르 (decisions/0011)', () => {
+  const genres = [
+    { id: 1, name: '액션' },
+    { id: 3, name: 'RPG' },
+  ]
+  const manual = saved({ game: { id: 7, title: 'Celeste', steam_appid: null, cover_url: null, genres } })
+  const steam = saved({ game: { id: 7, title: 'Celeste', steam_appid: 504230, cover_url: null, genres } })
+
+  it('직접 등록한 게임은 지금 장르를 칩으로 채우고, 그대로면 보내지 않는다', () => {
+    const initial = entryToEditForm(manual)
+    expect(initial.genreIds).toEqual([1, 3])
+    expect(buildUpdateBody({ ...initial, genreIds: [3, 1] }, initial)).toEqual({})
+  })
+
+  it('직접 등록한 게임은 바꾸거나 전부 뗄 수 있다', () => {
+    const initial = entryToEditForm(manual)
+    expect(buildUpdateBody({ ...initial, genreIds: [1] }, initial)).toEqual({ genre_ids: [1] })
+    expect(buildUpdateBody({ ...initial, genreIds: [] }, initial)).toEqual({ genre_ids: [] })
+  })
+
+  it('Steam 게임은 폼에 담지 않고, 고르지 않으면 보내지 않는다', () => {
+    const initial = entryToEditForm(steam)
+    expect(initial.genreIds).toEqual([])
+    expect(buildUpdateBody({ ...initial }, initial)).toEqual({})
+  })
+})
+
 describe('buildUpdateBody', () => {
   it('아무것도 안 바꾸면 빈 본문', () => {
     const initial = entryToEditForm(saved())

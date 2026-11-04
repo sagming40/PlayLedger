@@ -75,7 +75,7 @@ export function buildCreateBody(form: EntryForm): EntryCreateBody | null {
 }
 
 // 수정 폼이 고칠 수 있는 칸 ─ 제목은 고칠 수 없다 (DATA_MODEL 2.6절)
-// genreIds는 새로 고른 장르만 담는다 ─ 이미 붙은 장르는 고칠 수 없어 폼에 넣지 않는다 (DATA_MODEL 2.5절)
+// genreIds ─ 직접 등록한 게임은 지금 붙은 장르, Steam 게임은 새로 고른 장르만 담는다 (DATA_MODEL 2.5절)
 export type EntryEditForm = Pick<EntryForm, 'status' | 'genreIds' | 'purchasedAt' | 'price' | 'hours' | 'rating' | 'review'>
 
 /** 분 → 입력칸 글자. 90 → '1.5', 0 → '' (빈 칸 = 0시간, parseHours와 짝) */
@@ -89,13 +89,18 @@ function minutesToHours(minutes: number): string {
 export function entryToEditForm(entry: Entry): EntryEditForm {
   return {
     status: entry.status,
-    genreIds: [],
+    genreIds: entry.game.steam_appid === null ? entry.game.genres.map((g) => g.id) : [],
     purchasedAt: entry.purchased_at ?? '',
     price: entry.purchase_price === null ? '' : String(entry.purchase_price),
     hours: minutesToHours(entry.playtime_minutes),
     rating: entry.rating,
     review: entry.review ?? '',
   }
+}
+
+/** 고른 순서는 뜻이 없다 ─ 눌렀다 뗀 뒤 다시 눌러도 바뀐 게 아니다 */
+function sameIds(a: number[], b: number[]): boolean {
+  return a.length === b.length && a.every((id) => b.includes(id))
 }
 
 /**
@@ -114,7 +119,7 @@ export function buildUpdateBody(form: EntryEditForm, initial: EntryEditForm): En
 
   const body: EntryUpdateBody = {}
   if (form.status !== initial.status) body.status = form.status
-  if (form.genreIds.length) body.genre_ids = form.genreIds
+  if (!sameIds(form.genreIds, initial.genreIds)) body.genre_ids = form.genreIds
   if (form.purchasedAt !== initial.purchasedAt) body.purchased_at = form.purchasedAt || null
   if (form.price !== initial.price) body.purchase_price = price
   if (form.hours !== initial.hours) body.playtime_minutes = minutes

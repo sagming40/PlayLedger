@@ -23,6 +23,8 @@ watch(
 )
 
 const form = computed(() => edit.form.value)
+// 직접 등록한 게임은 내 것이라 장르를 언제든 바꾼다. Steam 게임은 다 같이 보는 행이라 고정 (decisions/0011)
+const isSteamGame = computed(() => edit.entry.value?.game.steam_appid !== null)
 
 // 상세로 돌아간다. 상세에서 왔으면 뒤로 간다 ─ 새로 이동하면 방문 기록에 상세 · 수정이 쌓여 뒤로가기가 이 폼으로 돌아온다
 // 주소를 직접 쳐서 들어왔으면 돌아갈 상세가 기록에 없으니 이 자리를 상세로 바꾼다
@@ -92,9 +94,9 @@ async function onSubmit() {
           v-model:hours="form.hours"
           v-model:rating="form.rating"
           v-model:review="form.review"
-          :fixed-genres="edit.entry.value.game.genres"
+          :fixed-genres="isSteamGame ? edit.entry.value.game.genres : []"
         >
-          <template #genre-hint>
+          <template v-if="isSteamGame" #genre-hint>
             <span class="text-xs text-muted-foreground">아직 장르가 없는 게임이에요. 한 번 저장한 장르는 바꿀 수 없어요</span>
           </template>
         </EntryFormFields>
