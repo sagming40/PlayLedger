@@ -37,7 +37,7 @@
 | S-06 설정 | `Settings.dc.html` | 3.6절 | 채택 (2026-10-24) |
 | 상단 메뉴 시안 A ~ H 비교 (D ~ H는 B 기반) | `TopNavBoard.dc.html`, `TopNav.dc.html` (`?variant=A` · `?screen=plain` · `?dark=false`) | 2.2절 | **H 채택** (2026-11-03, E + G의 아이콘). **F(떠 있는 캡슐)는 나중에 다시 볼 후보**, 나머지는 비교용. 캔버스 없이 저장소에서 직접 그렸다. material-dict 추천안의 상단 메뉴를 참고 |
 
-`Library`의 요약 줄 `가장 오래 방치`는 옛 안 — 구현이 기준이다. 통계 화면에 같은 내용이 있어 넣지 않았다.
+`Library`에 없는 장르 칸은 구현이 기준이다(정렬 칸 옆). `Form`의 구매일 칸 · `Detail`의 상태 칸도 shadcn 부품으로 구현했다(`DESIGN` 3.3 · 3.4절). `Library`의 요약 줄 `가장 오래 방치`는 옛 안 — 구현이 기준이다. 통계 화면에 같은 내용이 있어 넣지 않았다.
 
 데스크톱 보드(`Library` · `LibraryEmpty` · `Form` · `Detail` · `Stats` · `Settings`)의 왼쪽 사이드바는 옛 안이다 — 메뉴는 `TopNav.dc.html` 시안 H가 기준이다.
 
