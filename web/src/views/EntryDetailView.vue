@@ -106,10 +106,7 @@ async function confirmDelete() {
 
     <!-- 위쪽 줄 ─ 뒤로 · 수정 · ⋮ (목업 Detail · DetailMobile) -->
     <div class="relative -mt-5 flex h-14 items-center justify-between md:mt-0 md:h-11">
-      <RouterLink
-        :to="libraryPath()"
-        class="-ml-2.5 inline-flex h-11 items-center gap-1.5 px-2.5 text-sm text-foreground md:ml-0 md:px-0"
-      >
+      <RouterLink :to="libraryPath()" class="-ml-2.5 inline-flex h-11 items-center gap-1.5 px-2.5 text-sm text-foreground md:ml-0 md:px-0">
         <ChevronLeft class="size-4.5" aria-hidden="true" />
         라이브러리
       </RouterLink>
