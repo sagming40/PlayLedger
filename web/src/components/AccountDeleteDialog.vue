@@ -2,8 +2,8 @@
 import { computed, ref, watch } from 'vue'
 import { AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogTitle } from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import PasswordInput from '@/components/PasswordInput.vue'
 
 // S-06 계정 삭제 확인 (DESIGN 3.6절)
 // AlertDialog ─ 바깥을 눌러도 닫히지 않는다. 비밀번호를 한 번 더 받아 잠시 자리를 비운 사이 지워지지 않게 한다
@@ -48,10 +48,9 @@ function onSubmit() {
       <form class="flex flex-col gap-3" @submit.prevent="onSubmit">
         <div class="flex flex-col gap-2">
           <Label for="delete-password" class="text-sm font-semibold">비밀번호</Label>
-          <Input
+          <PasswordInput
             id="delete-password"
             v-model="password"
-            type="password"
             autocomplete="current-password"
             maxlength="128"
             class="h-11.5"

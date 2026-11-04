@@ -6,6 +6,7 @@ import { useAuthStore } from '@/stores/auth'
 import { safeRedirect } from '@/router/guard'
 import { ApiError } from '@/api/errors'
 import FormField from '@/components/FormField.vue'
+import PasswordInput from '@/components/PasswordInput.vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
@@ -158,10 +159,9 @@ async function onSubmit() {
         <FormField id="password" label="비밀번호" :help="isRegister ? '최소 8자' : undefined" dense>
           <!-- : 이 붙으면 "문자 그대로"가 아니라 "이 식을 계산한 값"이라는 뜻
                브라우저 비밀번호 관리자가 가입/로그인을 구분하도록 값을 바꿔준다 -->
-          <Input
+          <PasswordInput
             id="password"
             v-model="password"
-            type="password"
             :autocomplete="isRegister ? 'new-password' : 'current-password'"
             :aria-describedby="isRegister ? 'password-help' : undefined"
             class="h-11.5 bg-card/85 px-3.5 text-[15px]"
