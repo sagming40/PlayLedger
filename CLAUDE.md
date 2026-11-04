@@ -106,6 +106,7 @@ alembic upgrade head
 uvicorn app.main:app --reload --port 8001         # http://localhost:8001/docs
 pytest                                            # 테스트 전용 DB 사용
 python -m app.scripts.sync_steam_apps             # Steam 게임 목록 미러링 (STEAM_API_KEY 필요, 비어 있어도 서버는 뜬다)
+python -m app.scripts.seed_demo --email 나@example.com  # 예시 게임 26개 (로컬 DB의 빈 계정에만, 기대값은 tests/test_stats.py)
 
 # web/
 npm ci

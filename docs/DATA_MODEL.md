@@ -444,33 +444,11 @@ API 응답이 덮어쓰면 안 된다. 동기화 규칙:
 
 ### 3.2 방치 게임 추출 (F-09)
 
-```sql
-SELECT g.title, CURRENT_DATE - e.purchased_at AS idle_days
-FROM entries e
-JOIN games g ON g.id = e.game_id
-WHERE e.user_id = :user_id
-  AND e.status = 'BACKLOG'
-  AND e.purchased_at IS NOT NULL
-ORDER BY idle_days DESC;
-```
-
-PostgreSQL은 날짜끼리 빼면 바로 일수(정수)가 나온다. MariaDB의 `DATEDIFF()`에 해당한다.
+구현됨. `server/app/services/stats.py`가 원본이다. 방치일수는 브라우저 날짜로 센다 (`DESIGN` 3.5절).
 
 ### 3.3 장르별 통계 (F-11)
 
-```sql
-SELECT gn.name,
-       COUNT(*)                                     AS total,
-       COUNT(*) FILTER (WHERE e.status = 'CLEARED')  AS cleared,
-       COUNT(*) FILTER (WHERE e.status <> 'BACKLOG') AS started
-FROM entries e
-JOIN game_genres gg ON gg.game_id = e.game_id
-JOIN genres gn      ON gn.id = gg.genre_id
-WHERE e.user_id = :user_id
-GROUP BY gn.id;
-```
-
-완주율 = `cleared ÷ started` (`REQUIREMENTS` 5.3절 정의대로 분모에서 미시작 제외). 계산은 `services`에서 한다.
+구현됨. `server/app/services/stats.py`가 원본이다. 완주율 = `cleared ÷ started` (`REQUIREMENTS` 5.3절).
 
 ### 3.4 구매 전 경고 (F-18)
 
