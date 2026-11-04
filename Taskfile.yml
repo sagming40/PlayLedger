@@ -1,0 +1,20 @@
+# 자주 쓰는 명령 모음. task 또는 task --list로 목록을 본다
+# 비유: 리모컨 ─ 버튼(task 이름) 하나에 여러 동작을 묶어 둔다. 지금은 배포 버튼만 있다
+version: '3'
+
+tasks:
+  default:
+    desc: 명령 목록
+    silent: true
+    cmds:
+      - task --list
+
+  deploy:
+    desc: 운영 서버에 배포 (push된 main, CI 통과한 커밋만) — task deploy -- -DryRun은 서버에 안 가고 확인만
+    # passphrase · sudo 비밀번호를 물으려면 터미널을 그대로 넘겨야 한다
+    interactive: true
+    platforms: [windows]
+    silent: true
+    cmds:
+      # 확인 · 대기 · 서버 실행은 scripts/deploy.ps1이 한다 (SERVER 2절)
+      - powershell -NoProfile -ExecutionPolicy Bypass -File scripts/deploy.ps1 {{.CLI_ARGS}}
