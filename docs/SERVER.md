@@ -59,7 +59,7 @@ age -d -i "$HOME\playledger-backup.key" -o "$env:TEMP\play-restore.dump" $latest
 ## 3. 처음 세팅
 
 > `cbt-journal`의 `docs/SERVER.md` 4장과 같은 순서이고, 줄마다 자세한 설명은 그쪽에 있다. 여기서는 다른 점과 왜 치는지만 적는다.
-> 다 치면 "언제 · 어느 기기 · 결과"를 각 절에 채운다.
+> 2026-11-04 회사 PC에서 전부 쳤다. 결과는 5절.
 
 ### 3.1 SSH 열쇠 (PC, 기기마다)
 
@@ -69,6 +69,19 @@ age -d -i "$HOME\playledger-backup.key" -o "$env:TEMP\play-restore.dump" $latest
 ssh-keygen -t ed25519 -f "$HOME\.ssh\play_vultr" -C "company-pc"   # passphrase를 넣는다
 Get-Content "$HOME\.ssh\play_vultr.pub"                            # Vultr에 붙여 넣을 공개키
 ```
+
+**다른 PC를 추가할 때** (서버는 이미 있다. 집 PC · 노트북은 아직 안 함)
+
+1. 그 PC에서 위 명령으로 열쇠를 만든다(`-C`는 `home-pc` · `laptop`).
+2. 공개키 한 줄을 서버에 넣는다. 이미 접속되는 PC(회사 PC)로 `ssh play` 해서 치거나, Vultr 웹 콘솔(Server Information → View Console, root로 로그인)에서 친다. root · 비밀번호 SSH는 막혀 있어도 웹 콘솔은 된다.
+
+   ```bash
+   echo 'ssh-ed25519 AAAA…(한 줄 전체)' >> /home/sagming40/.ssh/authorized_keys
+   ```
+
+   `>>`(두 개)여야 한다. `>`(하나)면 다른 PC의 열쇠가 지워진다.
+3. 그 PC의 `~/.ssh/config`에 `Host play`를 적는다. `User`는 `sagming40`, `IdentityFile`은 `~/.ssh/play_vultr`, `HostName`은 `play.sagming.com`으로 써도 된다.
+4. `ssh play` → `sudo whoami`가 `root`면 끝. sudo 비밀번호는 PC가 달라도 같다.
 
 ### 3.2 서버 만들기 (Vultr 화면)
 
@@ -163,6 +176,7 @@ rm ~/prod.env.example ~/play-compose ~/play-release ~/play-backup ~/play-backup.
 ### 3.7 백업 열쇠 (PC → 서버)
 
 자물쇠(공개키)만 서버에 둔다. 서버가 털려도 백업은 못 연다. 개인키는 서버 · 저장소 · 대화 · 클라우드에 두지 않는다. 잃으면 그 전 백업은 못 연다.
+**개인키는 지금 회사 PC `$HOME\playledger-backup.key`에만 있다.** 복구는 이 PC에서 하거나 USB로 옮긴다. 회사 PC를 못 쓰게 될 때를 대비한 사본을 아직 안 만들었다.
 
 ```powershell
 age-keygen -o "$HOME\playledger-backup.key"
@@ -193,5 +207,23 @@ sudo play-backup
 - **Docker는 ufw를 우회한다.** `compose.prod.yaml`에서 포트를 여는 것은 `web`뿐이다. `db` · `api`에 `ports`를 더하지 않는다
 - **요청 제한은 프로세스 메모리에 있다.** 워커를 늘리면 제한도 늘고, 재배포하면 횟수가 0이 된다 (`core/rate_limit.py`)
 - **`web`의 IP 172.30.0.10을 바꾸면 `server/Dockerfile`의 `--forwarded-allow-ips`도 같이 바꾼다.** 어긋나면 모든 사용자가 한 IP로 묶인다
-- **HSTS는 지금 하루다.** 운영에서 확인한 뒤 `web/deploy/Caddyfile`에서 1년으로 늘린다
+- **HSTS는 지금 하루다.** 운영 확인은 끝났다. 다음 배포에서 `web/deploy/Caddyfile`을 1년으로 늘린다
+- **`.env`를 값이 보이게 열지 않는다.** 캡처로 비밀값이 나간 적이 있다(5절). 확인은 `sudo grep -c '=$' /srv/playledger/.env`로 한다
+- **서버 탭과 PC 탭을 헷갈린다.** `notepad` · `git rev-parse`는 PC에서, `sudo play-compose`는 서버에서 친다. 프롬프트로 구분한다
 - **DB 비밀번호는 볼륨을 처음 만들 때만 적용된다.** `.env`만 바꾸면 `InvalidPasswordError`가 난다
+
+## 5. 실제로 한 기록
+
+**2026-11-04 · 처음 세팅과 배포 (회사 PC)**
+
+- 3.1 ~ 3.8절 순서대로 사용자가 직접 쳤다. Docker Engine 29.9.3 · Compose v5.7.0, Vultr 스왑 2.3GB, swappiness 10
+- 첫 `play-release`(`fd07964`): 이미지 받기 → DB → 마이그레이션 6개 → 교체 → 헬스체크 4번째 통과. 인증서 Let's Encrypt, 2027-02-02까지
+- 미러링 198,461건 28.8초. 그 뒤 메모리 955Mi 중 424Mi 남음, 스왑 54Mi 사용. 첫 백업 22,777바이트
+- 밖에서 확인: `/library/1` 200, `/assets/x.js` 404, `/docs`에 Swagger 없음, `/api/docs` · `/api/openapi.json` 404, 로그인 안 한 API 401, http → https 308, 5432 · 8000 · 2019 닫힘
+- 실제 폰(안드로이드 LTE): 가입 · 로그인 · 직접 등록 · Steam 등록(커버) · 수정 · 통계 · 계정 삭제
+- 요청 제한: PC IP가 429일 때 폰 IP는 로그인 200. 로그에 서로 다른 공인 IP 둘이 찍힘
+- 두 창 동시 새로고침 로그인 유지, 삭제한 계정 재로그인 거절
+- 두 번째 배포(`e1e368c`): 직전 백업 → 교체. 기록과 로그인 유지(사용자 확인). 지금 운영 중인 커밋
+- **사고**: `.env`를 nano로 연 화면 캡처가 대화에 올라가 DB 비밀번호 · JWT 비밀이 노출됐다. DB를 만들기 전이라 둘 다 새로 만들었고 노출된 값은 어디에도 쓰지 않는다
+- **안 해 본 것**: 운영 백업으로 복구, `play-release` 되돌리기, 재부팅 뒤 자동 복구, 인증서 자동 갱신, 아이폰
+

@@ -15,7 +15,7 @@
 PlayLedger는 보유 목록이 아니라 **소비 이력**을 기록합니다.
 언제 얼마에 샀고, 얼마나 했고, 얼마나 방치했는지를 숫자로 환산해서 보여줍니다.
 
-> **v1.0을 완성했습니다.** 기록 · 상태 관리 · 통계까지 구현했고 지금은 배포를 준비하고 있습니다. 진행 상황은 [개발 계획](docs/PLAN.md)에 있습니다.
+> **[play.sagming.com](https://play.sagming.com)에서 운영 중입니다.** 기록 · 상태 관리 · 통계까지 구현했고, 운영 방법은 [SERVER](docs/SERVER.md)에 있습니다. 진행 상황은 [개발 계획](docs/PLAN.md)에 있습니다.
 >
 > React Native + Django로 진행하던 이전 버전은 [`v0-rn-django`](../../tree/v0-rn-django) 태그에 보존되어 있습니다.
 
