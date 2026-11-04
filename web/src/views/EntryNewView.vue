@@ -11,6 +11,7 @@ import FormField from '@/components/FormField.vue'
 import SteamTitleField from '@/components/SteamTitleField.vue'
 import { Button } from '@/components/ui/button'
 import { buildCreateBody, issuesMessage } from '@/lib/entry-form'
+import { showToast } from '@/lib/toast'
 
 // S-03 게임 등록 (DESIGN 3.3절, 그림은 docs/mockups/Form)
 const router = useRouter()
@@ -51,6 +52,7 @@ async function onSubmit() {
   errorMessage.value = ''
   try {
     await createEntry(body.value)
+    showToast('등록했어요')
     // replace ─ 뒤로가기로 방금 저장한 폼에 돌아와 중복 등록하지 않게 한다
     await router.replace({ name: 'library' })
   } catch (e) {

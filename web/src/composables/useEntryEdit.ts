@@ -2,6 +2,7 @@ import { computed, getCurrentScope, onScopeDispose, ref } from 'vue'
 import { updateEntry } from '@/api/entries'
 import { ApiError } from '@/api/errors'
 import { buildUpdateBody, entryToEditForm, issuesMessage, type EntryEditForm } from '@/lib/entry-form'
+import { showToast } from '@/lib/toast'
 import { OFFLINE_MESSAGE, useEntryDetail } from './useEntryDetail'
 
 /**
@@ -54,6 +55,8 @@ export function useEntryEdit() {
     errorMessage.value = ''
     try {
       await updateEntry(id, changes)
+      // 화면을 떠났어도 저장은 됐다 ─ 끌고 가지는 않되 알려는 준다
+      showToast('저장했어요')
       return !disposed && detail.entry.value?.id === id
     } catch (e) {
       if (disposed || detail.entry.value?.id !== id) return false

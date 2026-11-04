@@ -1,7 +1,11 @@
 <script setup lang="ts">
+import { defineAsyncComponent } from 'vue'
 import { useRoute } from 'vue-router'
 import { ChartColumn, LayoutGrid, Play, Plus, SlidersHorizontal } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
+
+// 따로 받는다 ─ Motion이 커서 그대로 묶으면 로그인 화면까지 첫 번들이 gzip 22kB → 68kB가 된다
+const AppToast = defineAsyncComponent(() => import('@/components/AppToast.vue'))
 
 // 현재 주소가 어딘지 알려주는 기구. 헤더 제목을 가져와 사용한다
 const route = useRoute()
@@ -97,5 +101,8 @@ function isActive(name: string) {
         {{ item.label }}
       </RouterLink>
     </nav>
+
+    <!-- 레이아웃에 둔다 ─ 저장하자마자 화면이 넘어가도 알림은 남는다 -->
+    <AppToast />
   </div>
 </template>

@@ -1,6 +1,7 @@
 import { getCurrentScope, onScopeDispose, ref } from 'vue'
 import { deleteEntry, getEntry, updateEntry, type Entry, type EntryStatus } from '@/api/entries'
 import { ApiError } from '@/api/errors'
+import { showToast } from '@/lib/toast'
 
 // 네트워크가 끊겨 SERVER 답 자체가 없을 때 (DESIGN 6장)
 export const OFFLINE_MESSAGE = '연결에 실패했습니다'
@@ -130,6 +131,8 @@ export function useEntryDetail() {
     deleteError.value = null
     try {
       await deleteEntry(id)
+      // 화면을 떠났어도 지워졌다 ─ 끌고 가지는 않되 알려는 준다
+      showToast('삭제했어요')
       return !disposed && entry.value?.id === id
     } catch (e) {
       if (disposed || entry.value?.id !== id) return false
