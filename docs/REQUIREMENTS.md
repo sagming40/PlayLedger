@@ -247,7 +247,7 @@ flowchart LR
 | 성능 | 게임 200개 기준 목록 조회 1초 이내 |
 | 보안 | 비밀번호는 평문 저장 금지 (해싱 라이브러리는 [decisions/0004](decisions/0004-password-argon2.md)) |
 | 인증 | access 토큰은 짧은 수명, refresh 토큰은 DB 저장 + httpOnly 쿠키. 다른 사용자의 데이터는 조회 불가 |
-| 개인정보 | Steam ID, Discord 사용자 ID 외의 개인정보는 수집하지 않음 |
+| 개인정보 | 이메일 · 닉네임 · 비밀번호 해시 · 게임 기록만 저장한다 (M8 · M11에 Steam ID · Discord ID 추가). 설정에서 계정을 지우면 바로 사라진다. 안내는 `/privacy` (DESIGN 3.6절) |
 | 설정 관리 | API 키, DB 비밀번호, OAuth 클라이언트 시크릿은 Git에 올리지 않음 (`.env`) |
 | 테스트 | 사용자 격리와 계산식은 pytest로 자동 검증, push마다 CI 실행 |
 | 대상 환경 | 데스크톱 브라우저 우선, 모바일 브라우저는 반응형으로 대응 |
