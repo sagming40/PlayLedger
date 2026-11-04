@@ -11,6 +11,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from app.core.config import settings
+from app.core.rate_limit import ALL_LIMITERS
 from app.deps import get_db, get_http_client
 from app.main import app
 
@@ -59,6 +60,13 @@ async def engine(test_db_url, migrate):   # migrate가 끝난 뒤에 엔진을 �
     eng = create_async_engine(test_db_url)
     yield eng
     await eng.dispose()
+
+
+@pytest.fixture(autouse=True)
+def reset_rate_limits():
+    """요청 제한은 프로세스 메모리에 남는다 ─ 앞 테스트의 횟수가 다음 테스트를 막지 않게 비운다"""
+    for limiter in ALL_LIMITERS:
+        limiter.reset()
 
 
 @pytest_asyncio.fixture(autouse=True)
