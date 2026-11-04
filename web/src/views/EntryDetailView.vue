@@ -12,6 +12,7 @@ import StatusDot from '@/components/StatusDot.vue'
 import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { libraryPath } from '@/lib/library-return'
 
 // S-04 게임 상세 (DESIGN 3.4절, 그림은 docs/mockups/Detail · DetailMobile · DeleteDialog)
 const route = useRoute()
@@ -77,7 +78,7 @@ async function confirmDelete() {
   // 목록에서 왔으면 뒤로 간다 ─ ?status= 필터가 그대로 남고, 방문 기록에 지운 기록이 앞에 남지 않는다
   const back = window.history.state?.back
   if (typeof back === 'string' && router.resolve(back).name === 'library') router.back()
-  else router.replace({ name: 'library' })
+  else router.replace(libraryPath())
 }
 </script>
 
@@ -106,7 +107,7 @@ async function confirmDelete() {
     <!-- 위쪽 줄 ─ 뒤로 · 수정 · ⋮ (목업 Detail · DetailMobile) -->
     <div class="relative -mt-5 flex h-14 items-center justify-between md:mt-0 md:h-11">
       <RouterLink
-        :to="{ name: 'library' }"
+        :to="libraryPath()"
         class="-ml-2.5 inline-flex h-11 items-center gap-1.5 px-2.5 text-sm text-muted-foreground hover:text-foreground md:ml-0 md:px-0"
       >
         <ChevronLeft class="size-4.5" aria-hidden="true" />
@@ -331,9 +332,11 @@ async function confirmDelete() {
             >
               "{{ entry.review }}"
             </blockquote>
-            <Button type="button" variant="ghost" class="-mr-2 h-9 shrink-0 text-muted-foreground" @click="startReview">고치기</Button>
+            <Button type="button" variant="ghost" class="-mr-2 h-11 shrink-0 text-muted-foreground md:h-9" @click="startReview"
+              >고치기</Button
+            >
           </div>
-          <Button v-else type="button" variant="outline" class="h-10 self-start" @click="startReview">한줄평 남기기</Button>
+          <Button v-else type="button" variant="outline" class="h-11 self-start md:h-10" @click="startReview">한줄평 남기기</Button>
         </section>
       </div>
 

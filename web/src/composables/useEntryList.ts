@@ -114,10 +114,6 @@ export function useEntryList() {
     return loadFirst()
   }
 
-  function setStatus(next: EntryStatus | null) {
-    return setFilters({ status: next, genre: genre.value, sort: sort.value })
-  }
-
   async function loadMore() {
     // 스크롤 감지와 버튼이 거의 동시에 부를 수 있다 ─ 진행 중이면 무시 (같은 페이지를 두 번 받지 않는다)
     if (loadingMore.value || firstLoading.value || !hasMore.value) return
@@ -154,7 +150,6 @@ export function useEntryList() {
     isFilterEmpty,
     loadFirst,
     loadMore,
-    setStatus,
     setFilters,
   }
 }

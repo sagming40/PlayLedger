@@ -3,6 +3,7 @@ import { computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ChevronLeft } from '@lucide/vue'
 import { useEntryEdit } from '@/composables/useEntryEdit'
+import { useLeaveGuard } from '@/composables/useLeaveGuard'
 import EntryFormFields from '@/components/EntryFormFields.vue'
 import FormField from '@/components/FormField.vue'
 import { Button } from '@/components/ui/button'
@@ -12,6 +13,7 @@ import { Input } from '@/components/ui/input'
 const route = useRoute()
 const router = useRouter()
 const edit = useEntryEdit()
+useLeaveGuard(() => edit.isDirty.value)
 
 // 주소 규칙이 숫자만 받으므로(router (\d+)) Number가 NaN이 되지 않는다
 watch(
@@ -41,13 +43,16 @@ async function onSubmit() {
 
 <template>
   <div class="flex max-w-190 flex-col gap-6">
-    <RouterLink
-      :to="{ name: 'entry-detail', params: { id: route.params.id } }"
-      class="inline-flex h-11 items-center gap-1.5 self-start text-sm text-muted-foreground hover:text-foreground"
-      @click.prevent="backToDetail"
-    >
-      <ChevronLeft class="size-4.5" aria-hidden="true" />
-      게임 상세
+    <!-- custom ─ RouterLink가 스스로 이동하지 않게 한다. 그냥 @click을 달면 자기 이동과 backToDetail이 둘 다 돈다 -->
+    <RouterLink v-slot="{ href }" :to="{ name: 'entry-detail', params: { id: route.params.id } }" custom>
+      <a
+        :href="href"
+        class="inline-flex h-11 items-center gap-1.5 self-start text-sm text-muted-foreground hover:text-foreground"
+        @click.prevent="backToDetail"
+      >
+        <ChevronLeft class="size-4.5" aria-hidden="true" />
+        게임 상세
+      </a>
     </RouterLink>
 
     <!-- 처음 불러오는 중 ─ 자리만 잡는다 (DESIGN 6장 뼈대) -->

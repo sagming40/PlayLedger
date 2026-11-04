@@ -198,7 +198,7 @@ onBeforeUnmount(() => {
           :key="chip.key ?? 'all'"
           type="button"
           :aria-pressed="list.status.value === chip.key"
-          class="inline-flex h-9 shrink-0 items-center gap-1.75 rounded-full border px-3.5 text-sm transition-colors"
+          class="inline-flex h-11 shrink-0 items-center gap-1.75 rounded-full border px-3.5 text-sm transition-colors md:h-9"
           :class="
             list.status.value === chip.key
               ? 'border-muted-foreground bg-secondary font-semibold text-foreground'
@@ -221,7 +221,7 @@ onBeforeUnmount(() => {
         >
           <SelectTrigger
             aria-label="장르 필터"
-            class="min-w-0 flex-1 rounded-lg bg-card text-[13px] data-[size=default]:h-9 md:w-32 md:flex-none dark:bg-card"
+            class="min-w-0 flex-1 rounded-lg bg-card text-[13px] data-[size=default]:h-11 md:w-32 md:flex-none md:data-[size=default]:h-9 dark:bg-card"
           >
             <SelectValue />
           </SelectTrigger>
@@ -233,7 +233,7 @@ onBeforeUnmount(() => {
         <Select :model-value="list.sort.value" @update:model-value="(v) => selectSort(v as EntrySort)">
           <SelectTrigger
             aria-label="정렬"
-            class="min-w-0 flex-1 rounded-lg bg-card text-[13px] data-[size=default]:h-9 md:w-36 md:flex-none dark:bg-card"
+            class="min-w-0 flex-1 rounded-lg bg-card text-[13px] data-[size=default]:h-11 md:w-36 md:flex-none md:data-[size=default]:h-9 dark:bg-card"
           >
             <SelectValue />
           </SelectTrigger>
@@ -329,9 +329,9 @@ onBeforeUnmount(() => {
         <p v-if="list.loadingMore.value" role="status" class="text-sm text-muted-foreground">불러오는 중…</p>
         <template v-else-if="list.moreError.value">
           <p role="alert" class="text-sm">{{ list.moreError.value }}</p>
-          <Button variant="outline" class="h-10" @click="list.loadMore()">다시 시도</Button>
+          <Button variant="outline" class="h-11 md:h-10" @click="list.loadMore()">다시 시도</Button>
         </template>
-        <Button v-else-if="list.hasMore.value" variant="ghost" class="h-10 text-muted-foreground" @click="list.loadMore()">
+        <Button v-else-if="list.hasMore.value" variant="ghost" class="h-11 text-muted-foreground md:h-10" @click="list.loadMore()">
           더 불러오기
         </Button>
         <div v-if="list.hasMore.value" ref="sentinel" aria-hidden="true" class="h-px w-full" />

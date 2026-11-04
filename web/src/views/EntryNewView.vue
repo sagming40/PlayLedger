@@ -10,6 +10,7 @@ import EntryFormFields from '@/components/EntryFormFields.vue'
 import FormField from '@/components/FormField.vue'
 import SteamTitleField from '@/components/SteamTitleField.vue'
 import { Button } from '@/components/ui/button'
+import { useLeaveGuard } from '@/composables/useLeaveGuard'
 import { buildCreateBody, issuesMessage } from '@/lib/entry-form'
 import { showToast } from '@/lib/toast'
 
@@ -44,6 +45,22 @@ const body = computed(() =>
 )
 const canSubmit = computed(() => body.value !== null && !submitting.value)
 
+// 긴 입력을 잃지 않게 물어본다. 등록에 성공한 뒤의 이동은 묻지 않는다
+const created = ref(false)
+useLeaveGuard(
+  () =>
+    !created.value &&
+    (title.value.trim() !== '' ||
+      steamApp.value !== null ||
+      status.value !== 'BACKLOG' ||
+      genreIds.value.length > 0 ||
+      purchasedAt.value !== '' ||
+      price.value !== '' ||
+      hours.value !== '' ||
+      rating.value !== null ||
+      review.value !== ''),
+)
+
 async function onSubmit() {
   // 버튼이 비활성이어도 엔터로 들어올 수 있어서 한 번 더 막는다
   if (!canSubmit.value || !body.value) return
@@ -52,6 +69,7 @@ async function onSubmit() {
   errorMessage.value = ''
   try {
     await createEntry(body.value)
+    created.value = true
     showToast('등록했어요')
     // replace ─ 뒤로가기로 방금 저장한 폼에 돌아와 중복 등록하지 않게 한다
     await router.replace({ name: 'library' })

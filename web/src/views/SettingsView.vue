@@ -102,7 +102,7 @@ async function onDelete(password: string) {
     <SurfacePanel class="flex flex-col gap-3.5">
       <div class="flex items-center gap-2.5">
         <h2 class="text-base font-bold">Steam 연동</h2>
-        <span class="rounded-md bg-secondary px-2 py-0.5 text-[11px] font-bold text-muted-foreground">M8 예정</span>
+        <span class="rounded-md bg-secondary px-2 py-0.5 text-[11px] font-bold text-muted-foreground">준비 중</span>
       </div>
       <div class="flex flex-col gap-2">
         <label for="steam-id" class="text-sm font-semibold text-muted-foreground">Steam ID</label>
@@ -128,7 +128,7 @@ async function onDelete(password: string) {
     <SurfacePanel class="flex flex-wrap items-center justify-between gap-3">
       <div class="flex items-center gap-2.5">
         <h2 class="text-base font-bold">Discord 연결</h2>
-        <span class="rounded-md bg-secondary px-2 py-0.5 text-[11px] font-bold text-muted-foreground">M11 예정</span>
+        <span class="rounded-md bg-secondary px-2 py-0.5 text-[11px] font-bold text-muted-foreground">준비 중</span>
       </div>
       <Button variant="secondary" disabled class="h-11 border-border px-4 font-semibold text-muted-foreground disabled:opacity-100"
         >Discord 계정 연결</Button

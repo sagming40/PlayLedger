@@ -27,6 +27,7 @@ export function useEntryEdit() {
   async function load(id: number) {
     form.value = null
     initial = null
+    saved.value = false
     errorMessage.value = ''
     await detail.load(id)
     // 기다리는 사이 다른 게임을 불렀으면 그쪽 load가 채운다
@@ -40,6 +41,13 @@ export function useEntryEdit() {
   // 잘못된 입력이면 null, 바뀐 게 없으면 빈 객체
   const body = computed(() => (form.value && initial ? buildUpdateBody(form.value, initial) : null))
   const canSubmit = computed(() => body.value !== null && !submitting.value)
+
+  // 떠날 때 물어볼지 ─ 잘못 적은 칸도 입력한 것이다. 저장한 뒤에는 묻지 않는다
+  const saved = ref(false)
+  const isDirty = computed(() => {
+    if (!form.value || saved.value) return false
+    return body.value === null || Object.keys(body.value).length > 0
+  })
 
   /**
    * 저장에 성공하면 true ─ 화면이 상세로 돌아간다. 실패하면 입력값을 그대로 두고 이유를 보인다
@@ -55,6 +63,7 @@ export function useEntryEdit() {
     errorMessage.value = ''
     try {
       await updateEntry(id, changes)
+      saved.value = true
       // 화면을 떠났어도 저장은 됐다 ─ 끌고 가지는 않되 알려는 준다
       showToast('저장했어요')
       return !disposed && detail.entry.value?.id === id
@@ -83,6 +92,7 @@ export function useEntryEdit() {
     submitting,
     errorMessage,
     canSubmit,
+    isDirty,
     load,
     submit,
   }

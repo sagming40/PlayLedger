@@ -51,6 +51,11 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
+// 상태 칩만 바꾸는 경우 ─ 나머지 필터는 그대로 (LibraryView가 setFilters로 하는 일)
+function setStatus(list: ReturnType<typeof useEntryList>, status: EntryStatus | null) {
+  return list.setFilters({ status, genre: list.genre.value, sort: list.sort.value })
+}
+
 describe('목록 불러오기', () => {
   it('처음에는 20개와 전체 개수 · 미시작 개수를 받는다', async () => {
     fakeServer(25, 7)
@@ -194,7 +199,7 @@ describe('상태 필터 (DESIGN 3.2 · 5장)', () => {
     statusServer(['BACKLOG', 'PLAYING', 'CLEARED', 'CLEARED', 'BACKLOG'])
     const list = useEntryList()
 
-    await list.setStatus('CLEARED')
+    await setStatus(list, 'CLEARED')
 
     expect(list.items.value.map((e) => e.status)).toEqual(['CLEARED', 'CLEARED'])
     expect(list.total.value).toBe(2)
@@ -206,12 +211,12 @@ describe('상태 필터 (DESIGN 3.2 · 5장)', () => {
     const calls = statusServer(['BACKLOG', 'PLAYING'])
     const list = useEntryList()
 
-    await list.setStatus(null)
+    await setStatus(list, null)
     // 전체 목록 + 미시작 개수 = 2번 (전체 개수는 목록 total)
     expect(calls).toHaveLength(2)
 
     calls.length = 0
-    await list.setStatus('BACKLOG')
+    await setStatus(list, 'BACKLOG')
     // 미시작 목록 + 전체 개수 = 2번 (미시작 개수는 목록 total)
     expect(calls).toHaveLength(2)
     expect(calls.every((c) => c.includes('limit=1') || c.includes('status=BACKLOG'))).toBe(true)
@@ -220,14 +225,14 @@ describe('상태 필터 (DESIGN 3.2 · 5장)', () => {
   it('이 상태만 없으면 "필터 결과 없음", 라이브러리가 비었으면 "빈 상태"', async () => {
     statusServer(['BACKLOG'])
     const list = useEntryList()
-    await list.setStatus('DROPPED')
+    await setStatus(list, 'DROPPED')
     expect(list.isFilterEmpty.value).toBe(true)
     expect(list.isEmpty.value).toBe(false)
 
     statusServer([])
     const fresh = useEntryList()
     // 새 계정이 ?status=CLEARED 주소로 들어와도 등록을 권한다
-    await fresh.setStatus('CLEARED')
+    await setStatus(fresh, 'CLEARED')
     expect(fresh.isEmpty.value).toBe(true)
     expect(fresh.isFilterEmpty.value).toBe(false)
   })
@@ -240,8 +245,8 @@ describe('상태 필터 (DESIGN 3.2 · 5장)', () => {
     )
     const list = useEntryList()
 
-    const first = list.setStatus('PLAYING')
-    const second = list.setStatus('CLEARED')
+    const first = setStatus(list, 'PLAYING')
+    const second = setStatus(list, 'CLEARED')
     // 뒤 필터(CLEARED)의 답이 먼저, 앞 필터(PLAYING)의 답이 나중에 온다
     for (const h of held.filter((h) => !h.url.includes('PLAYING'))) {
       const cleared = h.url.includes('status=CLEARED')
@@ -260,7 +265,7 @@ describe('상태 필터 (DESIGN 3.2 · 5장)', () => {
   it('추가로 불러오는 중에 필터를 바꾸면 그 페이지를 새 목록에 붙이지 않는다', async () => {
     statusServer(Array.from({ length: 25 }, () => 'BACKLOG' as EntryStatus))
     const list = useEntryList()
-    await list.setStatus(null)
+    await setStatus(list, null)
 
     // 추가 페이지 요청만 붙잡아 둔다
     const realFetch = globalThis.fetch
@@ -274,7 +279,7 @@ describe('상태 필터 (DESIGN 3.2 · 5장)', () => {
       ),
     )
     const more = list.loadMore()
-    await list.setStatus('PLAYING')
+    await setStatus(list, 'PLAYING')
     releaseMore!()
     await more
 
@@ -286,10 +291,10 @@ describe('상태 필터 (DESIGN 3.2 · 5장)', () => {
   it('같은 필터를 다시 고르면 다시 부르지 않는다', async () => {
     const calls = statusServer(['BACKLOG'])
     const list = useEntryList()
-    await list.setStatus('BACKLOG')
+    await setStatus(list, 'BACKLOG')
     calls.length = 0
 
-    await list.setStatus('BACKLOG')
+    await setStatus(list, 'BACKLOG')
 
     expect(calls).toHaveLength(0)
   })

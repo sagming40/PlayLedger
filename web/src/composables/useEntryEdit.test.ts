@@ -70,6 +70,33 @@ afterEach(() => {
   setAccessToken(null)
 })
 
+describe('떠날 때 물어볼지', () => {
+  it('처음에는 묻지 않고, 바꾸면 묻고, 되돌리면 묻지 않는다', async () => {
+    const { edit } = await opened()
+    expect(edit.isDirty.value).toBe(false)
+    edit.form.value!.status = 'DROPPED'
+    expect(edit.isDirty.value).toBe(true)
+    edit.form.value!.status = 'CLEARED'
+    expect(edit.isDirty.value).toBe(false)
+  })
+
+  it('잘못 적은 칸도 입력한 것이다', async () => {
+    const { edit } = await opened()
+    edit.form.value!.price = '글자'
+    expect(edit.isDirty.value).toBe(true)
+  })
+
+  it('저장한 뒤에는 묻지 않는다', async () => {
+    const { held, edit } = await opened()
+    edit.form.value!.status = 'DROPPED'
+    const saving = edit.submit()
+    await flush()
+    held[0]!.reply(json(200, entry(1)))
+    await saving
+    expect(edit.isDirty.value).toBe(false)
+  })
+})
+
 describe('수정 폼 열기', () => {
   it('기존 값을 채워서 연다', async () => {
     const { edit } = await opened()
