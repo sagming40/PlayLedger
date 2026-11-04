@@ -75,7 +75,7 @@ PlayLedger: 사놓고 안 한 게임을 구매일 · 구매가 · 플레이타�
 - **테스트 DB**: 기기마다 `playledger_test`를 한 번 만들어야 한다 (README "시작하기"). 이름이 `_test`로 끝나지 않으면 `conftest.py`가 테스트를 시작하지 않는다
 - **테스트 클라이언트는 `https://test`**: refresh 쿠키가 `Secure`라서 http로 부르면 쿠키가 실리지 않는다
 - **재발급 동시 요청 금지**: refresh는 rotation이라 동시에 두 번 보내면 재사용 감지가 정상 사용자를 로그아웃시킨다. 클라이언트는 재발급을 한 번만 보내고 나머지는 기다린다 (ARCHITECTURE 3.3절)
-- **422 본문은 두 형태**: Pydantic이 만든 422는 `detail`이 배열, 서버가 직접 던진 422는 문자열이다. 500의 `detail`은 영문이다. 화면에는 `web/src/api/errors.ts`를 거쳐 보여 준다 (ARCHITECTURE 3.9절)
+- **422 본문은 두 형태**: Pydantic이 만든 422는 `detail`이 배열, 서버가 직접 던진 422는 문자열이다. 화면에는 `web/src/api/errors.ts`를 거쳐 보여 준다 (ARCHITECTURE 3.9절)
 - **남의 기록은 403이 아니라 404**: "없는 것"과 "남의 것"의 응답 본문이 같아야 한다 (ARCHITECTURE 3.8절)
 - **날짜와 시각**: `created_at`은 UTC 시각(`...Z`), `purchased_at`은 날짜(`YYYY-MM-DD`)다. 날짜를 시각 파서로 읽으면 한국 시간으로 하루 전날이 된다
 - **async SQLAlchemy**: 응답에 쓰는 관계(`entry.game`, `game.genres`)는 `selectinload`로 미리 불러온다. lazy load가 안 된다

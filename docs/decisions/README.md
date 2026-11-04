@@ -20,3 +20,4 @@
 | [0008](0008-steam-app-mirror.md) | Steam 게임 목록을 키로 받아 미러링하고 영어 제목으로 검색 | 채택 |
 | [0009](0009-manual-steam-separate.md) | 수동 게임과 Steam 게임은 합치지 않고 별개 행 | 채택 |
 | [0010](0010-top-nav.md) | 데스크톱 메뉴를 왼쪽 사이드바에서 상단 메뉴 띠로 | 채택 |
+| [0011](0011-manual-games-per-user.md) | 직접 등록한 게임은 사용자별로 나누고 Steam 게임만 공유 | 채택 |

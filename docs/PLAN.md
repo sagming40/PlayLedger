@@ -297,7 +297,7 @@
 - [x] `/refresh` · `/logout` 출처 검사
 
 *데이터 · 계정*
-- [ ] 직접 등록 게임을 사용자별로 분리, Steam 게임만 공유
+- [x] 직접 등록 게임을 사용자별로 분리, Steam 게임만 공유 ([decisions/0011](decisions/0011-manual-games-per-user.md))
 - [ ] 계정 삭제 (API · S-06), 개인정보 안내, 수집 항목 문구 정정
 
 *B. 화면 · 세션*
