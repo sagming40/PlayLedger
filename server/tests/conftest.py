@@ -88,10 +88,14 @@ class FakeSteam:
     def __init__(self):
         self.details: dict[int, dict] = {}
         self.calls: list[int] = []
+        # 이상한 응답을 재현할 때 쓴다. 넣어 두면 details보다 먼저 답한다
+        self.override = None
 
     def handle(self, request: httpx.Request) -> httpx.Response:
         appid = int(request.url.params["appids"])
         self.calls.append(appid)
+        if self.override is not None:
+            return self.override(request)
         if appid not in self.details:
             return httpx.Response(500)
         return httpx.Response(200, json={str(appid): {"success": True, "data": self.details[appid]}})
