@@ -8,11 +8,11 @@
 | 항목 | 내용 |
 |---|---|
 | 단계 | **M5** 🔄 배포 (`PLAN` M5). `v1.0.0` 태그 있음. **`https://play.sagming.com` 운영 중**, 배포된 커밋 `e1e368c` |
-| 진행 중 | 없음. 미커밋 없음 |
-| 다음에 할 일 | ① 클린룸: **사용자가 집 PC에서 저장소를 지우고 새로 받아 직접** 한다(아래 집 PC 칸). Claude가 대신 돌리지 않는다 ② 코드: 서버 감시 `uptime.yml`, HSTS 1년, 개인정보 안내에 백업 14일 · Vultr 서울 · 접속 기록 반영 → 배포 ③ 운영 백업으로 복구 리허설(열쇠가 회사 PC에만 있다) ④ 200개 목록 측정 ⑤ 되돌리기 시험을 할지 사용자에게 묻는다 ⑥ `DESIGN` · `REQUIREMENTS` 대조 후 M5 ✅. 작업 방식은 정해졌다: 코드 · 문서는 Claude 자동, 서버 명령은 사용자가 친다. **Vultr 크레딧 2026-11-30 만료, 12월 AWS 이사** |
+| 진행 중 | 없음. 미커밋 없음. 비밀번호 보기 버튼은 `main`에만 있고 운영에는 아직 안 올렸다(다음 배포에 같이) |
+| 다음에 할 일 | ① 서버 열쇠: 집 PC · 노트북에서 `play_vultr`를 만들고, 공개키를 회사 PC에서 `ssh play`로 넣는다(`SERVER` 3.1절). 사용자가 친다 ② 코드: 서버 감시 `uptime.yml`, HSTS 1년, CSP `img-src` 좁히기, 개인정보 안내에 백업 14일 · Vultr 서울 · 접속 기록 반영 → 배포 ③ 재부팅 뒤 자동 복구 확인 ④ 운영 백업으로 복구 리허설(열쇠가 회사 PC에만 있다) ⑤ 200개 목록 측정 ⑥ 되돌리기 시험을 할지 사용자에게 묻는다 ⑦ `DESIGN` · `REQUIREMENTS` 대조 후 M5 ✅. 코드 · 문서는 Claude 자동, 서버 명령은 사용자가 친다. **Vultr 크레딧 2026-11-30 만료, 12월 AWS 이사** |
 | 판단이 남은 것 | 모바일 첫 줄이 요약 줄 도착 때 24px 밀리는 것. S-05 방치 일수 색(180일 미만도 포인트 색). 개인정보 안내 문구(법률 검토 안 받음). 아이폰 확인. 백업 개인키 사본(`SERVER` 3.7절) |
-| 기기별로 할 일 | **집 PC** 클린룸: 지우기 전에 `git status` · `git log origin/main..`으로 안 올린 작업 확인. `.env`는 폴더와 함께 사라지는데 Docker 볼륨 `pgdata`는 남는다 ─ 예전 비밀번호를 쓰거나 볼륨까지 지운다(그러면 확인용 기록도 사라진다). 그다음 `README` "시작하기"대로, 확인은 `pytest`(310건) · `npm test`(202건). **노트북**: `git pull` → `server/`에서 `pip install -r requirements-dev.txt` · `alembic upgrade head` → `web/`에서 `npm ci`(글꼴 패키지 2개 추가). `JWT_SECRET_KEY`가 32자 미만이면 서버가 뜨지 않는다. **서버 접속이 필요한 기기**: 열쇠를 새로 넣어야 한다(`SERVER` 3.1절). 지금은 회사 PC만 들어간다 |
-| 집 PC에만 있는 것 | 개발 DB의 확인용 계정 1개 · 기록 3개(클린룸에서 볼륨을 지우면 사라진다). `.claude/launch.json`은 절대 경로가 있어 커밋하지 않았다 ─ 다른 기기에서 미리보기를 쓰려면 새로 만든다 |
+| 기기별로 할 일 | **노트북**: `git pull` → `server/`에서 `pip install -r requirements-dev.txt` · `alembic upgrade head` → `web/`에서 `npm ci`(글꼴 패키지 2개 추가). `JWT_SECRET_KEY`가 32자 미만이면 서버가 뜨지 않는다. **서버 접속**: 지금은 회사 PC만 들어간다(위 ①) |
+| 집 PC에만 있는 것 | 클린룸으로 새로 만든 개발 DB(확인용 계정 · 게임 기록). `.claude/launch.json`은 실행 중인 `5173`에 붙기만 하는 설정으로 새로 만들었다(커밋 안 함) |
 | 회사 PC에만 있는 것 | `play-1` SSH 열쇠(`~/.ssh/play_vultr`) · **백업 개인키**(`~/playledger-backup.key`). `.claude/worktrees/brave-hawking-fc3e7c`(병합됨, 지워도 된다). 헤드리스 Edge 확인 스크립트는 저장소에 없다 ─ 필요하면 [DEVLOG_M4.5](archive/DEVLOG_M4.5.md)를 보고 새로 만든다 |
 
 ## 작성 규칙
@@ -21,6 +21,45 @@
 - 기기 표기는 `README` 개발 환경 표를 따른다 (데스크톱 A · 데스크톱 B · 노트북)
 - **막혔던 점은 해결됐어도 반드시 남긴다.** 같은 실수를 반복하지 않기 위한 기록이고, 나중에 이 프로젝트를 설명할 때 "어떤 문제를 어떻게 해결했는가"가 결과물보다 더 중요한 이야기가 된다
 - 환경 버전은 여기 적지 않는다. `requirements.txt` · `package.json` · `ci.yml`이 원본이고, 기기별 런타임은 `README`에 있다
+
+---
+
+## 2026-11-04 (11) · 클린룸 검증, 비밀번호 보기 버튼 (데스크톱 A, 클린룸은 사용자 · 문서와 코드는 자동)
+
+### 한 일
+- 진행 순서: 안 올린 작업 확인 → 사용자가 볼륨까지 지우고 새로 클론 → `README`만 보고 실행 → 발견 정리 → 문서 수정 → 비밀번호 보기 버튼
+- 클린룸(사용자가 직접): `docker compose down -v` → 폴더 삭제 → 클론 → `README` "시작하기". `pytest` **310 passed**(38.89초), `npm run lint` · `format:check` · `vue-tsc` 통과, `npm test` **202 passed**, 화면에서 가입 · 게임 등록
+- 클린룸 발견 4건을 `README`에서 고침
+  1. `web/` 검사 명령(lint · format:check · vue-tsc · test)이 `README`에 없었다. CLAUDE.md에만 있었다
+  2. `pytest`가 `requirements-dev.txt`에 있다는 안내가 테스트 절에 없었다
+  3. 개발 환경 표의 데스크톱 A Python이 3.13.5 ─ 실제는 3.14.7(Miniconda)
+  4. "배포 구성은 M5에서 작성됩니다" ─ 이미 `docs/SERVER.md`가 있다
+- 비밀번호 보기 버튼 `PasswordInput.vue`: 로그인 · 계정 삭제 칸 (`DESIGN` 3.1절)
+- 외부 리뷰(사용자가 ChatGPT에 맡긴 종합 평가)를 코드와 대조해 PLAN M5에 두 항목 추가: 재부팅 뒤 자동 복구, CSP `img-src` 좁히기. 나머지 권고는 이미 M5 · M6 계획에 있었다
+
+### [설계]
+- 닉네임은 중복 허용 그대로 둔다(`DATA_MODEL` 2.1절). 사용자가 같은 닉네임 가입을 보고 물었다 ─ 기기마다 DB가 따로이기도 하고, 닉네임은 표시 이름이다
+- 게임별 리뷰 · 댓글은 `REQUIREMENTS` F-34로만 적었다. 3.2절 "소셜 기능은 하지 않는다"와 부딪쳐서, 하게 되면 `decisions/`부터
+- 비밀번호 보기 버튼은 4.4절에 적지 않고 바로 넣었다. 사용자가 요청했고 화면 두 곳 · 컴포넌트 하나라 작다
+- 버튼은 `type="button"`(폼 제출 방지), `mousedown.prevent`(칸 포커스 유지 ─ 모바일 키보드가 닫히지 않게), `aria-pressed` · 바뀌는 `aria-label`. Edge의 `::-ms-reveal`을 숨겨 눈이 두 개 보이지 않게
+- 대화상자를 닫으면 컴포넌트가 사라져 다음에 열 때 가려진 상태로 시작한다 ─ 따로 되돌리는 코드를 두지 않았다
+- 가입 409 "이미 사용 중인 이메일"이 계정 존재를 알려 준다는 리뷰 지적은 이미 `ARCHITECTURE` 3.10절 · F-27에 감수한 것으로 적혀 있다
+
+### 막힌 것
+- **`pytest`를 찾을 수 없음.** 증상: venv에서 `pytest` → CommandNotFoundException. 원인: `requirements.txt`만 설치됨. `README` 2번에는 `requirements-dev.txt`가 맞게 있었지만 바로 옆 "운영은 requirements.txt만" 주석과 테스트 절에 안내가 없어 놓치기 쉬웠다. 해결: `pip install -r requirements-dev.txt` 후 310 passed, 테스트 절에 한 줄 추가
+- `npm run format check`(콜론 없이)를 쳐서 `prettier --write`가 돌았다. 전부 `unchanged`라 바뀐 파일은 없었다
+- 새 컴포넌트가 처음에 `format:check`에서 걸렸다. 커밋 전에 검사를 `&&`로 묶어 돌려서 잡았다(앞 세션 교훈)
+
+### 확인
+- `npm run lint` · `format:check` · `vue-tsc` 통과, `npm test` 202 passed (컴포넌트 테스트 도구가 없어 이 버튼의 자동 테스트는 없다)
+- 화면(내장 브라우저, 설정 → 계정 삭제 대화상자, 삭제는 누르지 않음): 처음 `type=password` · "비밀번호 보기" · 버튼 44×46px · 칸 오른쪽 여백 44px · `autocomplete=current-password` · `maxlength=128` 유지. 누르면 `type=text` · "비밀번호 숨기기" · `aria-pressed=true`, 포커스는 칸에 그대로, 값 유지, 대화상자 열린 채. 다시 누르면 password. 닫았다 열면 password · 빈 값
+- **확인 못 한 것**: 로그인 화면(브라우저가 로그인 상태라 직접 열지 않음, 같은 컴포넌트), Edge에서 눈이 하나만 보이는지, 실제 폰
+
+### 이번 세션 커밋
+- `feat(M5)` 비밀번호 보기 버튼 / `docs(M5)` 클린룸 발견 · 닉네임 · F-34 · M5 항목
+
+### 다음에 할 일
+- "현재 상태" ① ~ ⑦
 
 ---
 

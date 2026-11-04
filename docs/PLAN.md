@@ -343,7 +343,7 @@
 - [x] API Dockerfile (`requirements.txt`만, 비 root, `uvicorn --workers 1`). 요청 제한이 프로세스 메모리에 있어 워커를 늘리면 제한이 그만큼 늘어난다
 - [x] 화면 빌드를 Caddy가 내주는 구성, 운영 Compose
 - [x] Caddyfile: `/api` 프록시, SPA fallback(`try_files {path} /index.html`, 없으면 `/library` 새로고침이 404), 압축, 해시 파일 장기 캐시 · `index.html` 캐시 금지, 보안 헤더(HSTS · CSP · nosniff · Referrer-Policy)
-- [ ] uvicorn `--proxy-headers --forwarded-allow-ips`를 Caddy로 한정 — 안 하면 모든 사용자가 한 IP로 묶여 요청 제한이 서로를 막고, 넓게 열면 헤더로 IP를 속일 수 있다. 다른 IP 둘로 실제 확인
+- [x] uvicorn `--proxy-headers --forwarded-allow-ips`를 Caddy로 한정 — 안 하면 모든 사용자가 한 IP로 묶여 요청 제한이 서로를 막고, 넓게 열면 헤더로 IP를 속일 수 있다. 다른 IP 둘로 실제 확인
 - [x] 운영 `.env` 예시 (`ENABLE_DOCS=false`, 새 JWT 비밀, DB 비밀번호). 비밀값 · 서버 IP는 문서에 적지 않는다
 - [x] 배포 순서 스크립트: 백업 → `alembic upgrade head` → 교체 → `/api/health` 확인. 실패 시 되돌리는 방법
 - [x] Steam 미러 첫 실행 198,461건 28.8초
@@ -352,18 +352,21 @@
 - [x] 로그 회전(Compose 10MB 3개), 옛 이미지 정리(`play-release`)
 - [ ] 헬스체크 감시 (`.github/workflows/uptime.yml`을 30분마다, 실패하면 GitHub 메일. 아직 안 만듦), 디스크 여유 확인
 - [ ] HSTS를 하루 → 1년으로 (`web/deploy/Caddyfile`. 운영 확인은 끝남, 다음 배포에 포함)
+- [ ] CSP `img-src`를 `https:` 전체에서 실제 커버가 오는 Steam CDN 도메인으로 좁히기 (운영 네트워크 기록으로 도메인 확인 후) *(계획에 없던 작업)*
+- [ ] 서버 재부팅 뒤 자동 복구 확인 (`sudo reboot` → 세 컨테이너 · `/api/health` · 백업 타이머), 인증서 만료일 확인 *(계획에 없던 작업)*
 - [ ] `play-release` 되돌리기 실제 시험 (일부러 죽는 이미지 배포. 아직 한 번도 안 돌았다. 할지 사용자가 정한다)
 - [ ] 200개 목록 응답 시간을 운영 서버에서 다시 측정 (`REQUIREMENTS` 6장, 로컬 21ms)
 - [x] Inter · Noto Sans KR 내장 (`@fontsource-variable`). 외부로 나가는 글꼴 요청 없음, 전 화면 48장 비교에서 레이아웃 변화 없음
 - [ ] 배포 후 `개인정보 안내` 다시 대조 (백업 보관 기간, 호스팅 업체)
-- [ ] `SERVER.md` 작성, 클린룸 검증 (다른 PC에서 새로 클론)
+- [x] `SERVER.md` 작성, 클린룸 검증 (다른 PC에서 새로 클론) ─ 2026-11-04 데스크톱 A, 발견 4건 수정
+- [x] 로그인 · 계정 삭제 비밀번호 칸에 보기 버튼 (`DESIGN` 3.1절) *(계획에 없던 작업)*
 
 **완료 기준**
 - [x] 폰 데이터(LTE)로 접속해 가입 · 로그인 · 게임 등록 · 계정 삭제가 됨 (안드로이드. 아이폰은 미확인)
 - [x] `/library`에서 새로고침해도 화면이 나옴, `/docs`에 API 문서가 없음(Caddy가 /api만 넘겨 앱의 없는 주소 화면이 나온다), `/api/docs`는 404
 - [x] 다른 IP 둘에서 요청 제한이 따로 세어짐
 - [ ] 백업으로 빈 DB를 되살려 기록 수가 같음
-- [ ] 다른 PC에서 클론해 `README`만 보고 실행됨, 클린룸 검증에서 발견된 문제가 모두 수정됨
+- [x] 다른 PC에서 클론해 `README`만 보고 실행됨, 클린룸 검증에서 발견된 문제가 모두 수정됨 (데스크톱 A: `pytest` 310건 · `npm test` 202건 · 가입 · 게임 등록)
 
 > PulseGrid의 클린룸 검증에서 4건의 문제가 발견됐다. 같은 방식으로 검증한다.
 

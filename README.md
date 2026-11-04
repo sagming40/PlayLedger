@@ -234,8 +234,7 @@ playledger/
 
 ## 시작하기
 
-> 배포 구성(`docker compose up` 하나로 전체 기동)은 M5에서 작성됩니다.
-> 아래는 개발 환경 기준입니다.
+> 아래는 개발 환경 기준입니다. 운영 서버 배포 · 백업 · 복구는 [`docs/SERVER.md`](docs/SERVER.md)에 있습니다.
 
 **최초 1회 — 클론 직후**
 
@@ -288,7 +287,18 @@ docker compose exec db psql -U <루트 .env의 사용자명> -d playledger -c "C
 pytest -v
 ```
 
+> `pytest`는 `requirements-dev.txt`에 들어 있습니다. `requirements.txt`만 설치했다면 "pytest를 찾을 수 없다"가 나옵니다.
+
 > `server/.env`에 `TEST_DATABASE_URL`이 필요합니다. `DATABASE_URL`과 같되 DB 이름만 `playledger_test`입니다.
+
+**검사 · 테스트 — `web/`** (CI와 같은 순서)
+
+```powershell
+npm run lint             # ESLint
+npm run format:check     # Prettier 검사만. 고치려면 npm run format
+npx vue-tsc -b --noEmit  # 타입 검사
+npm test                 # Vitest
+```
 
 > `Activate.ps1` 실행이 차단되면 `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` 후 다시 시도합니다.
 
@@ -311,7 +321,7 @@ pytest -v
 > 자주 쓰는 순서대로 적었습니다. 데스크톱 B는 2026-10-29에 학교 PC(Ryzen 9 5900X)에서 회사 PC로 바뀌었습니다.
 
 - **OS** · Windows 11 (공통)
-- **런타임** · Python: 데스크톱 B 3.14.8 (Miniconda) · 데스크톱 A 3.13.5 · 노트북 3.13.9 (Anaconda 빌드), CI는 3.13. Node.js: v24.15.0 (데스크톱 B v24.22.0)
+- **런타임** · Python: 데스크톱 B 3.14.8 (Miniconda) · 데스크톱 A 3.14.7 (Miniconda) · 노트북 3.13.9 (Anaconda 빌드), CI는 3.13. Node.js: v24.15.0 (데스크톱 B v24.22.0)
 - **DB 도구** · HeidiSQL (PostgreSQL 접속 가능한 버전. 기기마다 달라도 됩니다)
 - **대상** · 웹 (데스크톱 · 모바일 브라우저)
 - **기기 간 이동** · 코드는 Git으로만 옮깁니다. `.env`와 DB 데이터는 Git으로 옮겨지지 않으므로 기기마다 따로 만듭니다
