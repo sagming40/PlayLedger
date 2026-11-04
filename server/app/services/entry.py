@@ -23,11 +23,12 @@ MAX_LIMIT = 100
 # 이유: user_id와 entry_id는 모두 int이다. ─ 순서가 바뀌어도 Python이 인식하지 못함
 #      → 순서가 뒤바뀌면 "남의 기록 조회"가 될 수도 있다 → 이름표를 붙이게 끔 강제하여 막는다
 async def get_entry(
-    db: AsyncSession, *, user_id: int, entry_id: int
+    db: AsyncSession, *, user_id: int, entry_id: int, for_update: bool = False
 ) -> Entry | None:
     """내 보유 기록 하나를 게임 · 장르까지 함께 불러온다. 내 것이 아니거나 없으면 None.
 
     None 하나로 "없음"과 "다른 유저의 것"을 구분하지 않는다 → Router는 모두 상태 코드 404로 응답한다
+    for_update = 이 행을 commit까지 잠근다 ─ 읽고 나서 고치는 사이 다른 기기가 지우지 못하게 (수정 API)
     """
     stmt = (
         select(Entry)
@@ -43,6 +44,9 @@ async def get_entry(
         # game.genres는 insert()로 DB만 바뀌어서 Python 객체가 인식하지 못한다 → 지난 값을 신뢰하지 않는다
         .execution_options(populate_existing=True)
     )
+    # selectinload는 쿼리가 따로 나가므로 잠기는 것은 Entry 행뿐이다 ─ 공유하는 Game은 잠그지 않는다
+    if for_update:
+        stmt = stmt.with_for_update()
     return await db.scalar(stmt)
 
 

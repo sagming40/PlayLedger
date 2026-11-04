@@ -36,7 +36,9 @@ router = APIRouter(prefix="/api/entries", tags=["entries"])
 ENTRY_UNIQUE = "uq_entries_user_id_game_id"
 
 
-async def _get_my_entry_or_404(db: AsyncSession, *, user_id: int, entry_id: int) -> Entry:
+async def _get_my_entry_or_404(
+    db: AsyncSession, *, user_id: int, entry_id: int, for_update: bool = False
+) -> Entry:
     """내 보유 기록을 꺼낸다. 없거나 다른 유저의 것이면 404
 
     단건 · 수정 · 삭제 3곳이 같은 상태 코드 · 같은 문구를 써야 한다
@@ -46,7 +48,7 @@ async def _get_my_entry_or_404(db: AsyncSession, *, user_id: int, entry_id: int)
     # 422로 돌려주면 '없는 id'와 응답이 갈린다. 주소창에 아무 숫자나 쳐 볼 수 있는 곳이다 (S-04 /library/:id)
     entry = None
     if 1 <= entry_id <= INT_MAX:
-        entry = await get_entry(db, user_id=user_id, entry_id=entry_id)
+        entry = await get_entry(db, user_id=user_id, entry_id=entry_id, for_update=for_update)
     if entry is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -232,7 +234,9 @@ async def update_my_entry(
 
     PATCH = 일부만 수정. (PUT = "통째로 교체" ─ 보내지 않은 항목도 지워진다)
     """
-    entry = await _get_my_entry_or_404(db, user_id=user.id, entry_id=entry_id)
+    # 잠그고 읽는다 ─ 안 잠그면 읽은 뒤 다른 기기가 지웠을 때 UPDATE가 0행이 되어 StaleDataError(500)가 난다
+    # 잠그면 삭제가 이 수정이 끝나기를 기다리고, 먼저 지워졌으면 여기서 404가 난다
+    entry = await _get_my_entry_or_404(db, user_id=user.id, entry_id=entry_id, for_update=True)
 
     # exclude_unset=True = 요청에 '실제로 적어 보낸' 항목만 꺼낸다
     # True로 설정하지 않으면 보내지 않은 항목까지 None으로 채워져 멀쩡한 값이 지워진다
@@ -265,7 +269,8 @@ async def update_my_entry(
 
     # updated_at은 모델의 onupdate가 갱신한다 ─ 건드리지 않는다
     await db.commit()
-    return await get_entry(db, user_id=user.id, entry_id=entry_id)
+    # commit으로 잠금이 풀린 직후 기다리던 삭제가 먼저 끝날 수 있다 ─ None을 응답 모델에 넘기면 500이므로 같은 404로
+    return await _get_my_entry_or_404(db, user_id=user.id, entry_id=entry_id)
 
 
 # status_code=204 ─ "요청 성공. 반환할 내용 없음." (응답 본문 없음)
