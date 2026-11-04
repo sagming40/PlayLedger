@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { effectScope } from 'vue'
 import { useEntryDetail } from './useEntryDetail'
 import { setAccessToken } from '@/api/client'
 import type { Entry } from '@/api/entries'
@@ -42,6 +43,114 @@ async function flush() {
   // fetch → json() → 상태 반영까지 몇 번의 then을 거친다
   for (let i = 0; i < 5; i++) await Promise.resolve()
 }
+
+// 기록을 불러온 상세 하나 ─ 삭제 시나리오의 출발점
+async function openedDetail() {
+  const held = heldServer()
+  const detail = useEntryDetail()
+  const loading = detail.load(1)
+  await flush()
+  held.shift()!.reply(json(200, entry(1)))
+  await loading
+  return { held, detail }
+}
+
+describe('삭제', () => {
+  it('DELETE를 보내고 성공을 알린다 ─ 204는 본문이 없다', async () => {
+    const { held, detail } = await openedDetail()
+    const removing = detail.remove()
+    await flush()
+    expect(held[0]!.init?.method).toBe('DELETE')
+    expect(held[0]!.url).toContain('/entries/1')
+    held[0]!.reply(json(204))
+    expect(await removing).toBe(true)
+    expect(detail.saving.value).toBe(false)
+  })
+
+  it('두 번 눌러도 한 번만 보낸다', async () => {
+    const { held, detail } = await openedDetail()
+    const removing = detail.remove()
+    expect(await detail.remove()).toBe(false)
+    await flush()
+    expect(held).toHaveLength(1)
+    held[0]!.reply(json(204))
+    expect(await removing).toBe(true)
+  })
+
+  it('상태 저장 중에는 지우지 않고, 지우는 중에는 상태를 저장하지 않는다', async () => {
+    const { held, detail } = await openedDetail()
+    const saving = detail.changeStatus('PLAYING')
+    expect(await detail.remove()).toBe(false)
+    await flush()
+    expect(held).toHaveLength(1)
+    held[0]!.reply(json(200, entry(1, { status: 'PLAYING' })))
+    await saving
+
+    const removing = detail.remove()
+    expect(await detail.changeStatus('CLEARED')).toBe(false)
+    await flush()
+    expect(held.filter((h) => h.init?.method === 'DELETE')).toHaveLength(1)
+    expect(held).toHaveLength(2)
+    held[1]!.reply(json(204))
+    await removing
+  })
+
+  it('실패하면 기록을 그대로 두고 이유를 보인다', async () => {
+    const { held, detail } = await openedDetail()
+    const removing = detail.remove()
+    await flush()
+    held[0]!.reply(json(500, { detail: 'Internal Server Error' }))
+    expect(await removing).toBe(false)
+    expect(detail.entry.value?.id).toBe(1)
+    expect(detail.deleteError.value).not.toBeNull()
+  })
+
+  it('네트워크가 끊기면 연결 실패로 알린다', async () => {
+    const { detail } = await openedDetail()
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('Failed to fetch')))
+    expect(await detail.remove()).toBe(false)
+    expect(detail.deleteError.value).toBe('연결에 실패했습니다')
+  })
+
+  it('다른 탭에서 먼저 지웠으면 "찾을 수 없음"으로 바뀐다', async () => {
+    const { held, detail } = await openedDetail()
+    const removing = detail.remove()
+    await flush()
+    held[0]!.reply(json(404, { detail: '기록을 찾을 수 없습니다' }))
+    expect(await removing).toBe(false)
+    expect(detail.notFound.value).toBe(true)
+    expect(detail.entry.value).toBeNull()
+  })
+
+  it('답을 기다리는 사이 화면을 떠나면 성공해도 끌고 가지 않는다', async () => {
+    const scope = effectScope()
+    const held = heldServer()
+    const detail = scope.run(() => useEntryDetail())!
+    const loading = detail.load(1)
+    await flush()
+    held.shift()!.reply(json(200, entry(1)))
+    await loading
+    const removing = detail.remove()
+    await flush()
+    scope.stop()
+    held[0]!.reply(json(204))
+    expect(await removing).toBe(false)
+  })
+
+  it('답을 기다리는 사이 다른 게임으로 옮기면 그 게임을 건드리지 않는다', async () => {
+    const { held, detail } = await openedDetail()
+    const removing = detail.remove()
+    await flush()
+    const loading = detail.load(2)
+    await flush()
+    held[1]!.reply(json(200, entry(2)))
+    await loading
+    held[0]!.reply(json(404, { detail: '기록을 찾을 수 없습니다' }))
+    expect(await removing).toBe(false)
+    expect(detail.entry.value?.id).toBe(2)
+    expect(detail.notFound.value).toBe(false)
+  })
+})
 
 beforeEach(() => {
   setAccessToken('t1')
