@@ -18,6 +18,8 @@ from app.core.security import (
     hash_refresh_token,
     verify_password_async,
 )
+from app.models.entry import Entry
+from app.models.game import Game
 from app.models.user import RefreshToken, User
 from app.schemas.common import contains_broken_text
 from app.schemas.user import UserCreate
@@ -85,6 +87,21 @@ def _new_refresh_row(user_id: int, now: datetime) -> tuple[str, RefreshToken]:
         token_hash=hash_refresh_token(raw),
         expires_at=now + timedelta(days=settings.refresh_token_expire_days),
     )
+
+
+async def delete_account(db: AsyncSession, user_id: int) -> None:
+    """계정과 그 사람의 흔적을 지운다. 공유하는 Steam 게임은 남는다 (decisions/0011)
+
+    순서가 중요하다 ─ entries.game_id가 RESTRICT라 기록을 먼저 지워야 게임을 지울 수 있다
+    refresh 토큰은 users FK CASCADE로 함께 지워진다
+    """
+    # 먼저 잠근다 ─ 다른 탭에서 등록 중이면 끝나기를 기다렸다가 그 기록까지 본다
+    # 이후의 등록은 FK 검사가 이 잠금을 기다리다가 실패한다
+    await db.execute(select(User.id).where(User.id == user_id).with_for_update())
+    await db.execute(delete(Entry).where(Entry.user_id == user_id))
+    await db.execute(delete(Game).where(Game.owner_user_id == user_id))
+    await db.execute(delete(User).where(User.id == user_id))
+    await db.commit()
 
 
 async def issue_refresh_token(db: AsyncSession, user_id: int) -> str:

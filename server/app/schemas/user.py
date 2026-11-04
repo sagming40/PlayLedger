@@ -52,6 +52,12 @@ class UserCreate(BaseModel):
         return value.strip() if isinstance(value, str) else value
 
 
+class AccountDeleteRequest(BaseModel):
+    """계정 삭제 확인 ─ 토큰만으로는 지우지 않는다. 자리를 비운 사이 누군가 누를 수 있다"""
+
+    password: CleanStr = Field(min_length=1, max_length=128)
+
+
 class UserRead(BaseModel):
     """회원 정보 응답으로 나가는 것
 

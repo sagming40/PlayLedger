@@ -14,12 +14,13 @@ from app.core.rate_limit import (
     login_ip_limiter,
     register_limiter,
 )
-from app.core.security import create_access_token
+from app.core.security import create_access_token, verify_password_async
 from app.deps import client_ip, ensure_not_limited, get_current_user, get_db, reject_other_sites
 from app.models.user import User
-from app.schemas.user import LoginRequest, TokenResponse, UserCreate, UserRead
+from app.schemas.user import AccountDeleteRequest, LoginRequest, TokenResponse, UserCreate, UserRead
 from app.services.auth import (
     authenticate,
+    delete_account,
     issue_refresh_token,
     register_user,
     revoke_refresh_token,
@@ -188,3 +189,34 @@ async def logout(
 async def read_me(current_user: User = Depends(get_current_user)) -> User:
     """지금 로그인한 사용자 정보. 인증 검사는 get_current_user가 전부 맡는다."""
     return current_user
+
+
+@router.delete("/me", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_me(
+    payload: AccountDeleteRequest,
+    request: Request,
+    response: Response,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> None:
+    """비밀번호를 확인하고 계정을 지운다 (S-06)
+
+    틀린 비밀번호는 401이 아니라 403이다 ─ 401이면 화면이 토큰 만료로 알고 재발급을 시도한다
+    로그인과 같은 실패 횟수를 센다 ─ 여기가 비밀번호 대입의 뒷문이 되면 안 된다
+    """
+    failure_key = f"{client_ip(request)}|{current_user.email}"
+    ensure_not_limited(login_failure_limiter, failure_key)
+
+    matches = current_user.password_hash is not None and await verify_password_async(
+        payload.password, current_user.password_hash
+    )
+    if not matches:
+        login_failure_limiter.hit(failure_key)
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="비밀번호가 올바르지 않습니다",
+        )
+
+    login_failure_limiter.reset(failure_key)
+    await delete_account(db, current_user.id)
+    clear_refresh_cookie(response)
