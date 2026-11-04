@@ -82,7 +82,7 @@ PlayLedger: 사놓고 안 한 게임을 구매일 · 구매가 · 플레이타�
 - **반응형 기준은 `48rem`**: px이 아니라 루트 글꼴 크기에 따라 기기마다 전환 지점이 다르다
 
 ## 하지 말 것
-- `npx shadcn-vue add`를 그대로 치지 않는다. `style.css`와 패키지 버전을 바꾸고 고쳐 둔 `button`을 덮어쓰려 한다. 레지스트리의 소스만 받아 import를 `@/lib/utils` · `@/components/ui`로 바꿔 넣는다 (DEVLOG 2026-11-04 (8))
+- `npx shadcn-vue add`를 그대로 치지 않는다. `style.css`와 패키지 버전을 바꾸고 고쳐 둔 `button`을 덮어쓰려 한다. 레지스트리의 소스만 받아 import를 `@/lib/utils` · `@/components/ui`로 바꿔 넣는다 (archive/DEVLOG_M4.5 2026-11-04 (8))
 - `.env`(루트 · `server/`)를 커밋하지 않는다. `STEAM_API_KEY`는 화면 · 로그 · URL에 찍지 않는다 (헤더로만 보낸다)
 - `alembic.ini`에 한글을 쓰지 않는다 (Windows에서 cp949로 읽어서 `UnicodeDecodeError`가 날 수 있다). DB 주소도 넣지 않는다 (`alembic/env.py`가 `.env`에서 읽음)
 - access 토큰을 `localStorage`에 넣지 않는다. 메모리(`api/client.ts`)에만 둔다
