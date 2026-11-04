@@ -58,6 +58,14 @@ async def test_create_uses_defaults(client, auth_headers):
     assert created["cost_per_hour"] is None
 
 
+async def test_time_and_date_formats(client, auth_headers):
+    """화면이 믿는 형식이다 ─ 시각은 UTC Z, 날짜는 시각 없이 (CLAUDE.md 함정, ARCHITECTURE 3.1절)"""
+    created = await entry_of(client, await auth_headers(A), purchased_at="2026-01-02")
+    assert created["created_at"].endswith("Z"), created["created_at"]
+    assert created["updated_at"].endswith("Z"), created["updated_at"]
+    assert created["purchased_at"] == "2026-01-02"
+
+
 # ─── 수정 ───────────────────────────────────────────────
 
 

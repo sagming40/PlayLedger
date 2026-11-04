@@ -103,6 +103,19 @@ async def test_owner_can_replace_manual_genres(client, auth_headers):
     assert res.json()["game"]["genres"] == []
 
 
+async def test_replacing_genres_counts_as_an_edit(client, auth_headers):
+    """장르만 고쳐도 최근 수정순 맨 위로 올라온다"""
+    a = await auth_headers(A)
+    ids = await genre_ids(client, a)
+    first = (await create(client, a, "먼저 등록")).json()
+    await create(client, a, "나중 등록")
+
+    res = await client.patch(f"/api/entries/{first['id']}", json={"genre_ids": [ids["전략"]]}, headers=a)
+    assert res.json()["updated_at"] > first["updated_at"]
+    listed = (await client.get("/api/entries", headers=a)).json()
+    assert listed["items"][0]["id"] == first["id"]
+
+
 async def test_steam_genres_stay_fixed(client, auth_headers, session_factory, fake_steam):
     """Steam 게임은 여럿이 같이 보는 행이라 비어 있을 때만 채운다"""
     a = await auth_headers(A)

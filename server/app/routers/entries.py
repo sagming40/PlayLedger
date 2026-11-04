@@ -5,6 +5,7 @@ from typing import Literal
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -289,6 +290,8 @@ async def update_my_entry(
         await _ensure_genres_exist(db, genre_ids)
         if entry.game.owner_user_id == user.id:
             await replace_genres(db, entry.game_id, genre_ids)
+            # 장르만 바꾸면 entries 행이 그대로라 onupdate가 돌지 않는다 ─ 최근 수정순 맨 위로 올라와야 한다
+            entry.updated_at = func.now()
         else:
             await attach_genres_if_empty(db, entry.game_id, genre_ids)
 
