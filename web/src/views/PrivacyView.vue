@@ -42,6 +42,9 @@ const backTo = computed(() => (auth.isAuthenticated ? '/settings' : '/login'))
         <li>서버는 Vultr의 서울 데이터센터에 있어요. 2026년 12월에 다른 호스팅으로 옮길 예정이고, 옮기면 이 안내를 고쳐요</li>
         <li>서버 접속 기록에는 접속 IP, 시각, 요청한 주소가 남아요. 일정 용량이 차면 오래된 것부터 지워져요</li>
         <li>데이터베이스는 매일 새벽 암호화한 백업을 만들고, 14일이 지난 백업은 지워요</li>
+        <li>
+          서버가 사라질 때를 대비해 같은 백업을 Cloudflare R2 저장소에도 14일 동안 둬요. 암호화된 채로 올려서 Cloudflare도 열어 볼 수 없어요
+        </li>
       </ul>
     </section>
 
