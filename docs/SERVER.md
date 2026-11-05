@@ -48,13 +48,30 @@ New-Item -ItemType Directory -Force "$HOME\playledger-backups" | Out-Null
 scp "play:/var/backups/playledger/*.dump.age" "$HOME\playledger-backups\"
 ```
 
-**복구** (PC의 로컬 운영 구성에서 연습. 운영 복구도 같은 순서다):
+**복구 리허설** (PC, Docker Desktop을 켠 뒤. 2026-11-06 처음 함, 5절). 운영은 읽기만 한다.
+
+1. 서버에서 백업을 새로 만들고 바로 개수를 센다 ─ 그 사이에 기록이 바뀌지 않게 붙여서 친다:
+
+```bash
+sudo play-backup && sudo play-compose exec db psql -U playledger -d playledger -c "select (select count(*) from users) users, (select count(*) from games) games, (select count(*) from entries) entries, (select count(*) from genres) genres, (select count(*) from game_genres) game_genres, (select count(*) from refresh_tokens) refresh_tokens, (select version_num from alembic_version) alembic"
+```
+
+2. 위 "백업 내려받기" 뒤 PC에서 가장 최근 백업을 빈 임시 DB에 되살려 같은 개수를 센다. `steam_apps`는 구조만 백업하므로 0이 맞다(미러링으로 다시 채운다):
 
 ```powershell
 $latest = Get-ChildItem "$HOME\playledger-backups\*.dump.age" | Sort-Object Name | Select-Object -Last 1
-age -d -i "$HOME\playledger-backup.key" -o "$env:TEMP\play-restore.dump" $latest.FullName
-# 빈 DB에 되살린 뒤 users · games · entries 수를 운영과 대조한다. 끝나면 임시 파일을 지운다
+$dump = "$env:TEMP\play-restore.dump"
+age -d -i "$HOME\playledger-backup.key" -o $dump $latest.FullName
+docker run -d --rm --name play-restore -e POSTGRES_USER=playledger -e POSTGRES_PASSWORD=rehearsal -e POSTGRES_DB=playledger postgres:18
+do { Start-Sleep 2; docker exec play-restore pg_isready -U playledger -d playledger -q } until ($LASTEXITCODE -eq 0)
+Start-Sleep 3   # 첫 기동은 초기화 뒤 한 번 재시작한다 ─ 그 틈에 들어가지 않게
+docker cp $dump play-restore:/tmp/r.dump
+docker exec play-restore pg_restore -U playledger -d playledger --exit-on-error /tmp/r.dump; "pg_restore exit $LASTEXITCODE"
+docker exec play-restore psql -U playledger -d playledger -c "select (select count(*) from users) users, (select count(*) from games) games, (select count(*) from entries) entries, (select count(*) from genres) genres, (select count(*) from game_genres) game_genres, (select count(*) from refresh_tokens) refresh_tokens, (select count(*) from steam_apps) steam_apps, (select version_num from alembic_version) alembic"
+docker stop play-restore; Remove-Item $dump   # 풀린 덤프에는 이메일 · 비밀번호 해시가 있다. 반드시 지운다
 ```
+
+운영 DB에 실제로 되살리는 순서(api 멈춤 → DB 비우기 → `pg_restore` → api 다시)는 아직 해 보지 않았다. 필요해지면 위 리허설을 기준으로 먼저 PC에서 연습한다.
 
 되돌리기: `play-release`는 새 버전이 살아나지 않으면 이전 커밋으로 스스로 돌아간다. 마이그레이션은 되돌리지 않는다(데이터를 잃을 수 있다). 표 때문에 옛 코드가 안 돌면 배포 직전 백업으로 복구한다.
 
@@ -253,3 +270,10 @@ sudo play-backup
 - 배포 전 운영 DB 커버 호스트: `shared.akamai.steamstatic.com` 2건뿐 ─ 새 `img-src https://*.steamstatic.com`에 모두 들어간다
 - 한 줄 `ssh -t play "… -c \"…\""`를 PowerShell에서 치면 `\"`가 이스케이프가 아니라 따옴표가 끊긴다(`ParserError` · 서버 bash `syntax error near '('`). 따옴표가 겹치는 명령은 서버에 들어가서(`ssh play`) 친다
 - `task deploy`로 `6af62c1` 배포(사용자). 밖에서: 응답 헤더 `Strict-Transport-Security: max-age=31536000`, CSP `img-src 'self' https://*.steamstatic.com data:`, `/api/health` ok, `/privacy`에 "어디에 얼마나 남는지" 절
+
+**2026-11-06 · 첫 복구 리허설 (회사 PC)**
+
+- 서버: `sudo play-backup` → `playledger-20261105T232759Z.dump.age`(24,046바이트), 바로 센 운영 개수 users 2 · games 2 · entries 2 · genres 8 · game_genres 3 · refresh_tokens 14 · alembic `8c2f4a71d9e3`
+- PC: `scp`로 8개(22 ~ 23KB) 받음 → 가장 최근 것을 풀어 23,846바이트 → 빈 `postgres:18` 컨테이너에 `pg_restore --exit-on-error` exit 0 → 개수가 위와 모두 같음, `steam_apps` 0(구조만), 외래 키 6 · 인덱스 22, 사용자 · 게임과 이어지는 entries 2
+- 2절 PowerShell 명령을 그대로 한 번 더 돌려 같은 결과, 내려받은 뒤 되살리고 세기까지 7초. 풀린 덤프는 지웠고 컨테이너는 `--rm`이라 남지 않는다
+- PC `$HOME\playledger-backups\`에 잠긴 백업 8개가 남아 있다 ─ 이게 지금의 "서버 밖 사본"이다(손으로 받을 때만 생긴다)
