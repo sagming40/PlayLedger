@@ -1,0 +1,48 @@
+# .github/workflows/uptime.yml
+# 운영 감시 (PLAN M5, SERVER 1절) ─ 30분마다 GitHub가 밖에서 play.sagming.com의 문을 두드려 본다
+# 비유: 경비 아저씨 순찰 ─ 문이 안 열리거나(헬스체크) 출입증 기한이 얼마 안 남았으면(인증서) 실패로 끝나고,
+#       실패한 예약 작업은 GitHub가 마지막으로 이 파일의 cron을 고친 사람에게 메일을 보낸다
+# - 서버 안에서 도는 감시는 서버와 같이 죽는다. 그래서 바깥(GitHub)에서 본다
+# - 저장소에 60일 동안 커밋이 없으면 GitHub가 예약 작업을 멈춘다. 멈추면 Actions 화면에서 다시 켠다
+
+name: uptime
+
+on:
+  schedule:
+    - cron: "7,37 * * * *"                   # 정각 · 30분은 GitHub가 몰려서 늦게 돈다. 7분 · 37분으로 비켜 간다
+  workflow_dispatch:                         # Actions 화면에서 손으로 한 번 돌려 볼 때
+
+permissions: {}                              # 저장소를 읽을 일도 없다 ─ 바깥 주소만 부른다
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    env:
+      SITE: play.sagming.com
+      CERT_MIN_DAYS: 20                      # Caddy는 만료 30일 전에 갱신한다. 20일 아래면 갱신이 몇 번 실패한 것
+    steps:
+      - name: 헬스체크 (/api/health)
+        # 배포 중 교체되는 몇 초 · 순간 끊김으로 메일이 오지 않게 20초 간격으로 4번까지 본다
+        # 200이어도 DB가 죽었으면 본문이 ok가 아니다 ─ 본문까지 본다 (server/app/main.py)
+        run: |
+          for i in 1 2 3 4; do
+            body=$(curl -fsS --max-time 10 "https://$SITE/api/health") && [[ $body == *'"status":"ok"'* ]] && {
+              echo "ok ($i번째): $body"; exit 0; }
+            echo "실패 ($i번째): ${body:-응답 없음}"
+            [[ $i -lt 4 ]] && sleep 20
+          done
+          echo "::error::헬스체크 4번 모두 실패 ─ SERVER.md 2절로 서버 상태를 본다"
+          exit 1
+
+      - name: 인증서 남은 날
+        run: |
+          end=$(echo | openssl s_client -connect "$SITE:443" -servername "$SITE" 2>/dev/null |
+                openssl x509 -noout -enddate | cut -d= -f2)
+          [[ -n $end ]] || { echo "::error::인증서를 읽지 못했다"; exit 1; }
+          days=$(( ($(date -d "$end" +%s) - $(date +%s)) / 86400 ))
+          echo "만료 $end, ${days}일 남음"
+          if (( days < CERT_MIN_DAYS )); then
+            echo "::error::인증서가 ${days}일 남았다 ─ Caddy 갱신이 실패하고 있다 (sudo play-compose logs web)"
+            exit 1
+          fi
