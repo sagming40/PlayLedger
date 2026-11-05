@@ -247,3 +247,9 @@ sudo play-backup
 - `task deploy`: ci 성공 확인 → passphrase · sudo 비밀번호 → 이미지 받기(api 2.0초 · web 4.9초) → 직전 백업 23,906바이트 → 마이그레이션(새 것 없음) → 교체, 세 컨테이너 Healthy → 헬스체크 1번째 통과 → `health ok`. 커밋 `53db9d7`
 - 밖에서(다른 명령으로): `/api/health` 200, `{"status":"ok","database":"ok"}`. 이번 배포에 `web` · `server` · `deploy` 변경이 없어 화면 번들은 `index-Cn1qTS9J.js` 그대로
 - `ssh -t`는 끝날 때 `Connection to <서버 IP> closed.`를 찍는다. 이 줄이 있는 출력을 문서로 옮길 때는 IP를 뺀다
+
+**2026-11-05 · 다섯 번째 배포, HSTS 1년 · CSP 좁히기 (회사 PC)**
+
+- 배포 전 운영 DB 커버 호스트: `shared.akamai.steamstatic.com` 2건뿐 ─ 새 `img-src https://*.steamstatic.com`에 모두 들어간다
+- 한 줄 `ssh -t play "… -c \"…\""`를 PowerShell에서 치면 `\"`가 이스케이프가 아니라 따옴표가 끊긴다(`ParserError` · 서버 bash `syntax error near '('`). 따옴표가 겹치는 명령은 서버에 들어가서(`ssh play`) 친다
+- `task deploy`로 `6af62c1` 배포(사용자). 밖에서: 응답 헤더 `Strict-Transport-Security: max-age=31536000`, CSP `img-src 'self' https://*.steamstatic.com data:`, `/api/health` ok, `/privacy`에 "어디에 얼마나 남는지" 절

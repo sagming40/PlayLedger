@@ -7,9 +7,9 @@
 
 | 항목 | 내용 |
 |---|---|
-| 단계 | **M5** 🔄 배포 (`PLAN` M5). `v1.0.0` 태그 있음. **`https://play.sagming.com` 운영 중**, 배포된 커밋 `53db9d7` (`task deploy`, 그 뒤 커밋은 문서뿐) |
-| 진행 중 | 감시 · HSTS 1년 · CSP 좁히기 · 개인정보 안내 커밋 · push함, **배포 전** (2026-11-05 (2)) |
-| 다음에 할 일 | ① 서버 열쇠: 노트북에서 `play_vultr`(`-C laptop`)를 만들고 공개키를 넣는다(`SERVER` 3.1절, 집 PC는 끝남). 사용자가 친다 ② 운영 DB 커버 호스트를 세서 모두 `*.steamstatic.com`인지 본 뒤 `task deploy` → 헤더 · 커버 · `/privacy` 화면 · `uptime` 첫 실행 확인 ③ 재부팅 뒤 자동 복구 확인 ④ 운영 백업으로 복구 리허설(열쇠가 회사 PC에만 있다) ⑤ 200개 목록 측정 ⑥ 되돌리기 시험을 할지 사용자에게 묻는다 ⑦ `DESIGN` · `REQUIREMENTS` 대조 후 M5 ✅. 코드 · 문서는 Claude 자동, 서버 명령은 사용자가 친다. **Vultr 크레딧 2026-11-30 만료, 12월 AWS 이사** |
+| 단계 | **M5** 🔄 배포 (`PLAN` M5). `v1.0.0` 태그 있음. **`https://play.sagming.com` 운영 중**, 배포된 커밋 `6af62c1` (`task deploy`) |
+| 진행 중 | 감시 · HSTS 1년 · CSP 좁히기 · 개인정보 안내 배포함(`6af62c1`, 2026-11-05 (2)). `/library` 커버 화면 확인 · `uptime` 첫 실행 결과가 남음 |
+| 다음에 할 일 | ① 서버 열쇠: 노트북에서 `play_vultr`(`-C laptop`)를 만들고 공개키를 넣는다(`SERVER` 3.1절, 집 PC는 끝남). 사용자가 친다 ② 로그인해서 `/library` 커버가 보이는지, GitHub Actions `uptime` 첫 예약 실행이 성공했는지 본다 ③ 재부팅 뒤 자동 복구 확인 ④ 운영 백업으로 복구 리허설(열쇠가 회사 PC에만 있다) ⑤ 200개 목록 측정 ⑥ 되돌리기 시험을 할지 사용자에게 묻는다 ⑦ `DESIGN` · `REQUIREMENTS` 대조 후 M5 ✅. 코드 · 문서는 Claude 자동, 서버 명령은 사용자가 친다. **Vultr 크레딧 2026-11-30 만료, 12월 AWS 이사** |
 | 판단이 남은 것 | 모바일 첫 줄이 요약 줄 도착 때 24px 밀리는 것. S-05 방치 일수 색(180일 미만도 포인트 색). 개인정보 안내 문구(법률 검토 안 받음). 아이폰 확인. 비밀번호 보기 버튼을 Edge · 실제 폰에서 아직 안 봤다(운영에는 올라감). 백업 개인키 사본(`SERVER` 3.7절) |
 | 기기별로 할 일 | **집 PC · 노트북 공통**: `git pull`. 새 패키지 · 마이그레이션은 없다. 배포하기 전에 `task --version`으로 Task를 확인한다(회사 PC만 확인함, 없으면 사용자가 설치하거나 `SERVER` 2절의 직접 명령). **노트북**: `git pull` → `server/`에서 `pip install -r requirements-dev.txt` · `alembic upgrade head` → `web/`에서 `npm ci`(글꼴 패키지 2개 추가). `JWT_SECRET_KEY`가 32자 미만이면 서버가 뜨지 않는다. **서버 접속**: 회사 PC · 집 PC는 된다. 노트북은 아직(위 ①) |
 | 집 PC에만 있는 것 | `play-1` SSH 열쇠(`~/.ssh/play_vultr`, 회사 PC 것과 별개). 클린룸으로 새로 만든 개발 DB(확인용 계정 · 게임 기록). `.claude/launch.json`은 실행 중인 `5173`에 붙기만 하는 설정으로 새로 만들었다(커밋 안 함) |
@@ -52,14 +52,18 @@
 - CSP: Chrome에서 같은 `img-src` 정책의 iframe으로 `shared.akamai` · `shared.fastly` · `cdn.cloudflare.steamstatic.com` 커버 로드(460px), `steamcdn-a.akamaihd.net`은 차단 ─ 같은 주소를 허용하면 로드돼서 정책 때문에 막힌 것임을 확인
 - `uptime.yml` 두 단계를 로컬 `bash -eo pipefail`로: 운영 ok exit 0 / 없는 주소 4번 실패 exit 1 / 인증서 89일 exit 0 / 기준 100일 exit 1 / 인증서 못 읽음 exit 1. GitHub에 `uptime` 워크플로 `active`
 - 프론트: lint · `format:check` · `vue-tsc` 통과, `npm test` 202 passed
-- **확인 못 한 것**: `caddy validate`, GitHub에서 `uptime`이 실제로 돈 결과(첫 예약 실행 전), 바뀐 개인정보 화면 · 운영 헤더 · 커버(배포 전)
+- 배포 전 운영 DB 커버 호스트(사용자가 서버에서): `shared.akamai.steamstatic.com` 2건뿐
+- 배포(사용자 `task deploy`, `6af62c1`) 뒤 밖에서: HSTS `max-age=31536000`, CSP `img-src 'self' https://*.steamstatic.com data:`, `/api/health` ok, `/privacy`에 새 절이 보임(Chrome 화면). 자세한 건 `SERVER` 5절
+- **확인 못 한 것**: `caddy validate`(배포 헬스체크 통과로 대신), `uptime` 첫 예약 실행(05:37 UTC 차례가 05:43에도 안 보였다 ─ GitHub 예약은 처음에 늦게 돈다), 로그인한 `/library` 커버 화면
+
+### 막힌 것 (배포 전)
+- **안내한 한 줄 명령이 PowerShell에서 깨졌다.** 증상: `ParserError: MissingArgument`, 다시 치니 서버 bash에서 `syntax error near unexpected token '('`. 원인: `ssh -t play "… -c \"select …\""`는 bash 문법인데 PowerShell 5.1은 `\"`를 이스케이프로 읽지 않아 따옴표가 중간에 끊겼다. 해결: 이미 열려 있던 서버 탭에서 따옴표 한 겹으로 쳤다. 배운 것: 사용자 터미널이 PowerShell이면 따옴표가 겹치는 서버 명령은 서버에 들어가서 치게 안내한다(오전 `git commit` 실패와 같은 뿌리)
 
 ### 이번 세션 커밋
-- `ci(M5)` uptime `45a514c` / `feat(M5)` HSTS · CSP `058d7c2` / `feat(M5)` 개인정보 안내 `9fb03b9` / `docs(M5)` PLAN · SERVER `cccfac7` / `docs(M5)` 이 기록
+- `ci(M5)` uptime `45a514c` / `feat(M5)` HSTS · CSP `058d7c2` / `feat(M5)` 개인정보 안내 `9fb03b9` / `docs(M5)` PLAN · SERVER `cccfac7` / `docs(M5)` 작업 기록 `6af62c1` / `docs(M5)` 배포 기록
 
 ### 다음에 할 일
-- 배포 전: 운영 DB 커버 호스트 세기 → 모두 `*.steamstatic.com`이면 `task deploy`
-- 배포 후: 헤더 2개 · `/library` 커버 · `/privacy` 화면, GitHub Actions `uptime` 첫 실행 결과
+- `/library` 커버 화면, `uptime` 첫 실행 결과
 
 ---
 
