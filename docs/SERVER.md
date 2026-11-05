@@ -240,3 +240,9 @@ sudo play-backup
 - 집 PC에서 `ssh -t play "sudo play-release f463a1b…"`: 이미지 받기 → 직전 백업 23,838바이트 → 마이그레이션(새 것 없음) → 교체 → 헬스체크 1번째 통과. 비밀번호 보기 버튼이 들어간 버전
 - 밖에서: `/api/health` 200, 로그인 화면이 불러오는 `PasswordInput-*.js`에 "비밀번호 보기" 문구가 있음
 - 한 줄 명령으로 `sudo`를 부를 때는 `-t`가 있어야 비밀번호를 묻는다. 없으면 "a terminal is required"
+
+**2026-11-05 · 네 번째 배포, `task deploy` 첫 실행 (회사 PC)**
+
+- `task deploy`: ci 성공 확인 → passphrase · sudo 비밀번호 → 이미지 받기(api 2.0초 · web 4.9초) → 직전 백업 23,906바이트 → 마이그레이션(새 것 없음) → 교체, 세 컨테이너 Healthy → 헬스체크 1번째 통과 → `health ok`. 커밋 `53db9d7`
+- 밖에서(다른 명령으로): `/api/health` 200, `{"status":"ok","database":"ok"}`. 이번 배포에 `web` · `server` · `deploy` 변경이 없어 화면 번들은 `index-Cn1qTS9J.js` 그대로
+- `ssh -t`는 끝날 때 `Connection to <서버 IP> closed.`를 찍는다. 이 줄이 있는 출력을 문서로 옮길 때는 IP를 뺀다

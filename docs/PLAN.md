@@ -358,7 +358,7 @@
 - [ ] 200개 목록 응답 시간을 운영 서버에서 다시 측정 (`REQUIREMENTS` 6장, 로컬 21ms)
 - [x] Inter · Noto Sans KR 내장 (`@fontsource-variable`). 외부로 나가는 글꼴 요청 없음, 전 화면 48장 비교에서 레이아웃 변화 없음
 - [ ] 배포 후 `개인정보 안내` 다시 대조 (백업 보관 기간, 호스팅 업체)
-- [ ] PC 쪽 배포 스크립트 ─ 미커밋 없음 · push됨 · 그 커밋의 CI 성공(이미지 있음)을 확인한 뒤에만 `ssh -t play "sudo play-release <커밋>"`을 부른다. 2026-11-04에 CI가 도는 중인 커밋을 배포하려 했다. `cbt-journal`의 `task deploy`(`Taskfile.yml` → `scripts/deploy.ps1`)와 같은 모양 *(계획에 없던 작업)*
+- [x] PC 쪽 배포 스크립트 (2026-11-05 첫 실제 배포 `53db9d7`) ─ 미커밋 없음 · push됨 · 그 커밋의 CI 성공(이미지 있음)을 확인한 뒤에만 `ssh -t play "sudo play-release <커밋>"`을 부른다. 2026-11-04에 CI가 도는 중인 커밋을 배포하려 했다. `cbt-journal`의 `task deploy`(`Taskfile.yml` → `scripts/deploy.ps1`)와 같은 모양 *(계획에 없던 작업)*
 - [x] `SERVER.md` 작성, 클린룸 검증 (다른 PC에서 새로 클론) ─ 2026-11-04 데스크톱 A, 발견 4건 수정
 - [x] 로그인 · 계정 삭제 비밀번호 칸에 보기 버튼 (`DESIGN` 3.1절) *(계획에 없던 작업)*
 
