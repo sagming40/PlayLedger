@@ -8,15 +8,18 @@
 	encode zstd gzip
 
 	header {
-		# 처음엔 하루만 ─ 설정이 틀린 채로 길게 걸면 되돌리기 어렵다. 운영에서 확인한 뒤 1년으로 늘린다
-		Strict-Transport-Security "max-age=86400"
+		# 1년 ─ 하루로 시작해 운영 HTTPS를 확인한 뒤 늘렸다 (2026-11-05). 브라우저가 1년 동안 http로는 아예 안 온다
+		# includeSubDomains · preload는 붙이지 않는다 ─ 이 주소 하나만 책임진다. 다른 하위 주소는 프로젝트마다 따로다
+		Strict-Transport-Security "max-age=31536000"
 		X-Content-Type-Options "nosniff"
 		Referrer-Policy "strict-origin-when-cross-origin"
 		Permissions-Policy "camera=(), microphone=(), geolocation=()"
 		# 어디서 온 것을 실행 · 표시할지 브라우저에 알린다 ─ 스크립트가 끼어들어도 토큰을 밖으로 못 보낸다
 		# style 'unsafe-inline' ─ Vue :style과 Motion · ECharts가 요소에 style을 직접 단다
-		# img https: ─ 커버 주소는 Steam CDN 여럿이고, 서버가 https만 저장한다 (services/steam.py)
-		Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' https: data:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+		# img *.steamstatic.com ─ 커버는 Steam이 준 header_image 주소를 그대로 쓴다 (services/steam.py, https만 저장)
+		#   지금은 shared.akamai.steamstatic.com이다. CDN 업체가 바뀌어도 이름은 *.steamstatic.com이었다. 그 밖의 주소는 막힌다
+		#   막혀도 화면은 제목 앞 두 글자로 대신 보여 준다 (DESIGN 4.4절). 와일드카드는 shared.akamai.처럼 여러 단계도 받는다
+		Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' https://*.steamstatic.com data:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
 		-Server
 		-Via
 	}
