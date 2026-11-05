@@ -14,6 +14,7 @@
 | 도메인 | `play.sagming.com` (Cloudflare, DNS만 · 회색 구름) |
 | 열린 문 | 22 · 80 · 443 |
 | 앱 위치 | `/srv/playledger/` (`compose.yaml` · `.env` · `image.env`), 백업 `/var/backups/playledger/` |
+| 감시 | GitHub Actions `uptime` — 30분마다(7분 · 37분) 밖에서 `/api/health` 본문과 인증서 남은 날(20일 미만이면 실패)을 본다. 실패하면 GitHub 메일. 저장소에 60일 커밋이 없으면 GitHub가 멈추니 Actions 화면에서 다시 켠다. 디스크 여유는 아직 안 본다 |
 | 기억할 날짜 | **2026-11-30 Vultr 크레딧 만료** — 그 전에 남길지 정한다. Stop은 요금이 계속 나간다, 없애려면 Destroy |
 
 ## 2. 평소에 쓰는 명령
