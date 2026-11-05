@@ -321,7 +321,7 @@ npm test                 # Vitest
 > 자주 쓰는 순서대로 적었습니다. 데스크톱 B는 2026-10-29에 학교 PC(Ryzen 9 5900X)에서 회사 PC로 바뀌었습니다.
 
 - **OS** · Windows 11 (공통)
-- **런타임** · Python: 데스크톱 B 3.14.8 (Miniconda) · 데스크톱 A 3.14.7 (Miniconda) · 노트북 3.13.9 (Anaconda 빌드), CI는 3.13. Node.js: v24.15.0 (데스크톱 B v24.22.0)
+- **런타임** · Python: 데스크톱 B 3.14.8 (Miniconda) · 데스크톱 A 3.14.7 (Miniconda) · 노트북 3.14.7 (Miniconda), CI는 3.13. Node.js: v24.15.0 (데스크톱 B v24.22.0)
 - **DB 도구** · HeidiSQL (PostgreSQL 접속 가능한 버전. 기기마다 달라도 됩니다)
 - **대상** · 웹 (데스크톱 · 모바일 브라우저)
 - **기기 간 이동** · 코드는 Git으로만 옮깁니다. `.env`와 DB 데이터는 Git으로 옮겨지지 않으므로 기기마다 따로 만듭니다
