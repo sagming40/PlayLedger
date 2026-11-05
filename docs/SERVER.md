@@ -14,6 +14,7 @@
 | 도메인 | `play.sagming.com` (Cloudflare, DNS만 · 회색 구름) |
 | 열린 문 | 22 · 80 · 443 |
 | 앱 위치 | `/srv/playledger/` (`compose.yaml` · `.env` · `image.env`), 백업 `/var/backups/playledger/` |
+| 서버 밖 백업 | Cloudflare R2 버킷 `playledger-backups`, 14일 (3.9절, [decisions/0013](decisions/0013-r2-offsite-backup.md)) |
 | 감시 | GitHub Actions `uptime` — 30분마다(7분 · 37분) 밖에서 `/api/health` 본문과 인증서 남은 날(20일 미만이면 실패)을 본다. 실패하면 GitHub 메일. 저장소에 60일 커밋이 없으면 GitHub가 멈추니 Actions 화면에서 다시 켠다. 디스크 여유는 아직 안 본다 |
 | 기억할 날짜 | **2026-11-30 Vultr 크레딧 만료** — 그 전에 남길지 정한다. Stop은 요금이 계속 나간다, 없애려면 Destroy |
 
@@ -71,7 +72,34 @@ docker exec play-restore psql -U playledger -d playledger -c "select (select cou
 docker stop play-restore; Remove-Item $dump   # 풀린 덤프에는 이메일 · 비밀번호 해시가 있다. 반드시 지운다
 ```
 
-운영 DB에 실제로 되살리는 순서(api 멈춤 → DB 비우기 → `pg_restore` → api 다시)는 아직 해 보지 않았다. 필요해지면 위 리허설을 기준으로 먼저 PC에서 연습한다.
+**운영 복구** (`deploy/play-restore`). 운영 DB를 백업 시점으로 **바꾼다** ─ 그 뒤의 기록은 사라진다. 운영에서는 아직 돌려 보지 않았고, 내 PC의 운영 구성에서 시험했다(5절 2026-11-06).
+열쇠는 PC에만 있어서, PC에서 풀어 서버의 내 홈으로 올린다. 04:30 백업 타이머 시각은 피한다.
+
+```powershell
+# PC ─ 되살릴 백업을 고른다. 가장 최근이 아니면 이름으로 고른다
+$pick = Get-ChildItem "$HOME\playledger-backups\*.dump.age" | Sort-Object Name | Select-Object -Last 1
+age -d -i "$HOME\playledger-backup.key" -o "$env:TEMP\restore.dump" $pick.FullName
+scp "$env:TEMP\restore.dump" play:~/restore.dump; Remove-Item "$env:TEMP\restore.dump"
+```
+
+```bash
+# 서버 ─ 덤프 확인 → restore 입력 → 지우기 전 백업 → api 멈춤 → DB 비우고 되살리기 → 마이그레이션 → api 시작 → 게임 목록
+chmod 600 ~/restore.dump
+sudo play-restore ~/restore.dump; rm -f ~/restore.dump    # 풀린 덤프다. 성공 · 실패와 상관없이 지운다
+```
+
+- 잠긴 `.dump.age`나 깨진 파일은 덤프 확인에서 멈추고 아무것도 안 바꾼다. `restore`가 아닌 답도 취소다
+- 지우기 전에 지금 DB를 `play-backup`으로 한 번 더 뜬다. 잘못 되살렸으면 그 파일(`/var/backups/playledger/` 맨 끝)을 받아 같은 순서로 다시 한다
+- 중간에 멈추면 api가 멈춘 채다(화면은 뜨고 `/api`는 502). 같은 명령을 다시 치면 된다 ─ DB가 없으면 지우기 전 백업을 건너뛰고 이어서 되살린다
+- 백업이 지금 코드보다 옛 버전이면 마이그레이션이 따라 올린다. 백업은 `steam_apps`를 구조만 담아서 마지막에 게임 목록을 다시 받는다
+
+**백업 상태** (서버). 실패해도 알려 주는 곳이 없다 ─ 가끔 본다:
+
+```bash
+systemctl list-timers play-backup.timer      # 다음 · 지난 실행 시각
+systemctl --failed                           # play-backup.service가 있으면 실패한 것 (R2만 실패해도 여기 뜬다)
+sudo journalctl -u play-backup -n 20         # 마지막 실행 출력 ([backup] R2에 올림: … 줄)
+```
 
 되돌리기: `play-release`는 새 버전이 살아나지 않으면 이전 커밋으로 스스로 돌아간다. 마이그레이션은 되돌리지 않는다(데이터를 잃을 수 있다). 표 때문에 옛 코드가 안 돌면 배포 직전 백업으로 복구한다.
 
@@ -176,7 +204,7 @@ PC에서 파일을 보낸다:
 
 ```powershell
 # 저장소 폴더
-scp deploy/prod.env.example deploy/play-compose deploy/play-release deploy/play-backup deploy/play-backup.service deploy/play-backup.timer play:~/
+scp deploy/prod.env.example deploy/play-compose deploy/play-release deploy/play-backup deploy/play-restore deploy/play-backup.service deploy/play-backup.timer play:~/
 ```
 
 서버에서 설치하고 비밀값을 만든다. 비밀값은 화면 캡처 · 채팅에 내지 않는다:
@@ -187,9 +215,9 @@ sudo install -m 600 ~/prod.env.example /srv/playledger/.env
 sudo sed -i "s/^POSTGRES_PASSWORD=.*/POSTGRES_PASSWORD=$(openssl rand -hex 32)/; s/^JWT_SECRET_KEY=.*/JWT_SECRET_KEY=$(openssl rand -hex 32)/" /srv/playledger/.env
 sudo nano /srv/playledger/.env    # STEAM_API_KEY만 붙여 넣는다 (https://steamcommunity.com/dev/apikey)
 sudo grep -c '=$' /srv/playledger/.env    # 빈 값 개수. 0이어야 한다 (값은 출력되지 않는다)
-sudo install -m 755 ~/play-compose ~/play-release ~/play-backup /usr/local/bin/
+sudo install -m 755 ~/play-compose ~/play-release ~/play-backup ~/play-restore /usr/local/bin/
 sudo install -m 644 ~/play-backup.service ~/play-backup.timer /etc/systemd/system/
-rm ~/prod.env.example ~/play-compose ~/play-release ~/play-backup ~/play-backup.service ~/play-backup.timer
+rm ~/prod.env.example ~/play-compose ~/play-release ~/play-backup ~/play-restore ~/play-backup.service ~/play-backup.timer
 ```
 
 ### 3.7 백업 열쇠 (PC → 서버)
@@ -221,12 +249,44 @@ sudo play-compose run --rm api python -m app.scripts.sync_steam_apps
 sudo play-backup
 ```
 
+### 3.9 서버 밖 백업 (Cloudflare R2)
+
+왜 R2인지는 [decisions/0013](decisions/0013-r2-offsite-backup.md). 잠긴 파일을 그대로 올리므로 Cloudflare도 열 수 없다. 이 절을 하지 않으면 `play-backup`은 서버에만 둔다.
+
+1. **Cloudflare 화면** (개인 Gmail 계정)
+   - R2 → 시작하기. 무료 한도(10GB)라도 결제수단 등록을 요구할 수 있다
+   - 버킷 만들기: 이름 `playledger-backups`, 위치 자동, 공개 접근 끔
+   - 버킷 → 설정 → 객체 수명 주기 규칙: 접두사 `playledger-`, **14일 뒤 삭제**. 서버 스크립트도 14일에 지우지만, 서버가 사라져도 사본이 개인정보 안내의 기한을 넘기지 않게 하는 안전장치다
+   - R2 → API 토큰 관리 → 토큰 만들기: 권한 **객체 읽기 및 쓰기**, 버킷 **`playledger-backups`만**, 기한 없음. 액세스 키 ID · 비밀 액세스 키와 S3 주소(`https://<계정 ID>.r2.cloudflarestorage.com`)가 한 번만 보인다. 화면을 캡처하지 않는다
+
+2. **PC → 서버** (저장소 폴더):
+
+```powershell
+scp deploy/r2.env.example deploy/play-backup deploy/play-release deploy/play-restore play:~/
+```
+
+3. **서버** ─ 값은 nano로 넣고 화면은 캡처하지 않는다(4장):
+
+```bash
+sudo apt-get install -y rclone        # Ubuntu 24.04는 1.60.1 ─ 이 버전으로 시험했다
+sudo install -m 600 ~/r2.env.example /etc/playledger/r2.env
+sudo nano /etc/playledger/r2.env      # ENDPOINT · ACCESS_KEY_ID · SECRET_ACCESS_KEY 세 줄만
+sudo grep -c '=$' /etc/playledger/r2.env    # 빈 값 개수. 0이어야 한다
+sudo install -m 755 ~/play-backup ~/play-release ~/play-restore /usr/local/bin/
+rm ~/r2.env.example ~/play-backup ~/play-release ~/play-restore
+sudo play-backup                      # 끝에 "[backup] R2에 올림: …"이 나오면 된다
+```
+
+Cloudflare 화면의 버킷 객체 목록에 같은 이름이 보이면 끝. 실패하면 `[backup] R2 실패: …`와 종료 코드 3이 나오고, 서버 사본은 그대로 있다.
+
 ## 4. 함정
 
 - **Docker는 ufw를 우회한다.** `compose.prod.yaml`에서 포트를 여는 것은 `web`뿐이다. `db` · `api`에 `ports`를 더하지 않는다
 - **요청 제한은 프로세스 메모리에 있다.** 워커를 늘리면 제한도 늘고, 재배포하면 횟수가 0이 된다 (`core/rate_limit.py`)
 - **`web`의 IP 172.30.0.10을 바꾸면 `server/Dockerfile`의 `--forwarded-allow-ips`도 같이 바꾼다.** 어긋나면 모든 사용자가 한 IP로 묶인다
-- **HSTS는 지금 하루다.** 운영 확인은 끝났다. 다음 배포에서 `web/deploy/Caddyfile`을 1년으로 늘린다
+- **HSTS가 1년이다(2026-11-05부터).** 이 주소를 http로 되돌릴 수 없다. `includeSubDomains` · `preload`는 붙이지 않는다
+- **`play-backup` · `play-release` · `play-restore`는 배포로 바뀌지 않는다.** `/usr/local/bin/`에 손으로 설치한 것이다. 저장소에서 고쳤으면 3.9절 2 · 3단계처럼 다시 올려 설치한다
+- **`/etc/playledger/r2.env`도 `.env`처럼 값이 보이게 열지 않는다.** 확인은 `sudo grep -c '=$'`로 한다
 - **`.env`를 값이 보이게 열지 않는다.** 캡처로 비밀값이 나간 적이 있다(5절). 확인은 `sudo grep -c '=$' /srv/playledger/.env`로 한다
 - **서버 탭과 PC 탭을 헷갈린다.** `notepad` · `git rev-parse`는 PC에서, `sudo play-compose`는 서버에서 친다. 프롬프트로 구분한다
 - **DB 비밀번호는 볼륨을 처음 만들 때만 적용된다.** `.env`만 바꾸면 `InvalidPasswordError`가 난다
@@ -277,3 +337,15 @@ sudo play-backup
 - PC: `scp`로 8개(22 ~ 23KB) 받음 → 가장 최근 것을 풀어 23,846바이트 → 빈 `postgres:18` 컨테이너에 `pg_restore --exit-on-error` exit 0 → 개수가 위와 모두 같음, `steam_apps` 0(구조만), 외래 키 6 · 인덱스 22, 사용자 · 게임과 이어지는 entries 2
 - 2절 PowerShell 명령을 그대로 한 번 더 돌려 같은 결과, 내려받은 뒤 되살리고 세기까지 7초. 풀린 덤프는 지웠고 컨테이너는 `--rm`이라 남지 않는다
 - PC `$HOME\playledger-backups\`에 잠긴 백업 8개가 남아 있다 ─ 이게 지금의 "서버 밖 사본"이다(손으로 받을 때만 생긴다)
+
+**2026-11-06 · `play-restore` · R2 업로드를 내 PC에서 시험 (회사 PC, 운영은 안 건드림)**
+
+- 운영 구성(`compose.prod.yaml` + `compose.local.yaml`, 프로젝트 `playledger-check`)을 띄우고, 서버 스크립트는 `docker:29-cli` 컨테이너에서 돌렸다. `play-compose`만 이 구성을 부르는 가짜로 바꿨고 `play-backup` · `play-restore`는 저장소 것 그대로, 자물쇠는 실제 공개키
+- 정상: 계정 A 기록 2건 → 백업 → A 기록 1건 · 계정 B 추가 → 되살리기 12초 → A 2건, B 로그인 401, 지우기 전 백업 1개 생김, `/api/health` ok
+- 옛 버전 백업(`471f3f2597b9`에서 뜬 덤프): 되살린 뒤 마이그레이션 `471f3f2597b9 → 8c2f4a71d9e3`가 돌고 정상
+- 아무것도 안 바뀌고 멈춘 경우 9가지: 잠긴 `.dump.age` · 아무 바이트 · 잘린 덤프 · 가운데가 망가진 덤프(목차 확인이 끝까지 읽어서 잡힌다) · 터미널 없음 · `no` 답 · 배포 잠금 중 · 없는 파일 · 인자 없음. `restore` 답은 진행
+- 중간에 멈춘 상태 흉내(api 멈춤 · DB 없음, `/api` 502)에서 다시 실행 → "DB가 없다 ─ 지우기 전 백업은 건너뛴다" → 정상. 처음 설계에서는 여기서 `dropdb`와 지우기 전 백업이 실패해 다시 실행할 수 없었다(사전 검증에서 발견, `--if-exists`와 DB 확인을 넣음)
+- 게임 목록 다시 받기는 이 구성에 Steam 키가 없어 실패 → 안내만 찍고 끝(의도한 동작). 키가 있는 경로는 운영에서 처음 본다
+- R2는 rclone `local` 백엔드로 흉내: 올림 exit 0, 20일 된 사본만 지워지고 10일 된 것 · 다른 이름 파일은 남음. 쓸 수 없는 곳 · `R2_BUCKET` 없음 → exit 3, 서버 사본 있음. 복구 중 지우기 전 백업도 R2로 올라감
+- Ubuntu 24.04 apt rclone **1.60.1**에서 같은 시험 + `r2.env.example` 그대로(Cloudflare provider)에 닿지 않는 주소 → 1초 만에 exit 3. 처음엔 재시도로 2분 넘게 붙잡혀서 `--contimeout 10s --low-level-retries 3`을 넣었다
+- `shellcheck` 4개 파일 통과. 시험 컨테이너 · 볼륨은 지웠다
