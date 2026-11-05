@@ -8,8 +8,8 @@
 | 항목 | 내용 |
 |---|---|
 | 단계 | **M5** 🔄 배포 (`PLAN` M5). `v1.0.0` 태그 있음. **`https://play.sagming.com` 운영 중**, 배포된 커밋 `53db9d7` (`task deploy`, 그 뒤 커밋은 문서뿐) |
-| 진행 중 | 없음. 미커밋 없음 |
-| 다음에 할 일 | ① 서버 열쇠: 노트북에서 `play_vultr`(`-C laptop`)를 만들고 공개키를 넣는다(`SERVER` 3.1절, 집 PC는 끝남). 사용자가 친다 ② 코드(**자동/직접을 아직 안 정했다, 먼저 묻는다**): 서버 감시 `uptime.yml`, HSTS 1년, CSP `img-src` 좁히기(운영 네트워크 기록으로 Steam CDN 도메인을 먼저 확인하고 배포 전에 커버가 보이는지 화면으로 본다), 개인정보 안내에 백업 14일 · Vultr 서울 · 접속 기록 반영 → `task deploy` ③ 재부팅 뒤 자동 복구 확인 ④ 운영 백업으로 복구 리허설(열쇠가 회사 PC에만 있다) ⑤ 200개 목록 측정 ⑥ 되돌리기 시험을 할지 사용자에게 묻는다 ⑦ `DESIGN` · `REQUIREMENTS` 대조 후 M5 ✅. 코드 · 문서는 Claude 자동, 서버 명령은 사용자가 친다. **Vultr 크레딧 2026-11-30 만료, 12월 AWS 이사** |
+| 진행 중 | 감시 · HSTS 1년 · CSP 좁히기 · 개인정보 안내 커밋 · push함, **배포 전** (2026-11-05 (2)) |
+| 다음에 할 일 | ① 서버 열쇠: 노트북에서 `play_vultr`(`-C laptop`)를 만들고 공개키를 넣는다(`SERVER` 3.1절, 집 PC는 끝남). 사용자가 친다 ② 운영 DB 커버 호스트를 세서 모두 `*.steamstatic.com`인지 본 뒤 `task deploy` → 헤더 · 커버 · `/privacy` 화면 · `uptime` 첫 실행 확인 ③ 재부팅 뒤 자동 복구 확인 ④ 운영 백업으로 복구 리허설(열쇠가 회사 PC에만 있다) ⑤ 200개 목록 측정 ⑥ 되돌리기 시험을 할지 사용자에게 묻는다 ⑦ `DESIGN` · `REQUIREMENTS` 대조 후 M5 ✅. 코드 · 문서는 Claude 자동, 서버 명령은 사용자가 친다. **Vultr 크레딧 2026-11-30 만료, 12월 AWS 이사** |
 | 판단이 남은 것 | 모바일 첫 줄이 요약 줄 도착 때 24px 밀리는 것. S-05 방치 일수 색(180일 미만도 포인트 색). 개인정보 안내 문구(법률 검토 안 받음). 아이폰 확인. 비밀번호 보기 버튼을 Edge · 실제 폰에서 아직 안 봤다(운영에는 올라감). 백업 개인키 사본(`SERVER` 3.7절) |
 | 기기별로 할 일 | **집 PC · 노트북 공통**: `git pull`. 새 패키지 · 마이그레이션은 없다. 배포하기 전에 `task --version`으로 Task를 확인한다(회사 PC만 확인함, 없으면 사용자가 설치하거나 `SERVER` 2절의 직접 명령). **노트북**: `git pull` → `server/`에서 `pip install -r requirements-dev.txt` · `alembic upgrade head` → `web/`에서 `npm ci`(글꼴 패키지 2개 추가). `JWT_SECRET_KEY`가 32자 미만이면 서버가 뜨지 않는다. **서버 접속**: 회사 PC · 집 PC는 된다. 노트북은 아직(위 ①) |
 | 집 PC에만 있는 것 | `play-1` SSH 열쇠(`~/.ssh/play_vultr`, 회사 PC 것과 별개). 클린룸으로 새로 만든 개발 DB(확인용 계정 · 게임 기록). `.claude/launch.json`은 실행 중인 `5173`에 붙기만 하는 설정으로 새로 만들었다(커밋 안 함) |
@@ -21,6 +21,45 @@
 - 기기 표기는 `README` 개발 환경 표를 따른다 (데스크톱 A · 데스크톱 B · 노트북)
 - **막혔던 점은 해결됐어도 반드시 남긴다.** 같은 실수를 반복하지 않기 위한 기록이고, 나중에 이 프로젝트를 설명할 때 "어떤 문제를 어떻게 해결했는가"가 결과물보다 더 중요한 이야기가 된다
 - 환경 버전은 여기 적지 않는다. `requirements.txt` · `package.json` · `ci.yml`이 원본이고, 기기별 런타임은 `README`에 있다
+
+---
+
+## 2026-11-05 (2) · 감시 · HSTS 1년 · CSP 좁히기 · 개인정보 안내 (데스크톱 B, 자동)
+
+### 한 일
+- 진행 순서: 운영 응답 헤더 · 커버 도메인 확인 → 설계 · 사전 검증 → Caddyfile → `uptime.yml` → `PrivacyView.vue` → 검사 → 커밋 · push → 문서
+- `.github/workflows/uptime.yml`: 30분마다 `/api/health` 본문 + 인증서 남은 날. `SERVER` 1절에 감시 줄
+- `web/deploy/Caddyfile`: HSTS `max-age=31536000`, CSP `img-src 'self' https://*.steamstatic.com data:`
+- 개인정보 안내에 "어디에 얼마나 남는지" 절 (Vultr 서울 · 12월 이사 예정, 접속 기록, 백업 14일)
+
+### [설계]
+- 커버 도메인: 운영 화면은 로그인이 필요해 네트워크 기록을 못 봤다(비밀번호는 Claude가 넣지 않는다). 대신 Steam `appdetails`의 `header_image`를 appid 4개로 받아 보니 모두 `shared.akamai.steamstatic.com`. 서버가 받은 주소를 그대로 저장하므로(`services/steam.py`) 운영 기록도 같은 이름일 것 ─ **배포 전에 운영 DB에서 호스트를 한 번 센다**(아래 다음에 할 일)
+- 호스트 하나가 아니라 `*.steamstatic.com`: Steam은 CDN 업체를 바꿔 왔지만(akamai · fastly · cloudflare) 이름은 `steamstatic.com` 아래였다. 막혀도 화면은 제목 두 글자로 대신하니 망가지지는 않는다
+- HSTS에 `includeSubDomains` · `preload`를 안 붙인다: `play.` 아래 하위 주소는 없고, preload는 되돌리기가 몇 달 걸린다
+- 감시는 바깥(GitHub)에서: 서버 안 감시는 서버와 같이 죽는다. 정각은 GitHub 예약이 몰려 늦게 돌아서 7분 · 37분
+- 사전 검증에서 발견: 배포하는 몇 초 동안 health가 실패하면 메일이 온다 ─ 20초 간격 4번까지 다시 본다
+- 사전 검증에서 발견: DB가 죽어도 응답이 오면 안 된다 ─ `curl -f`(503 실패) + 본문 `"status":"ok"`까지 본다
+- 사전 검증에서 발견: 저장소에 60일 커밋이 없으면 GitHub가 예약 작업을 끈다 ─ 워크플로 주석 · `SERVER` 1절에 적었다
+- 인증서 기준 20일: Caddy가 30일 전부터 갱신하므로 20일 아래면 갱신이 열흘째 실패한 것. 지금 89일 남음(만료 2027-02-02)
+- 접속 기록 문구는 실제 구성에 맞췄다: Caddy 접근 로그는 꺼져 있지만 uvicorn 접근 로그(IP · 요청 주소)가 Docker 로그(10MB × 3 회전)에 남는다. 그래서 기간이 아니라 "용량이 차면 지워진다"
+- 디스크 여유 확인은 밖에서 볼 수 없어 PLAN에서 따로 뺐다
+
+### 막힌 것
+- **이 PC에 `python` · `gh` · Docker가 없다.** Bash에서 `python`이 없어 Edit로 고쳤고, YAML 검사는 `server/venv`의 Python으로 했다. `gh`가 없어 `workflow_dispatch`로 손으로 돌려 보지 못했다(인증 없는 API로 등록 · `active`만 확인). Docker가 없어 `caddy validate`를 못 했다
+
+### 확인
+- 고치기 전 운영 헤더: `Strict-Transport-Security: max-age=86400`, CSP `img-src 'self' https: data:`
+- CSP: Chrome에서 같은 `img-src` 정책의 iframe으로 `shared.akamai` · `shared.fastly` · `cdn.cloudflare.steamstatic.com` 커버 로드(460px), `steamcdn-a.akamaihd.net`은 차단 ─ 같은 주소를 허용하면 로드돼서 정책 때문에 막힌 것임을 확인
+- `uptime.yml` 두 단계를 로컬 `bash -eo pipefail`로: 운영 ok exit 0 / 없는 주소 4번 실패 exit 1 / 인증서 89일 exit 0 / 기준 100일 exit 1 / 인증서 못 읽음 exit 1. GitHub에 `uptime` 워크플로 `active`
+- 프론트: lint · `format:check` · `vue-tsc` 통과, `npm test` 202 passed
+- **확인 못 한 것**: `caddy validate`, GitHub에서 `uptime`이 실제로 돈 결과(첫 예약 실행 전), 바뀐 개인정보 화면 · 운영 헤더 · 커버(배포 전)
+
+### 이번 세션 커밋
+- `ci(M5)` uptime `45a514c` / `feat(M5)` HSTS · CSP `058d7c2` / `feat(M5)` 개인정보 안내 `9fb03b9` / `docs(M5)` PLAN · SERVER `cccfac7` / `docs(M5)` 이 기록
+
+### 다음에 할 일
+- 배포 전: 운영 DB 커버 호스트 세기 → 모두 `*.steamstatic.com`이면 `task deploy`
+- 배포 후: 헤더 2개 · `/library` 커버 · `/privacy` 화면, GitHub Actions `uptime` 첫 실행 결과
 
 ---
 
