@@ -48,6 +48,32 @@
 
 ---
 
+## 2026-11-06 (1) · 노트북 개발 환경 맞추기 (노트북, 자동)
+
+### 한 일
+- 진행 순서: `git pull`(이미 최신) → 문서 · 상태 읽기 → 서버 venv → Docker · DB → `npm ci` → 검사. 서버 열쇠는 이동 중이라 다음으로 미뤘다
+- `server/venv` 새로 만듦(Miniconda 3.14.7) → `pip install -r requirements-dev.txt`
+- `playledger_test` 만듦, `alembic upgrade head`(`1e1d15e51ba2` → `8c2f4a71d9e3`)
+- `web/`에서 `npm ci` ─ `@fontsource-variable/inter` · `noto-sans-kr` 들어옴
+- 사용자가 `server/.env`에 `TEST_DATABASE_URL` · Steam 키를 넣었다. 키 이름이 `STAEM_API_KEY`로 들어가 있어 `STEAM_API_KEY`로 이름만 고쳤다(값은 안 봄). 세 곳의 DB 비밀번호가 같은 것도 값을 찍지 않고 비교했다
+- `README` 개발 환경 표의 노트북 Python을 3.13.9(Anaconda) → 3.14.7(Miniconda)로
+
+### 막힌 것
+- **venv가 깨져 있었다.** 증상: `did not find executable at 'C:\ProgramData\anaconda3\python.exe'`. 원인: 노트북 venv는 옛 경로 `C:\__dev_repos\PlayLedger`에서 Anaconda로 만든 것인데, 그 Anaconda가 지워졌다. 해결: `venv.broken`으로 이름만 바꿔 두고 남아 있던 Miniconda 3.14.7로 새로 만들었다. 배운 것: venv는 만든 Python 경로에 묶여 있다 ─ Python을 지우거나 바꾸면 venv도 다시 만든다
+- **Docker Desktop이 처음 실행에 안 떴다.** 한 번 더 켜니 떴다. DB 컨테이너는 `Recreate`됐지만 볼륨은 그대로 남았다
+
+### 확인
+- `pytest` **310 passed**(82.89초)
+- `npm run lint` 오류 없음, `format:check` 통과, `vue-tsc` exit 0, `npm test` **202 passed**(16 files)
+- `uptime` 예약 실행: 2026-11-05 13:28 · 20:48 UTC 두 건 모두 `success`(GitHub API, 전체 2건)
+- **확인 못 한 것**: 노트북 `ssh play`(열쇠가 없다), 노트북에서 개발 서버를 띄운 화면, `npm audit` 경고 내용(이번에 건드리지 않음)
+
+### 다음에 할 일
+- 노트북 서버 열쇠(`SERVER` 3.1절, `-C laptop`). 사용자가 친다
+- 다 되면 `server/venv.broken`을 지운다
+
+---
+
 ## 2026-11-05 (2) · 감시 · HSTS 1년 · CSP 좁히기 · 개인정보 안내 (데스크톱 B, 자동)
 
 ### 한 일
