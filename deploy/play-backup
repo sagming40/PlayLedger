@@ -9,6 +9,9 @@ set -euo pipefail
 RECIPIENTS=/etc/playledger/backup.pub
 DEST=/var/backups/playledger
 KEEP=14
+# 서버 밖 사본 (SERVER 3.9절). 이 파일이 없으면 서버에만 둔다
+R2_ENV=/etc/playledger/r2.env
+R2_DAYS=14   # 개인정보 안내의 "14일"과 같아야 한다 (web/src/views/PrivacyView.vue)
 
 die() {
 	echo "[backup] 실패: $*" >&2
@@ -46,3 +49,29 @@ find "$DEST" -maxdepth 1 -name 'playledger-*.dump.age' -printf '%f\n' |
 		echo "[backup] 정리: $old"
 		rm -f -- "$DEST/$old"
 	done
+
+# ── 서버 밖 사본 (Cloudflare R2) ── 서버가 통째로 사라져도 남게 한다
+# 잠긴 파일 그대로 올린다 ─ Cloudflare도 열 수 없다. 열쇠는 PC에만 있다
+# 실패해도 서버 사본은 이미 있다 ─ 종료 코드 3으로 구분한다. 타이머는 실패로 남고, play-release는 배포를 계속한다
+[[ -f $R2_ENV ]] || exit 0
+# r2.env: RCLONE_CONFIG_R2_* (rclone이 환경변수로 원격을 만든다)와 R2_BUCKET. 권한 600, 값은 화면에 내지 않는다
+# --config "" ─ 설정 파일을 쓰지 않는다 (없다는 안내 줄이 매일 찍히지 않게)
+# --contimeout · --low-level-retries ─ R2에 닿지 않을 때 기본값이면 2분 넘게 붙잡혀 배포까지 늦어진다
+set -a
+# shellcheck source=/dev/null
+. "$R2_ENV"
+set +a
+[[ -n ${R2_BUCKET:-} ]] || { echo "[backup] R2 실패: $R2_ENV에 R2_BUCKET이 없다" >&2; exit 3; }
+
+if ! rclone --config "" --contimeout 10s --low-level-retries 3 copyto "$DEST/$NAME" "r2:$R2_BUCKET/$NAME"; then
+	echo "[backup] R2 실패: 올리지 못했다 (서버 사본은 있다: $DEST/$NAME)" >&2
+	exit 3
+fi
+echo "[backup] R2에 올림: $NAME"
+
+# 서버와 달리 개수가 아니라 날짜로 지운다 ─ 배포 직전 백업이 끼어도 "14일"이 그대로다
+# 올린 시각이 아니라 원본 파일 시각으로 센다 (rclone이 메타데이터에 담는다)
+if ! rclone --config "" --contimeout 10s --low-level-retries 3 delete "r2:$R2_BUCKET" --include 'playledger-*.dump.age' --min-age "${R2_DAYS}d"; then
+	echo "[backup] R2 실패: 오래된 사본을 지우지 못했다" >&2
+	exit 3
+fi

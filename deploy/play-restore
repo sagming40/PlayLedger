@@ -1,0 +1,91 @@
+#!/usr/bin/env bash
+# play-restore ─ 백업으로 운영 DB를 되살린다 (SERVER.md 2절). /usr/local/bin/에 설치한다
+# 쓰는 법: sudo play-restore ~/restore.dump   (PC에서 age로 푼 덤프를 scp로 올린 것. 끝나면 지운다)
+# 비유: 장부를 통째로 사본으로 갈아 끼우기 ─ 창구를 닫고(api 멈춤), 지금 장부도 사본을 하나 떠 두고,
+#       장부를 비운 뒤 사본을 옮겨 적고, 양식을 지금 코드에 맞춘 다음 창구를 연다
+# - 백업을 여는 열쇠는 서버에 없다(SERVER 3.7절). 그래서 풀린 덤프를 받는다
+# - 지금 DB를 지우기 전에 play-backup으로 한 번 더 떠 둔다 ─ 잘못 되살렸어도 바로 전으로 돌아갈 수 있다
+# - 화면(web)은 멈추지 않는다. 그 사이 /api는 502가 나고 화면은 오류 안내를 보여 준다
+
+set -euo pipefail
+
+ROOT=/srv/playledger
+
+log() { echo "[restore] $*"; }
+die() {
+	echo "[restore] 실패: $*" >&2
+	exit 1
+}
+
+[[ $EUID -eq 0 ]] || die "sudo로 실행해야 한다"
+[[ $# -eq 1 ]] || die "사용법: play-restore <풀린 덤프 파일>"
+FILE=$1
+[[ -f $FILE && -r $FILE ]] || die "파일이 없다: $FILE"
+[[ -f $ROOT/image.env ]] || die "아직 배포 전이다: $ROOT/image.env 없음"
+
+# 배포와 겹치지 않게 같은 자물쇠를 쓴다 (play-release)
+exec 9>/run/lock/playledger-deploy.lock
+flock -n 9 || die "배포가 진행 중이다"
+
+# ── 1. 덤프 확인 ── 여기까지는 운영에 영향이 없다
+# 목차(-l)를 읽어 pg_dump -Fc 파일인지 본다. 잠긴 .age를 그대로 올렸으면 여기서 멈춘다
+log "덤프 확인: $FILE ($(stat -c %s "$FILE") 바이트)"
+TOC=$(play-compose exec -T db pg_restore -l <"$FILE") ||
+	die "pg_restore가 읽지 못한다 ─ age로 풀었나? (.dump.age가 아니라 .dump여야 한다)"
+grep -q 'TABLE DATA public entries' <<<"$TOC" || die "entries 표 데이터가 없다 ─ 이 앱의 백업이 맞나?"
+
+# 사람이 한 번 더 보게 한다 ─ 지우는 단계라 되묻는다 (터미널이 없으면 묻지 않고 멈춘다)
+if [[ ${PLAY_RESTORE_YES:-} != 1 ]]; then
+	[[ -t 0 ]] || die "확인을 받을 터미널이 없다 (ssh -t로 실행한다)"
+	read -r -p "[restore] 운영 DB를 이 덤프로 바꾼다. 계속하려면 restore 를 친다: " answer
+	[[ $answer == restore ]] || die "취소했다 (아무것도 안 바꿨다)"
+fi
+
+# ── 2. 지금 상태 백업 ── R2 업로드만 실패(3)한 것은 서버 사본이 있으니 계속한다
+# 지난번 복구가 지우기와 만들기 사이에서 멈췄으면 DB가 없다 ─ 뜰 것이 없으니 건너뛰고 되살리기로 간다
+# shellcheck disable=SC2016
+if [[ $(play-compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d postgres -tAc "select 1 from pg_database where datname = '"'"'$POSTGRES_DB'"'"'"') == 1 ]]; then
+	log "지우기 전 백업"
+	rc=0
+	play-backup || rc=$?
+	[[ $rc -eq 0 || $rc -eq 3 ]] || die "백업 실패 ─ 아무것도 안 바꿨다"
+else
+	log "DB가 없다 (지난 복구가 중간에 멈춘 것) ─ 지우기 전 백업은 건너뛴다"
+fi
+
+# ── 3. 창구 닫기 ──
+log "api 멈춤"
+play-compose stop api
+
+# 여기서부터 실패하면 DB가 비었거나 반쯤 찬 채일 수 있다 ─ 방금 뜬 백업으로 다시 실행한다
+trap 'echo "[restore] 중간에 멈췄다. api가 멈춘 채다 ─ 방금 뜬 백업(/var/backups/playledger/ 맨 끝)을 PC에서 풀어 다시 실행한다" >&2' ERR
+
+# ── 4. 비우고 되살리기 ──
+# 접속 중인 DB는 지울 수 없어 관리용 postgres DB에 붙어서 지운다. --force는 남은 연결을 끊는다
+# 작은따옴표가 맞다 ─ $POSTGRES_USER는 컨테이너 안에서 풀린다
+# shellcheck disable=SC2016
+play-compose exec -T db sh -c '
+	dropdb -U "$POSTGRES_USER" --maintenance-db=postgres --force --if-exists "$POSTGRES_DB" &&
+	createdb -U "$POSTGRES_USER" --maintenance-db=postgres -O "$POSTGRES_USER" "$POSTGRES_DB"'
+log "되살리는 중"
+# shellcheck disable=SC2016
+play-compose exec -T db sh -c 'pg_restore -U "$POSTGRES_USER" -d "$POSTGRES_DB" --exit-on-error' <"$FILE"
+
+# ── 5. 양식 맞추기 ── 옛 백업이면 표가 지금 코드보다 뒤처져 있다
+log "마이그레이션"
+play-compose run --rm --no-deps api alembic upgrade head
+
+# ── 6. 창구 열기 ── api 헬스체크(DB까지 닿는지)가 통과할 때까지 기다린다
+log "api 시작"
+play-compose up -d --wait --wait-timeout 120 api
+trap - ERR
+
+# shellcheck disable=SC2016
+play-compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "select (select count(*) from users) users, (select count(*) from games) games, (select count(*) from entries) entries, (select version_num from alembic_version) alembic"'
+
+# ── 7. Steam 게임 목록 ── 백업은 steam_apps를 구조만 담는다(play-backup). 비어 있으면 Steam 검색이 안 된다
+log "Steam 게임 목록 다시 받기"
+play-compose run --rm api python -m app.scripts.sync_steam_apps ||
+	log "게임 목록을 못 받았다 ─ 서비스는 돈다. 나중에 SERVER 2절 미러링 명령을 친다"
+
+log "완료. 올린 덤프 파일을 지운다: rm $FILE"
