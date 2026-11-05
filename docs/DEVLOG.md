@@ -8,10 +8,10 @@
 | 항목 | 내용 |
 |---|---|
 | 단계 | **M5** 🔄 배포 (`PLAN` M5). `v1.0.0` 태그 있음. **`https://play.sagming.com` 운영 중**, 배포된 커밋 `6af62c1` (`task deploy`) |
-| 진행 중 | 감시 · HSTS 1년 · CSP 좁히기 · 개인정보 안내 배포함(`6af62c1`, 2026-11-05 (2)). `/library` 커버 화면 확인 · `uptime` 첫 실행 결과가 남음 |
+| 진행 중 | 노트북 개발 환경 복구 중(2026-11-06 (1)). `/library` 커버 화면 확인이 남음. `uptime`은 예약 실행 2건 성공(11-05 13:28 · 20:48 UTC) ─ 30분마다인데 하루 2번만 돌아서 며칠 지켜본다 |
 | 다음에 할 일 | ① 서버 열쇠: 노트북에서 `play_vultr`(`-C laptop`)를 만들고 공개키를 넣는다(`SERVER` 3.1절, 집 PC는 끝남). 사용자가 친다 ② 로그인해서 `/library` 커버가 보이는지, GitHub Actions `uptime` 첫 예약 실행이 성공했는지 본다 ③ 재부팅 뒤 자동 복구 확인 ④ 운영 백업으로 복구 리허설(열쇠가 회사 PC에만 있다) ⑤ 200개 목록 측정 ⑥ 되돌리기 시험을 할지 사용자에게 묻는다 ⑦ `DESIGN` · `REQUIREMENTS` 대조 후 M5 ✅. 코드 · 문서는 Claude 자동, 서버 명령은 사용자가 친다. **Vultr 크레딧 2026-11-30 만료, 12월 AWS 이사** |
 | 판단이 남은 것 | 모바일 첫 줄이 요약 줄 도착 때 24px 밀리는 것. S-05 방치 일수 색(180일 미만도 포인트 색). 개인정보 안내 문구(법률 검토 안 받음). 아이폰 확인. 비밀번호 보기 버튼을 Edge · 실제 폰에서 아직 안 봤다(운영에는 올라감). 백업 개인키 사본(`SERVER` 3.7절) |
-| 기기별로 할 일 | **집 PC · 노트북 공통**: `git pull`. 새 패키지 · 마이그레이션은 없다. 배포하기 전에 `task --version`으로 Task를 확인한다(회사 PC만 확인함, 없으면 사용자가 설치하거나 `SERVER` 2절의 직접 명령). **노트북**: `git pull` → `server/`에서 `pip install -r requirements-dev.txt` · `alembic upgrade head` → `web/`에서 `npm ci`(글꼴 패키지 2개 추가). `JWT_SECRET_KEY`가 32자 미만이면 서버가 뜨지 않는다. **서버 접속**: 회사 PC · 집 PC는 된다. 노트북은 아직(위 ①) |
+| 기기별로 할 일 | **집 PC · 노트북 공통**: `git pull`. 새 패키지 · 마이그레이션은 없다. **노트북**(2026-11-06 (1)에서 이어서): `playledger_test` 만들기(`README` "시작하기") → `pytest` · `web/` 검사 4종으로 확인 → `server/venv.broken` 지우기 → 서버 열쇠(위 ①). venv · `npm ci` · `alembic upgrade head`는 끝남. **서버 접속**: 회사 PC · 집 PC는 된다. 노트북은 아직 |
 | 집 PC에만 있는 것 | `play-1` SSH 열쇠(`~/.ssh/play_vultr`, 회사 PC 것과 별개). 클린룸으로 새로 만든 개발 DB(확인용 계정 · 게임 기록). `.claude/launch.json`은 실행 중인 `5173`에 붙기만 하는 설정으로 새로 만들었다(커밋 안 함) |
 | 회사 PC에만 있는 것 | **백업 개인키**(`~/playledger-backup.key`). `.claude/worktrees/brave-hawking-fc3e7c`(병합됨, 지워도 된다). 헤드리스 Edge 확인 스크립트는 저장소에 없다 ─ 필요하면 [DEVLOG_M4.5](archive/DEVLOG_M4.5.md)를 보고 새로 만든다 |
 
@@ -21,6 +21,30 @@
 - 기기 표기는 `README` 개발 환경 표를 따른다 (데스크톱 A · 데스크톱 B · 노트북)
 - **막혔던 점은 해결됐어도 반드시 남긴다.** 같은 실수를 반복하지 않기 위한 기록이고, 나중에 이 프로젝트를 설명할 때 "어떤 문제를 어떻게 해결했는가"가 결과물보다 더 중요한 이야기가 된다
 - 환경 버전은 여기 적지 않는다. `requirements.txt` · `package.json` · `ci.yml`이 원본이고, 기기별 런타임은 `README`에 있다
+
+---
+
+## 2026-11-06 (1) · 노트북 개발 환경 복구 (노트북, 자동 · 중간에 멈춤)
+
+### 한 일
+- 진행 순서: `git pull`(이미 최신) → 문서 · 환경 점검 → venv 다시 만들기 → Docker · DB → `npm ci` → (여기서 멈춤)
+- `uptime` 확인(인증 없는 GitHub API): 예약 실행 2건 모두 `success`. 30분 간격인데 하루 2건이라 GitHub 예약 지연인지 지켜본다
+- `server/venv`를 Miniconda 3.14.7로 다시 만들고 `requirements-dev.txt` 설치(목록 45줄). 깨진 것은 `server/venv.broken`으로 남겨 둠
+- Docker Desktop을 켜고 `docker compose up -d` → `playledger-db` healthy
+- `web/`에서 `npm ci` exit 0, `@fontsource-variable/inter` · `noto-sans-kr` 들어옴. npm audit 경고가 떴다(건수는 안 봄)
+- 사용자가 `server/.env`에 `TEST_DATABASE_URL` · Steam 키를 넣었다. 키 이름이 `STAEM_API_KEY`로 오타여서 이름만 `STEAM_API_KEY`로 고쳤다(값은 안 봄). DB 비밀번호 세 곳 일치 확인(값 비교만)
+
+### 막힌 것
+- **venv가 안 돈다.** 증상: `did not find executable at 'C:\ProgramDatanaconda3\python.exe'`. 원인: venv가 옛 경로 `C:\__dev_repos\PlayLedger`에서 Anaconda로 만들어졌는데 Anaconda가 지워졌다. 해결: 남은 Miniconda 3.14.7로 새로 만듦. 배운 것: Python을 지우거나 폴더를 옮기면 venv는 다시 만든다. `README` 개발 환경 표의 노트북 Python(3.13.9 Anaconda)도 이제 틀렸다 ─ 확인 뒤 고친다
+- **Docker Desktop이 꺼져 있었다.** 처음 `Start-Process`로는 안 떠서 한 번 더 켰다
+- **`docker compose exec postgres` 실패.** 서비스 이름은 `db`다(컨테이너 이름 `playledger-db`)
+
+### 확인 못 한 것
+- `playledger_test`가 없다 ─ 아직 안 만들었다. `pytest` · 프론트 검사 4종도 아직 안 돌렸다
+- 노트북 서버 열쇠 `play_vultr` 아직 없음
+
+### 다음에 할 일
+- "현재 상태" 기기별로 할 일의 노트북 줄
 
 ---
 
