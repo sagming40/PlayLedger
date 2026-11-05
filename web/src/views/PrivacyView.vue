@@ -37,10 +37,19 @@ const backTo = computed(() => (auth.isAuthenticated ? '/settings' : '/login'))
     </section>
 
     <section class="flex flex-col gap-2">
+      <h2 class="text-lg font-bold">어디에 얼마나 남는지</h2>
+      <ul class="list-disc pl-5">
+        <li>서버는 Vultr의 서울 데이터센터에 있어요. 2026년 12월에 다른 호스팅으로 옮길 예정이고, 옮기면 이 안내를 고쳐요</li>
+        <li>서버 접속 기록에는 접속 IP, 시각, 요청한 주소가 남아요. 일정 용량이 차면 오래된 것부터 지워져요</li>
+        <li>데이터베이스는 매일 새벽 암호화한 백업을 만들고, 14일이 지난 백업은 지워요</li>
+      </ul>
+    </section>
+
+    <section class="flex flex-col gap-2">
       <h2 class="text-lg font-bold">지우는 방법</h2>
       <p>
-        설정 화면의 <strong>계정 삭제</strong>를 누르면 계정, 게임 기록, 직접 등록한 게임이 바로 지워져요. 서버 백업에는 백업 보관 기간이
-        끝날 때까지 남을 수 있어요.
+        설정 화면의 <strong>계정 삭제</strong>를 누르면 계정, 게임 기록, 직접 등록한 게임이 바로 지워져요. 서버 백업에는 최대 14일 동안 남을
+        수 있어요.
       </p>
     </section>
 
