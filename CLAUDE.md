@@ -37,7 +37,7 @@ PlayLedger: 사놓고 안 한 게임을 구매일 · 구매가 · 플레이타�
 - DEVLOG "현재 상태"를 고친다 (완료 / 진행 중 / 다음에 할 일)
 - 겪은 문제 · 결정은 **그 세션 안에서** DEVLOG에 적는다. 형식은 전역 "문서 체계"와 DEVLOG 위쪽 "작성 규칙"을 따른다. 막혔던 점은 해결됐어도 남긴다
 - 끝낸 항목은 PLAN 작업 목록 체크박스와 2장 진행 현황 표에 반영한다. 계획에 없던 작업은 `*(계획에 없던 작업)*`을 붙여 추가한다
-- **마일스톤을 ✅로 닫기 전에** 전역 "작업 방식"의 "마일스톤 닫기 전 점검" 5단계를 한다. PlayLedger에서 대조할 것: 그 단계까지의 버전에 속한 `REQUIREMENTS` 4장 기능 · 6장 비기능, `DESIGN` 화면 규격 표, 목업, `ARCHITECTURE` 3장 계약. 전체 검증: `pytest`, `npm run lint` · `format:check` · `vue-tsc -b --noEmit` · `npm test` · `npm run build`, 로컬에서 가입 → 게임 등록 → 목록 · 통계 → 계정 삭제, 운영이면 `/api/health` · `/privacy` · `uptime` · 백업 타이머
+- **마일스톤을 ✅로 닫기 전에** 전역 "작업 방식"의 "마일스톤 닫기 전 점검" 5단계를 한다. PlayLedger에서 대조할 것: 그 단계까지의 버전에 속한 `REQUIREMENTS` 4장 기능 · 6장 비기능, `DESIGN` 화면 규격 표, 목업, `ARCHITECTURE` 3장 계약. 전체 검증: `pytest`, `npm run lint` · `format:check` · `vue-tsc -b --noEmit` · `npm test` · `npm run build`, 로컬에서 가입 → 게임 등록 → 목록 · 통계 → 계정 삭제, 운영이면 `/api/health`(`disk` 포함) · `/privacy` · `uptime` 최근 실행 · `systemctl list-timers 'play-*'` · `systemctl --failed` · `journalctl -u play-backup`의 "R2에 올림"(`SERVER` 2절 백업 상태)
 
 ## 작업 규칙
 - **전역 설정 위치**: 모든 기기(회사 PC · 집 PC · 노트북) `~/.claude/CLAUDE.md`

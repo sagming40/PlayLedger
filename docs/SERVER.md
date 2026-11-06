@@ -13,7 +13,7 @@
 | 접속 | 일반 계정 `sagming40` + SSH 키만. root · 비밀번호 로그인 불가 |
 | 도메인 | `play.sagming.com` (Cloudflare, DNS만 · 회색 구름) |
 | 열린 문 | 22 · 80 · 443 |
-| 앱 위치 | `/srv/playledger/` (`compose.yaml` · `.env` · `image.env`), 백업 `/var/backups/playledger/` |
+| 앱 위치 | `/srv/playledger/` (`compose.yaml` · `.env` · `image.env`), 백업 `/var/backups/playledger/`(최근 14개) |
 | 서버 밖 백업 | Cloudflare R2 버킷 `playledger-backups`, 14일 (3.9절, [decisions/0013](decisions/0013-r2-offsite-backup.md)) |
 | 감시 | GitHub Actions `uptime` — 30분마다(7분 · 37분) 밖에서 `/api/health` 본문과 인증서 남은 날(20일 미만이면 실패)을 본다. 디스크 여유도 같은 본문의 `"disk"`로 본다(남은 공간 10% 미만이면 `low` → 실패). 실패하면 GitHub 메일. 저장소에 60일 커밋이 없으면 GitHub가 멈추니 Actions 화면에서 다시 켠다 |
 | 정기 작업 | 백업 매일 04:30 KST(`play-backup.timer`), Steam 게임 목록 매주 일요일 05:30 KST(`play-steam-sync.timer`, 3.10절) |
@@ -74,7 +74,7 @@ docker stop play-restore; Remove-Item $dump   # 풀린 덤프에는 이메일 ·
 ```
 
 **운영 복구** (`deploy/play-restore`). 운영 DB를 백업 시점으로 **바꾼다** ─ 그 뒤의 기록은 사라진다. 운영에서는 아직 돌려 보지 않았고, 내 PC의 운영 구성에서 시험했다(5절 2026-11-06).
-열쇠는 PC에만 있어서, PC에서 풀어 서버의 내 홈으로 올린다. 04:30 백업 타이머 시각은 피한다.
+열쇠는 PC에만 있어서, PC에서 풀어 서버의 내 홈으로 올린다. 04:30 백업과 일요일 05:30 ~ 05:45 게임 목록 타이머 시각은 피한다(게임 목록은 같은 잠금을 잡아서 "배포가 진행 중이다"로 멈춘다. 그러면 다시 친다).
 
 ```powershell
 # PC ─ 되살릴 백업을 고른다. 가장 최근이 아니면 이름으로 고른다
@@ -259,7 +259,7 @@ sudo play-backup
 1. **Cloudflare 화면** (개인 Gmail 계정)
    - R2 → 시작하기. 무료 한도(10GB)라도 결제수단 등록을 요구할 수 있다
    - 버킷 만들기: 이름 `playledger-backups`, 위치 자동, 저장 공간 클래스 **표준**(Infrequent Access는 최소 30일 과금이라 14일 보관에 손해). 공개 개발 URL · 사용자 설정 도메인은 켜지 않는다(기본이 비공개)
-   - 버킷 → 설정 → 객체 수명 주기 규칙: 접두사 `playledger-`, **14일 뒤 삭제**. 서버 스크립트도 14일에 지우지만, 서버가 사라져도 사본이 개인정보 안내의 기한을 넘기지 않게 하는 안전장치다
+   - 버킷 → 설정 → 객체 수명 주기 규칙: 접두사 `playledger-`, **14일 뒤 삭제**. `play-backup`도 R2에서 14일 지난 사본을 지우지만, 서버가 사라져도 사본이 개인정보 안내의 기한을 넘기지 않게 하는 안전장치다
    - R2 → API 토큰 관리 → **Account API 토큰 생성**(사용자 토큰이 아니라 계정에 붙는 토큰. 일반 "계정 API 토큰" 메뉴에서 만들면 S3 키가 안 나온다): 권한 **객체 읽기 및 쓰기**, 버킷 **`playledger-backups`만**, 기한 없음. 액세스 키 ID · 비밀 액세스 키와 S3 주소(`https://<계정 ID>.r2.cloudflarestorage.com`)가 한 번만 보인다. 화면을 캡처하지 않는다. 값은 Bitwarden "API 키" 폴더의 "Cloudflare 계정 API 토큰" 보안 메모(마스터 비밀번호 재확인 켬)에 둔다 ─ 내가 쓰는 API 키와 달리 서버가 쓰는 열쇠라 따로 뒀다. 회사 PC는 웹 금고만 잠깐(전역 설정 "계정 보안") ─ 서버가 사라지면 새 서버에 다시 넣어야 한다
 
 2. **PC → 서버** (저장소 폴더):
@@ -306,7 +306,7 @@ systemctl list-timers 'play-*'
 - **요청 제한은 프로세스 메모리에 있다.** 워커를 늘리면 제한도 늘고, 재배포하면 횟수가 0이 된다 (`core/rate_limit.py`)
 - **`web`의 IP 172.30.0.10을 바꾸면 `server/Dockerfile`의 `--forwarded-allow-ips`도 같이 바꾼다.** 어긋나면 모든 사용자가 한 IP로 묶인다
 - **HSTS가 1년이다(2026-11-05부터).** 이 주소를 http로 되돌릴 수 없다. `includeSubDomains` · `preload`는 붙이지 않는다
-- **`play-backup` · `play-release` · `play-restore`와 타이머 파일(`play-*.service` · `.timer`)은 배포로 바뀌지 않는다.** `/usr/local/bin/` · `/etc/systemd/system/`에 손으로 설치한 것이다. 저장소에서 고쳤으면 3.9절 2 · 3단계, 3.10절처럼 다시 올려 설치한다(타이머는 `daemon-reload`까지)
+- **`play-compose` · `play-backup` · `play-release` · `play-restore`와 타이머 파일(`play-*.service` · `.timer`)은 배포로 바뀌지 않는다.** `/usr/local/bin/` · `/etc/systemd/system/`에 손으로 설치한 것이다. 저장소에서 고쳤으면 3.6절 · 3.9절 2 · 3단계 · 3.10절처럼 다시 올려 설치한다(타이머는 `daemon-reload`까지)
 - **R2는 rclone이 올린 직후 보내는 확인용 HEAD를 501 `NotImplemented`로 거절한다**(apt rclone 1.60.1). 파일은 올라가는데 1차 시도가 실패로 찍힌다. `play-backup`은 `--s3-no-head`로 올리고 목록(`lsf`)에서 크기를 맞춰 본다. rclone 버전이나 옵션을 바꾸면 시험 파일로 먼저 본다(5절 2026-11-06 R2 설치)
 - **`/etc/playledger/r2.env`도 `.env`처럼 값이 보이게 열지 않는다.** 확인은 `sudo grep -c '=$'`로 한다
 - **`.env`를 값이 보이게 열지 않는다.** 캡처로 비밀값이 나간 적이 있다(5절). 확인은 `sudo grep -c '=$' /srv/playledger/.env`로 한다

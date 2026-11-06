@@ -13,29 +13,33 @@
 flowchart TB
     User["사용자<br/>데스크톱 · 모바일 브라우저"]
 
-    subgraph Host["서버 (Docker Compose)"]
-        Caddy["Caddy<br/>리버스 프록시"]
-        Web["Vue 빌드 결과물<br/>정적 파일"]
-        API["FastAPI<br/>인증 · 계산 · 병합"]
-        Worker["작업 워커<br/>자동 동기화 (M9)"]
-        DB[("PostgreSQL")]
-        Redis[("Redis<br/>작업 큐 · 캐시")]
+    subgraph Host["서버 play-1 (Docker Compose, deploy/compose.prod.yaml)"]
+        Web["web 컨테이너<br/>Caddy + Vue 빌드 결과물"]
+        API["api 컨테이너<br/>FastAPI"]
+        DB[("db 컨테이너<br/>PostgreSQL")]
+        Worker["작업 워커 (M9)"]
+        Redis[("Redis (M9)")]
     end
 
     Steam["Steam Web API"]
-    Discord["Discord OAuth"]
+    Discord["Discord OAuth (M11)"]
+    R2["Cloudflare R2<br/>잠긴 백업 사본"]
+    Uptime["GitHub Actions uptime<br/>밖에서 /api/health"]
 
-    User -->|"HTTPS"| Caddy
-    Caddy -->|"/"| Web
-    Caddy -->|"/api"| API
+    User -->|"HTTPS 443"| Web
+    Web -->|"/api (edge 네트워크)"| API
     API --> DB
-    API --> Redis
-    Worker --> Redis
-    Worker --> DB
+    API -.->|"M9"| Redis
+    Worker -.-> Redis
+    Worker -.-> DB
     API -->|"M2.5"| Steam
-    Worker -->|"M9"| Steam
-    API -->|"M11"| Discord
+    Worker -.->|"M9"| Steam
+    API -.->|"M11"| Discord
+    Host -->|"play-backup 매일"| R2
+    Uptime -->|"30분마다"| Web
 ```
+
+점선은 아직 없는 것이다. 포트를 여는 것은 `web`뿐이다. `api`는 `edge`(Caddy · Steam)와 `backend`(DB) 둘에 있고, `db`는 인터넷으로 나가는 길이 없는 `backend`에만 있다. 서버 세팅 · 타이머 · 백업은 [`SERVER`](SERVER.md).
 
 ### 1.2 개발 환경
 
@@ -136,6 +140,8 @@ v0에서 관리자 화면이 정규화를 거치지 않아 같은 게임이 2행
 | Steam Web API | 게임 목록 미러(M2.5), 보유 게임과 누적 플레이타임(M8) | **서버와 워커만** |
 | Steam 스토어 `appdetails` (비공식) | 고른 게임의 한국어 이름 · 커버 · 장르 · 출시일 (M2.5) | **서버만** |
 | Discord OAuth | 외부 로그인 | **서버만** |
+| Cloudflare R2 | 잠긴 DB 백업 사본 14일 (M5, [decisions/0013](decisions/0013-r2-offsite-backup.md)) | **서버의 `play-backup`만** (앱 코드는 부르지 않는다) |
+| GitHub Container Registry · Actions | 운영 이미지 보관, 밖에서 하는 감시(`uptime`) | CI가 올리고 서버가 받는다 ([`SERVER`](SERVER.md) 1절) |
 
 API 키와 클라이언트 시크릿은 서버 밖으로 나가지 않는다. 프론트엔드 코드는
 브라우저로 전부 내려받아지므로, 여기에 넣은 값은 누구나 볼 수 있다.
@@ -196,7 +202,7 @@ refresh 쿠키의 범위가 좁은 것은 `Path=/api/auth`로 심었기 때문�
 
 | 코드 | 언제 | 비고 |
 |---|---|---|
-| 429 | 로그인 · 가입 · 기록 등록이 너무 잦음 | `Retry-After` 헤더. 메모리에 세므로 서버 한 대 기준이다 (`core/rate_limit.py`) |
+| 429 | 로그인 · 가입 · 기록 등록이 너무 잦음, 로그인 · 계정 삭제의 비밀번호가 너무 자주 틀림(둘이 같은 실패 횟수를 센다) | `Retry-After` 헤더. 메모리에 세므로 서버 한 대 기준이다 (`core/rate_limit.py`) |
 | 403 | `/refresh` · `/logout`을 다른 사이트에서 부름 | 브라우저의 `Sec-Fetch-Site`로 판단. 형제 서브도메인은 SameSite로 막히지 않는다 |
 | 403 | 계정 삭제의 비밀번호가 틀림 | 401이면 화면이 토큰 만료로 알고 재발급을 시도한다 |
 | 503 | `/api/health`에서 DB에 닿지 못함 | 평소 응답 `{"status":"ok","database":"ok","disk":"ok"}`. `disk`는 `ok` · `low`(남은 공간 10% 미만) · `error`이고 상태 코드를 바꾸지 않는다 ─ 503이면 배포가 되돌리기를 시작하기 때문. 밖의 `uptime` 감시가 따로 본다 |
@@ -258,6 +264,7 @@ access 토큰은 메모리에만 존재하므로 새로고침하면 사라진다
 
 이때의 401은 오류가 아니라 **로그인하지 않은 상태**를 의미한다.
 에러 문구를 표시하지 않고 비로그인 상태로 시작한다.
+401이 아닌 실패(서버에 닿지 못함 · 5xx)는 로그인 여부를 모르는 것이라, 로그인 화면에 경고와 "다시 시도"를 띄운다 (`stores/auth.ts`의 `restoreFailed`).
 
 ### 3.5 로그아웃
 
@@ -583,8 +590,12 @@ playledger/
 │   ├── package.json
 │   └── vite.config.ts          # 개발용 /api 프록시 설정
 │
-├── .github/workflows/          # CI (pytest 자동 실행)
-├── docker-compose.yml          # 지금은 PostgreSQL만 (M9에 Redis, M5에 운영 구성)
+├── .github/workflows/          # ci.yml(pytest · 화면 검사 · 이미지 · audit), uptime.yml(운영 감시)
+├── deploy/                     # 운영 Compose · 서버 스크립트 · systemd 타이머 (SERVER)
+├── scripts/                    # PC 쪽 배포(task deploy) · 200개 측정
+├── Taskfile.yml
+├── LICENSE
+├── docker-compose.yml          # 개발용 PostgreSQL만 (운영은 deploy/compose.prod.yaml, M9에 Redis)
 ├── .env.example                # Compose용 DB 계정 키 이름 (값은 루트 .env)
 ├── docs/
 ├── .gitattributes              # 줄바꿈 규칙 (LF 고정)
@@ -611,6 +622,7 @@ playledger/
 | 프론트 설정 | `web/.env` | 필요 시 |
 
 `.env.example`에 키 이름만 적고 값은 비워서 커밋한다.
+위 표는 개발 기기 기준이다. 운영 서버의 `.env` · `r2.env` · 백업 공개키, PC에만 있는 백업 개인키는 [`SERVER`](SERVER.md) 3.6 · 3.7 · 3.9절.
 
 **루트 `.env`가 따로 있는 이유**
 

@@ -41,4 +41,4 @@
 
 데스크톱 보드(`Library` · `LibraryEmpty` · `Form` · `Detail` · `Stats` · `Settings`)의 왼쪽 사이드바는 옛 안이다 — 메뉴는 `TopNav.dc.html` 시안 H가 기준이다.
 
-S-07(다음 게임 추첨, v1.1) · S-08(위시리스트, v1.2)은 그리지 않았다. `DESIGN` 3.7 · 3.8절의 와이어프레임을 본다.
+S-07(다음 게임 추첨, v1.1) · S-08(위시리스트, v1.2)은 그리지 않았다. `DESIGN` 3.7 · 3.8절의 와이어프레임을 본다. S-09(개인정보 안내, M4.5)도 그리지 않았다 ─ 글만 있는 화면이라 구현(`web/src/views/PrivacyView.vue`)이 기준이다.

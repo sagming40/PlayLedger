@@ -99,19 +99,16 @@ PlayLedger가 하는 일이 그것입니다.
 
 ```mermaid
 flowchart LR
-    User["👤 브라우저<br/>데스크톱 · 모바일"] -->|"HTTPS"| Caddy["Caddy"]
-    Caddy -->|"/"| Web["Vue 3<br/>화면"]
+    User["👤 브라우저<br/>데스크톱 · 모바일"] -->|"HTTPS"| Caddy["Caddy<br/>+ Vue 3 화면 파일"]
     Caddy -->|"/api"| API["FastAPI<br/>인증 · 계산 · 병합"]
     API --> DB[("PostgreSQL")]
-    API --> Redis[("Redis<br/>작업 큐")]
-    Worker["⏰ 워커<br/>자동 동기화"] --> Redis
-    Worker --> DB
     API --> Steam["Steam Web API"]
-    Worker --> Steam
-    API --> Discord["Discord OAuth"]
+    API -.-> Redis[("Redis 작업 큐<br/>v2.0 예정")]
+    Worker["⏰ 워커 · 자동 동기화<br/>v2.0 예정"] -.-> Redis
+    API -.-> Discord["Discord OAuth<br/>v2.1 예정"]
 
     classDef ext stroke-dasharray: 5 5
-    class Steam,Discord ext
+    class Steam,Discord,Redis,Worker ext
 ```
 
 **화면은 표시만, 서버는 판단만.**
@@ -191,8 +188,11 @@ playledger/
 │       ├── views/
 │       └── components/
 │
+├── deploy/                 # 운영 Compose · 서버 스크립트 · 타이머 (docs/SERVER.md)
+├── scripts/                # PC에서 돌리는 배포 · 측정 스크립트
 ├── docs/                   # 설계 문서
-└── docker-compose.yml
+├── Taskfile.yml            # task deploy
+└── docker-compose.yml      # 개발용 DB만
 ```
 
 > 자세한 구조와 요청 흐름은 [아키텍처](docs/ARCHITECTURE.md)에 있습니다.
@@ -204,7 +204,7 @@ playledger/
 | 버전 | 내용 | 상태 |
 |:---:|---|:---:|
 | **v1.0** | 기록 · 상태 관리 · 통계 대시보드 | ✅ 완료 |
-| v1.1 | 배포, 다음 게임 추첨 | ⏳ 예정 |
+| v1.1 | 배포, 서버 이사, 다음 게임 추첨 | 🔄 배포 운영 중 |
 | v1.2 | 위시리스트 + 구매 전 경고 | ⏳ 예정 |
 | v2.0 | Steam 자동 동기화, 플레이 세션 + 히트맵 | ⏳ 예정 |
 | v2.1 | Discord 로그인 | ⏳ 예정 |
@@ -330,4 +330,4 @@ npm test                 # Vitest
 
 ## 라이선스
 
-MIT License *(LICENSE 파일은 추후 추가 예정)*
+MIT License ([LICENSE](LICENSE))

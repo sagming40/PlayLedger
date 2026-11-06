@@ -282,7 +282,7 @@ sequenceDiagram
 
 ### 3.6 S-06 설정
 
-그림: [`Settings.dc.html`](mockups/Settings.dc.html). 구성: 계정(닉네임 · 이메일) → 화면 테마 → Steam 연동(M8: Steam ID 입력 · 지금 동기화 · 마지막 동기화 시각) → Discord 연결(M11) → 로그아웃.
+그림: [`Settings.dc.html`](mockups/Settings.dc.html). 구성: 계정(닉네임 · 이메일) → 화면 테마 → Steam 연동(M8: Steam ID 입력 · 지금 동기화 · 마지막 동기화 시각) → Discord 연결(M11) → 로그아웃 → 개인정보 안내 링크 → 계정 삭제(맨 아래).
 
 **화면 테마 (F-24)**
 
@@ -488,7 +488,7 @@ stateDiagram-v2
 | `text` | `#F2F2F5` | `#17171B` |
 | `muted` (보조 글자) | `#A1A1AC` | `#5C5C68` |
 
-**글꼴** · Inter + Noto Sans KR
+**글꼴** · Inter + Noto Sans KR. 외부 글꼴 서버를 부르지 않고 앱에 내장한다(`@fontsource-variable`, `web/src/style.css`의 `--font-sans`) ─ 접속 IP가 글꼴 업체로 가지 않는다
 
 **테마 전환 (F-24)**
 - 다크 · 라이트 둘 다 지원한다. 기본은 **시스템 설정**(`prefers-color-scheme`)을 따른다
