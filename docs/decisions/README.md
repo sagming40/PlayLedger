@@ -28,3 +28,4 @@
 | [0016](0016-steam-sync-details-later.md) | 동기화는 게임 목록만으로, 상세 정보는 나중에 조금씩 | 채택 |
 | [0017](0017-milestone-renumber.md) | 마일스톤 번호를 실제 순서대로(M6 · M7 Steam, M8 Discord), 확장 M9 ~ M11은 순서 없음 | 채택 |
 | [0018](0018-discord-manual-link.md) | Discord 계정은 로그인한 상태에서 수동 연결만, 이메일은 받지 않음 | 채택 |
+| [0019](0019-steam-purchase-info.md) | Steam 게임의 구매일 · 구매가는 처음 본 날 · 구매 기록 붙여넣기(M6.5) · 빈칸 채우기로, 추정하지 않음 | 채택 |
