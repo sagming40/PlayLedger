@@ -349,7 +349,7 @@
 - [x] Steam 미러 첫 실행 198,461건 28.8초
 - [ ] M9 전까지 미러를 다시 돌리는 주기 정하기
 - [x] DB 매일 백업 + **복구 리허설**(2026-11-06, 빈 DB에 되살려 7개 표 개수 · alembic 버전 일치. `SERVER` 2절 · 5절)
-- [ ] 서버 밖 보관 ─ Cloudflare R2에 14일 ([decisions/0013](decisions/0013-r2-offsite-backup.md)). `play-backup` 업로드 · 14일 정리 코드와 로컬 시험 끝(2026-11-06). 서버 설치(`SERVER` 3.9절)와 첫 실제 업로드가 남음
+- [x] 서버 밖 보관 ─ Cloudflare R2에 14일 ([decisions/0013](decisions/0013-r2-offsite-backup.md)). 2026-11-06 설치, 운영 `play-backup` "R2에 올림 … 24046 바이트, 크기 확인", `/privacy`에 R2 문구(`f417342`). R2 14일 정리가 실제로 지우는 것은 11-20 이후에 본다
 - [x] 운영 복구 스크립트 `play-restore` (덤프 확인 → 지우기 전 백업 → api 멈춤 → 비우고 되살리기 → 마이그레이션 → api → 게임 목록). 내 PC 운영 구성에서 정상 · 옛 버전 백업 · 멈춰야 하는 경우 9가지 · 중간에 멈춘 뒤 다시 실행을 시험(2026-11-06, `SERVER` 5절). 운영에서는 아직 안 돌림 *(계획에 없던 작업)*
 - [x] 로그 회전(Compose 10MB 3개), 옛 이미지 정리(`play-release`)
 - [x] 헬스체크 감시 (`.github/workflows/uptime.yml`을 30분마다, 본문 · 인증서 남은 날, 실패하면 GitHub 메일. `SERVER` 1절)
