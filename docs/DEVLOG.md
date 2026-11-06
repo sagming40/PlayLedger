@@ -8,7 +8,7 @@
 | 항목 | 내용 |
 |---|---|
 | 단계 | **M5 ✅ 2026-11-06** (기록은 [DEVLOG_M5](archive/DEVLOG_M5.md), 닫기 전 점검 표는 그 파일 2026-11-06 (6)). **M6 🔄 Steam 동기화** ─ 번호를 다시 매겼다(2026-11-06 (8), [decisions/0017](decisions/0017-milestone-renumber.md)): M6 Steam 동기화 → M7 자동 동기화 → M8 Discord → 확장 M9 · M10 · M11(순서 없음). 옛 번호는 [archive/README](archive/README.md) 대응표. M5.5 서버 이사는 12월. `v1.0.0` 태그 있음. **`https://play.sagming.com` 운영 중**, 배포된 커밋 `c34b701` (`task deploy`) |
-| 진행 중 | **M6 Steam 계정 연결(서버)은 끝, 운영 배포 전 ─ 다음은 보유 게임 목록(`GetOwnedGames`)**(2026-11-06 (11)). 화면 버튼(S-06)은 아직 없어서 `/settings?steam=` 결과를 화면이 안 읽는다. 방식: 마이그레이션까지 사용자가 직접 쳤고 그 뒤로는 **자동**(사용자 지시). 먼저 읽을 것: `PLAN` M6 작업 목록, [decisions/0016](decisions/0016-steam-sync-details-later.md) · [0019](decisions/0019-steam-purchase-info.md), `ARCHITECTURE` 5.1 · 5.4절. 운영 중인 것: 매일 백업(서버 14개 + R2 14일) · 디스크 감시(`/api/health` `disk`) · Steam 매주 타이머 · `uptime`. R2 14일 정리가 실제로 지우는 것은 11-20 이후에 처음 본다. `uptime` 예약 실행은 지금까지 3번(11-05 22:28 · 11-06 05:48 · 10:29 KST) ─ 30분마다인데 하루 몇 번만 돌아서 며칠 지켜본다 |
+| 진행 중 | **M6 Steam 계정 연결(서버) · 보유 게임 조회는 끝, 운영 배포 전 ─ 다음은 병합 규칙(`ARCHITECTURE` 5.1절)과 동기화 API**(2026-11-06 (11) · (12)). 화면 버튼(S-06)은 아직 없어서 `/settings?steam=` 결과를 화면이 안 읽는다. 방식: 마이그레이션까지 사용자가 직접 쳤고 그 뒤로는 **자동**(사용자 지시). 먼저 읽을 것: `PLAN` M6 작업 목록, [decisions/0016](decisions/0016-steam-sync-details-later.md) · [0019](decisions/0019-steam-purchase-info.md), `ARCHITECTURE` 5.1 · 5.4절. 운영 중인 것: 매일 백업(서버 14개 + R2 14일) · 디스크 감시(`/api/health` `disk`) · Steam 매주 타이머 · `uptime`. R2 14일 정리가 실제로 지우는 것은 11-20 이후에 처음 본다. `uptime` 예약 실행은 지금까지 3번(11-05 22:28 · 11-06 05:48 · 10:29 KST) ─ 30분마다인데 하루 몇 번만 돌아서 며칠 지켜본다 |
 | 다음에 할 일 | ① `uptime` 실행 간격을 며칠 지켜본다, 새 "디스크 여유" 단계가 통과하는지 본다 ② 11-08(일) 아침 `journalctl -u play-steam-sync`로 첫 예약 실행을 본다 ③ 11-20 이후 R2 버킷에서 14일 지난 사본이 지워졌는지 본다(`SERVER` 5절 맨 아래) ④ M6 `PLAN` 작업 목록 순서대로(Steam 계정 연결 → 게임 목록 → 병합 → 상세 채우기 → 출처 · 구매 정보 → 화면). 로컬 시험은 사용자의 실제 Steam 계정(게임 세부 정보 공개 필요) ⑤ M6.5 구매 기록 가져오기 ─ 시작할 때 사용자에게 Steam 구매 기록 · 라이선스 목록 페이지 복사본을 받아 형식부터 본다 ⑥ M6.7 비밀번호 변경 · 찾기 + 이메일 인증(새 단계, 메일 발송 서비스부터 정한다) ⑦ 12월 M5.5 서버 이사, M7 · M8, 그다음 확장 셋. 코드 · 문서는 Claude 자동, 서버 명령은 사용자가 친다. **Vultr 크레딧 2026-11-30 만료, 12월 AWS 이사** |
 | 판단이 남은 것 | 모바일 첫 줄이 요약 줄 도착 때 24px 밀리는 것. S-05 방치 일수 색(180일 미만도 포인트 색). 개인정보 안내 문구(법률 검토 안 받음). 아이폰 확인. 비밀번호 보기 버튼을 Edge · 실제 폰에서 아직 안 봤다(운영에는 올라감). 백업 개인키 사본(`SERVER` 3.7절) |
 | 기기별로 할 일 | **회사 PC · 노트북 공통**: `git pull` 뒤 `alembic upgrade head`(새 마이그레이션 `e4a48be57f0f` ─ `users.steam_synced_at`). 새 패키지는 없다. M6 코드를 시작하면 OpenID 콜백 시험에 로컬 API(`8001`) · 화면(`5173`)이 둘 다 떠 있어야 한다. **노트북**: 개발 환경 끝남(2026-11-06 (2), Task 3.54.0 있음). 서버 열쇠 · `venv.broken` 정리도 끝(2026-11-06 (10)). **서버 접속**: 세 기기 모두 된다(`ssh play`, 열쇠는 기기마다 따로). **전역 설정**(노트북 열쇠 반영): 집 PC는 원본 `~/.claude/CLAUDE.md`를 드라이브 사본 `desktop_hm_CLAUDE.md`로 맞춘다. 회사 PC는 드라이브 `.claude/README.md` "회사 PC에 올릴 것"을 반영한다 |
@@ -21,6 +21,31 @@
 - 기기 표기는 `README` 개발 환경 표를 따른다 (데스크톱 A · 데스크톱 B · 노트북)
 - **막혔던 점은 해결됐어도 반드시 남긴다.** 같은 실수를 반복하지 않기 위한 기록이고, 나중에 이 프로젝트를 설명할 때 "어떤 문제를 어떻게 해결했는가"가 결과물보다 더 중요한 이야기가 된다
 - 환경 버전은 여기 적지 않는다. `requirements.txt` · `package.json` · `ci.yml`이 원본이고, 기기별 런타임은 `README`에 있다
+
+---
+
+## 2026-11-06 (12) · M6 보유 게임 목록 조회 (데스크톱 A, 자동)
+
+### 한 일
+- `services/steam.py` `fetch_owned_games` ─ `GetOwnedGames`(`include_appinfo` · `include_played_free_games`), 키는 헤더로. 결과는 `OwnedGame(appid, name, playtime_minutes)` 목록
+- `SteamProfilePrivate`(응답에 `game_count`가 없음 = 비공개) · `SteamUnavailable(timeout=)`(연결 실패 · 비200 · 형식 이상, timeout이면 504로 쓸 수 있게)
+- 테스트 `test_steam_owned.py` 17개: 정상 · 키가 URL에 없음 · 비공개 · 0개 · 이상한 행 건너뜀(문자열 · bool · 범위 밖 appid, 음수 · 문자열 플레이타임, 깨진 이름) · 같은 appid 두 번 · 장애 11종 · 빈 키
+
+### [설계]
+- 동기화 API(`POST`)는 병합과 같이 만든다 ─ 목록만 받는 API는 쓸 곳이 없다
+- 401 · 403(우리 키 문제)도 `SteamUnavailable` ─ 사용자가 고칠 수 없으니 장애와 같게 보이고 로그로 안다
+- 이름의 길이 · 기호뿐 검사는 하지 않고 깨진 글자만 버린다 ─ 제목은 병합이 `usable_title(응답 이름, 미러 이름)`으로 고른다
+
+### 막힌 것
+- 깨진 이름(`\ud800`) 테스트에서 httpx `Response(json=)`가 테스트 쪽에서 먼저 `UnicodeEncodeError` ─ `json.dumps`(ASCII 이스케이프)로 보낸다. 실제 Steam JSON도 `\ud800` 글자로 올 수 있는 모양이다
+
+### 검증 (관찰값)
+- `pytest` **369 passed**
+- 실제 Steam(연결한 사용자 계정, 개발 키): 게임 17개 · 이름 없는 것 0 · 플레이한 것 14 · 합 735시간. 가장 많이 한 게임 37,768분
+- **확인 못 한 것**: 실제 비공개 프로필의 응답 모양(문서 · 알려진 동작만 근거). 병합 구현 후 사용자 계정의 공개 설정을 잠깐 바꿔 볼지 정한다
+
+### 다음에 할 일
+- 병합 규칙 + 동기화 API (사용자별 잠금 · `ON CONFLICT` · 트랜잭션 하나 · 상한 5,000 · 결과 요약)
 
 ---
 
