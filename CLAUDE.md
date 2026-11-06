@@ -93,7 +93,7 @@ PlayLedger: 사놓고 안 한 게임을 구매일 · 구매가 · 플레이타�
 - `.env`, `venv/`, `node_modules/`, DB 데이터는 Git에 없으므로 기기마다 따로 준비한다 (`.env.example` 참고)
 - DB 구조는 Alembic으로 맞춘다: `git pull` 후 항상 `alembic upgrade head`
   - 마이그레이션 파일은 **모델을 고친 기기에서만** 만든다. 파일명은 `alembic.ini`의 `file_template` 규칙(`날짜_시각_설명`)을 따른다
-  - autogenerate 결과는 그대로 믿지 말고 읽어 보고, `alembic upgrade head --sql`로 실제 SQL을 확인한 다음 커밋한다
+  - autogenerate 결과는 그대로 믿지 말고 읽어 보고, `alembic upgrade 이전리비전:head --sql`로 실제 SQL을 확인한 다음 커밋한다. 범위 없이 `head --sql`만 치면 DB를 보지 않고 맨 처음부터 뽑다가 데이터를 읽는 마이그레이션(`20261104_1420`)에서 `'NoneType' object has no attribute 'all'`로 멈춘다
 - 패키지를 추가하거나 버전을 올렸으면 `requirements.txt`(테스트용은 `requirements-dev.txt`) · `package-lock.json`을 같이 커밋하고, 다른 기기에서 할 일(`pip install -r requirements-dev.txt`, `npm ci`)을 DEVLOG "현재 상태"에 적는다
 
 ## 자주 쓰는 명령

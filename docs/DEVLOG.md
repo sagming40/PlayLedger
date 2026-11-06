@@ -8,10 +8,10 @@
 | 항목 | 내용 |
 |---|---|
 | 단계 | **M5 ✅ 2026-11-06** (기록은 [DEVLOG_M5](archive/DEVLOG_M5.md), 닫기 전 점검 표는 그 파일 2026-11-06 (6)). **M6 🔄 Steam 동기화** ─ 번호를 다시 매겼다(2026-11-06 (8), [decisions/0017](decisions/0017-milestone-renumber.md)): M6 Steam 동기화 → M7 자동 동기화 → M8 Discord → 확장 M9 · M10 · M11(순서 없음). 옛 번호는 [archive/README](archive/README.md) 대응표. M5.5 서버 이사는 12월. `v1.0.0` 태그 있음. **`https://play.sagming.com` 운영 중**, 배포된 커밋 `c34b701` (`task deploy`) |
-| 진행 중 | **설계만 끝났고 코드는 아직 하나도 없다 ─ 여기서 이어 간다: M6 Steam 계정 연결(OpenID)부터.** 설계는 2026-11-06 (7) Steam 동기화 · (8) Discord · 번호 · (9) 구매일 · 구매가 보완(M6.5 새 단계). 먼저 읽을 것: `PLAN` M6 작업 목록, [decisions/0015](decisions/0015-steam-openid-link.md) · [0016](decisions/0016-steam-sync-details-later.md) · [0019](decisions/0019-steam-purchase-info.md), `ARCHITECTURE` 5.1 · 5.4절. **시작할 때 자동 / 직접 칠지 사용자에게 묻고**(아직 안 정함), OpenID는 처음 나오는 개념이라 비유 설명부터. 운영 중인 것: 매일 백업(서버 14개 + R2 14일) · 디스크 감시(`/api/health` `disk`) · Steam 매주 타이머 · `uptime`. R2 14일 정리가 실제로 지우는 것은 11-20 이후에 처음 본다. `uptime` 예약 실행은 지금까지 3번(11-05 22:28 · 11-06 05:48 · 10:29 KST) ─ 30분마다인데 하루 몇 번만 돌아서 며칠 지켜본다 |
+| 진행 중 | **M6 Steam 계정 연결(서버)은 끝, 운영 배포 전 ─ 다음은 보유 게임 목록(`GetOwnedGames`)**(2026-11-06 (11)). 화면 버튼(S-06)은 아직 없어서 `/settings?steam=` 결과를 화면이 안 읽는다. 방식: 마이그레이션까지 사용자가 직접 쳤고 그 뒤로는 **자동**(사용자 지시). 먼저 읽을 것: `PLAN` M6 작업 목록, [decisions/0016](decisions/0016-steam-sync-details-later.md) · [0019](decisions/0019-steam-purchase-info.md), `ARCHITECTURE` 5.1 · 5.4절. 운영 중인 것: 매일 백업(서버 14개 + R2 14일) · 디스크 감시(`/api/health` `disk`) · Steam 매주 타이머 · `uptime`. R2 14일 정리가 실제로 지우는 것은 11-20 이후에 처음 본다. `uptime` 예약 실행은 지금까지 3번(11-05 22:28 · 11-06 05:48 · 10:29 KST) ─ 30분마다인데 하루 몇 번만 돌아서 며칠 지켜본다 |
 | 다음에 할 일 | ① `uptime` 실행 간격을 며칠 지켜본다, 새 "디스크 여유" 단계가 통과하는지 본다 ② 11-08(일) 아침 `journalctl -u play-steam-sync`로 첫 예약 실행을 본다 ③ 11-20 이후 R2 버킷에서 14일 지난 사본이 지워졌는지 본다(`SERVER` 5절 맨 아래) ④ M6 `PLAN` 작업 목록 순서대로(Steam 계정 연결 → 게임 목록 → 병합 → 상세 채우기 → 출처 · 구매 정보 → 화면). 로컬 시험은 사용자의 실제 Steam 계정(게임 세부 정보 공개 필요) ⑤ M6.5 구매 기록 가져오기 ─ 시작할 때 사용자에게 Steam 구매 기록 · 라이선스 목록 페이지 복사본을 받아 형식부터 본다 ⑥ M6.7 비밀번호 변경 · 찾기 + 이메일 인증(새 단계, 메일 발송 서비스부터 정한다) ⑦ 12월 M5.5 서버 이사, M7 · M8, 그다음 확장 셋. 코드 · 문서는 Claude 자동, 서버 명령은 사용자가 친다. **Vultr 크레딧 2026-11-30 만료, 12월 AWS 이사** |
 | 판단이 남은 것 | 모바일 첫 줄이 요약 줄 도착 때 24px 밀리는 것. S-05 방치 일수 색(180일 미만도 포인트 색). 개인정보 안내 문구(법률 검토 안 받음). 아이폰 확인. 비밀번호 보기 버튼을 Edge · 실제 폰에서 아직 안 봤다(운영에는 올라감). 백업 개인키 사본(`SERVER` 3.7절) |
-| 기기별로 할 일 | **집 PC · 노트북 공통**: `git pull`만. 새 패키지 · 마이그레이션은 없다(11-06 오후는 문서 · 주석 · `scripts/measure-list.ps1` · `/api/health` `disk` · 타이머 파일). M6 코드를 시작하면 OpenID 콜백 시험에 로컬 API(`8001`) · 화면(`5173`)이 둘 다 떠 있어야 한다. **노트북**: 개발 환경 끝남(2026-11-06 (2), Task 3.54.0 있음). 서버 열쇠 · `venv.broken` 정리도 끝(2026-11-06 (10)). **서버 접속**: 세 기기 모두 된다(`ssh play`, 열쇠는 기기마다 따로). **전역 설정**(노트북 열쇠 반영): 집 PC는 원본 `~/.claude/CLAUDE.md`를 드라이브 사본 `desktop_hm_CLAUDE.md`로 맞춘다. 회사 PC는 드라이브 `.claude/README.md` "회사 PC에 올릴 것"을 반영한다 |
+| 기기별로 할 일 | **회사 PC · 노트북 공통**: `git pull` 뒤 `alembic upgrade head`(새 마이그레이션 `e4a48be57f0f` ─ `users.steam_synced_at`). 새 패키지는 없다. M6 코드를 시작하면 OpenID 콜백 시험에 로컬 API(`8001`) · 화면(`5173`)이 둘 다 떠 있어야 한다. **노트북**: 개발 환경 끝남(2026-11-06 (2), Task 3.54.0 있음). 서버 열쇠 · `venv.broken` 정리도 끝(2026-11-06 (10)). **서버 접속**: 세 기기 모두 된다(`ssh play`, 열쇠는 기기마다 따로). **전역 설정**(노트북 열쇠 반영): 집 PC는 원본 `~/.claude/CLAUDE.md`를 드라이브 사본 `desktop_hm_CLAUDE.md`로 맞춘다. 회사 PC는 드라이브 `.claude/README.md` "회사 PC에 올릴 것"을 반영한다 |
 | 집 PC에만 있는 것 | 클린룸으로 새로 만든 개발 DB(확인용 계정 · 게임 기록). `.claude/launch.json`은 실행 중인 `5173`에 붙기만 하는 설정으로 새로 만들었다(커밋 안 함) |
 | 회사 PC에만 있는 것 | **백업 개인키**(`~/playledger-backup.key`), 잠긴 운영 백업 8개(`~/playledger-backups/`, 11-06 받음). `.claude/worktrees/brave-hawking-fc3e7c`(병합됨, 지워도 된다). 헤드리스 Edge 확인 스크립트는 저장소에 없다 ─ 필요하면 [DEVLOG_M4.5](archive/DEVLOG_M4.5.md)를 보고 새로 만든다 |
 
@@ -21,6 +21,37 @@
 - 기기 표기는 `README` 개발 환경 표를 따른다 (데스크톱 A · 데스크톱 B · 노트북)
 - **막혔던 점은 해결됐어도 반드시 남긴다.** 같은 실수를 반복하지 않기 위한 기록이고, 나중에 이 프로젝트를 설명할 때 "어떤 문제를 어떻게 해결했는가"가 결과물보다 더 중요한 이야기가 된다
 - 환경 버전은 여기 적지 않는다. `requirements.txt` · `package.json` · `ci.yml`이 원본이고, 기기별 런타임은 `README`에 있다
+
+---
+
+## 2026-11-06 (11) · M6 Steam 계정 연결 ─ OpenID 시작 · 콜백 · 해제 (데스크톱 A, 마이그레이션까지 직접 · 그 뒤 자동)
+
+### 한 일
+- 사용자가 직접: `config.py` `public_base_url`, `models/user.py` `steam_synced_at`, 마이그레이션 `20261106_2012_add_steam_synced_at_to_users`(`e4a48be57f0f`). 관찰값: `alembic upgrade 8c2f4a71d9e3:head --sql` → `ALTER TABLE users ADD COLUMN steam_synced_at TIMESTAMP WITH TIME ZONE` 한 줄, `alembic current` → `e4a48be57f0f (head)`
+- 자동: `core/oauth_state.py`(서명 state 쪽지, M8도 씀) · `services/steam_openid.py` · `routers/steam_link.py`(`POST /api/steam/link/start` · `GET /callback` · `DELETE /api/steam/link`), `UserRead`에 `steam_id` · `steam_synced_at`, 운영 `PUBLIC_BASE_URL`은 `deploy/compose.prod.yaml`에(비밀값이 아니라 서버 `.env`를 고칠 일이 없다)
+- 테스트 `test_steam_link.py` 37개(위조 답 5 · Steam에 묻기 전에 거르는 망가진 확인서 13 · 값 개수, state 재사용 · 쿠키 없음 · 남의 콜백 · 만료 · 다른 용도 · 출입증으로 쓰기, `taken` · 409 · 두 탭 · 같은 Steam 동시 연결, Steam 장애 3, 해제 · 비로그인). `conftest` FakeSteam이 `steamcommunity.com`도 받는다
+- 문서: `ARCHITECTURE` 5.4절 "구현하며 정한 것" 표, `PLAN` M6 첫 항목 · 진행 표, `server/.env.example`, `CLAUDE.md` `--sql` 범위
+
+### [설계]
+- 사전 검증에서 보완: 응답의 `openid.return_to`가 우리가 보낸 주소와 같은지도 본다 ─ Steam 서명은 "Steam이 썼다"까지만 보장하고, 다른 사이트용 확인서를 우리 콜백에 들이밀 수 있다
+- 이미 Steam이 붙은 계정의 재연결은 막는다(시작 409, 두 탭은 `already`). 덮어쓰면 M6 병합에서 옛 Steam 기록과 섞인다
+- 콜백은 페이지 이동이라 오류 JSON을 사람이 못 본다 ─ 결과를 `/settings?steam=`로 보낸다. 화면이 읽는 것은 S-06에서
+- state 키를 access 토큰 키에서 갈라 냈다 ─ 같은 키면 `sub` · `exp`가 있는 state 쪽지가 출입증으로 통과한다
+
+### 막힌 것
+- **`alembic upgrade head --sql`이 `'NoneType' object has no attribute 'all'`로 멈춤** ─ 원인: 오프라인 모드는 DB를 보지 않아 맨 처음부터 SQL을 뽑고, 데이터를 읽는 `20261104_1420`에서 읽을 행이 없다. 해결: `이전리비전:head --sql`로 범위를 준다. `CLAUDE.md`를 고쳤다. 같은 시도에서 먼저 `ConnectionRefusedError [WinError 1225]`가 났는데 DB 컨테이너가 꺼져 있던 것
+- **테스트가 엉뚱한 이유로 통과할 뻔함** ─ 쿠키를 `domain="test"`로 넣었는데 httpx는 `https://test`의 쿠키를 `test.local`로 담는다. 쿠키가 아예 안 실린 채 "실패"를 기대하는 테스트(재사용 · 만료)가 통과했다. `test.local`로 고친 뒤, 재사용 검사 줄을 일부러 꺼서 `test_state_cannot_be_reused`만 실패하는 것을 확인했다. 배운 것: 실패를 기대하는 테스트는 "막는 코드를 빼면 실패하는지"로 한 번 뒤집어 본다
+- **실제 시험 중 재발급 동시 요청을 직접 밟음** ─ `/login` 화면을 연 채 스크립트로 `refresh`를 보내니 앱의 세션 복원 재발급과 겹쳐 재사용 감지가 시험 세션을 끊었다(`CLAUDE.md` 함정 그대로, 설계대로 동작). 화면이 없는 `/api/health` 페이지에서 새 시험 계정으로 다시 했다
+- Steam은 로그인 뒤 "localhost에 로그인" 동의 화면을 한 번 더 보인다 ─ 첫 시도는 그 사이 state(5분)가 만료됐다. 화면 문구에 "5분 안에"를 넣을지는 S-06에서 본다
+
+### 검증 (관찰값)
+- `pytest` **352 passed**
+- 로컬 실제 Steam(사용자 계정, `@example.com` 시험 계정 · 무작위 비밀번호): 가입 201 · 로그인 200 · start 200 → Steam이 `return_to=http://localhost:5173/...`를 받아 로그인 · 동의 화면 → 콜백 `303` → 개발 DB `users.steam_id`가 17자리로 저장, `steam_synced_at` NULL
+- 같은 콜백 주소를 다시 보냄 → `303 /settings?steam=failed`. Steam에 같은 확인서를 다시 되물으면 Steam도 `is_valid:false`(Steam이 response_nonce를 한 번만 받는다)
+- **확인 못 한 것**: 운영 배포 · 운영 도메인에서의 연결, 화면 버튼(S-06)
+
+### 다음에 할 일
+- M6 보유 게임 목록 조회(`GetOwnedGames`, 비공개 프로필 = 빈 응답 구분). 운영 배포는 S-06 화면이 붙은 뒤
 
 ---
 

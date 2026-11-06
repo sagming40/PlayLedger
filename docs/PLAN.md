@@ -28,7 +28,7 @@
 | M4.5 | 배포 전 정비 | **v1.0** | ✅ 2026-11-04 (`v1.0.0` 태그) |
 | M5 | 배포 | v1.1 | ✅ 2026-11-06 (`play.sagming.com` 운영 중) |
 | M5.5 | 서버 이사 (Vultr → AWS) *(계획에 없던 단계)* | v1.1 | ⬜ 12월 |
-| M6 | Steam 동기화 | v1.2 | 🔄 설계 확정 · 문서 끝 (2026-11-06), 코드 전 |
+| M6 | Steam 동기화 | v1.2 | 🔄 Steam 계정 연결(서버) 끝 (2026-11-06), 다음은 보유 게임 목록 |
 | M7 | Steam 자동 동기화 | v1.2 | ⬜ M6 다음. 설계는 AWS 서버 사양을 보고 |
 | M6.5 | Steam 구매 기록 가져오기 *(계획에 없던 단계)* | v1.2 | ⬜ M6 다음 (0019) |
 | M6.7 | 비밀번호 변경 · 찾기 + 이메일 인증 *(계획에 없던 단계)* | v1.2 | ⬜ M6.5 다음 |
@@ -415,7 +415,7 @@
 **작업 목록** (2026-11-06 사전 검증으로 다시 짰다 ─ DEVLOG 같은 날)
 - [x] Steam Web API 키 발급, `.env` 분리 (M2.5에서 끝남, 운영 서버에도 있음)
 - [x] 결정 · 문서: [decisions/0015](decisions/0015-steam-openid-link.md) · [0016](decisions/0016-steam-sync-details-later.md), `ARCHITECTURE` 5.1 · 5.4절, `DATA_MODEL` 2.1 · 2.4 · 2.6절, `DESIGN` 3.4 · 3.6절
-- [ ] Steam 계정 연결 ─ OpenID 시작 · 콜백(`check_authentication`) · 연결 해제, 마지막 동기화 시각 마이그레이션
+- [x] Steam 계정 연결 ─ OpenID 시작 · 콜백(`check_authentication`) · 연결 해제, 마지막 동기화 시각 마이그레이션 (2026-11-06, 서버만. 화면은 아래 S-06)
 - [ ] 보유 게임 목록 조회 (`GetOwnedGames`, 비공개 프로필 = 빈 응답 구분)
 - [ ] 병합 규칙 구현 (`ARCHITECTURE` 5.1절) ─ 사용자별 잠금 · `ON CONFLICT`, 새 기록 상태(0분 미시작 · 아니면 플레이중), 상한 5,000개, 트랜잭션 하나
 - [ ] 동기화에서도 수동 게임과 Steam 게임을 별개 행으로 둔다 ([decisions/0009](decisions/0009-manual-steam-separate.md))

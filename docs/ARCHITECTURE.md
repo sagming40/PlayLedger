@@ -613,6 +613,17 @@ sequenceDiagram
 - 다른 계정에 이미 연결된 Steam이면 409. 연결 해제는 `steam_id`만 비운다
 - 엔드포인트 이름은 구현하며 정하고, 계약은 Swagger가 원본이다
 
+**구현하며 정한 것** (2026-11-06, `routers/steam_link.py` · `services/steam_openid.py` · `core/oauth_state.py`)
+
+| 상황 | 규칙 |
+|---|---|
+| 시작 | 페이지 이동이 아니라 `fetch`다 ─ access 토큰은 메모리에만 있어 페이지 이동에 실리지 않는다. 응답의 주소로 화면이 이동한다. 이미 Steam이 붙어 있으면 409(덮어쓰면 옛 Steam 기록과 섞인다, 해제 후 다시) |
+| 돌아오는 주소 | 설정값 `PUBLIC_BASE_URL` + 콜백 경로 + `state`. 요청 헤더로 만들지 않는다. Steam은 `http://localhost:5173`도 받아 준다(2026-11-06 실제 확인) |
+| 콜백 결과 | 오류 JSON 대신 `/settings?steam=` 로 303 이동한다: `linked` · `taken`(다른 계정) · `already`(두 탭에서 다른 Steam) · `unavailable`(Steam 응답 없음 · 5xx · 429) · `failed`(그 밖의 전부). 쿠키는 늘 지운다 |
+| Steam에 되묻기 전에 거르는 것 | `mode` · `ns` · `op_endpoint`, 응답의 `return_to`가 우리가 보낸 주소와 같은지(다른 사이트용 확인서), `claimed_id` 모양과 `identity` 일치, 서명 항목에 `claimed_id` · `return_to` 등이 다 있는지, 값 개수 · 길이 |
+| state 쪽지 | access 토큰 키에서 갈라 낸 다른 키로 서명(서로 바꿔 쓸 수 없다), `purpose`로 Steam · Discord 구분, 한 번 쓴 nonce는 메모리에 적어 둔다(프로세스 하나 기준, `--workers 1`) |
+| 동시에 | 연결은 "비어 있을 때만" 조건부 UPDATE 한 번 ─ 두 탭이 와도 덮어쓰지 않는다. 두 계정이 같은 Steam이면 UNIQUE에 걸린 쪽이 `taken` |
+
 ---
 
 ## 6. 프로젝트 구조
