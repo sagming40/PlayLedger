@@ -46,3 +46,14 @@ jobs:
             echo "::error::인증서가 ${days}일 남았다 ─ Caddy 갱신이 실패하고 있다 (sudo play-compose logs web)"
             exit 1
           fi
+
+      - name: 디스크 여유
+        # 헬스체크는 디스크가 부족해도 status ok다(배포 되돌리기가 엉뚱하게 돌지 않게). 여기서 따로 본다
+        # low = 남은 공간 10% 미만, error = 못 읽음 (server/app/main.py DISK_LOW_FREE_RATIO)
+        run: |
+          body=$(curl -fsS --max-time 10 "https://$SITE/api/health")
+          echo "$body"
+          if [[ $body != *'"disk":"ok"'* ]]; then
+            echo "::error::디스크 여유가 부족하거나 읽지 못했다 ─ 서버에서 df -h · sudo docker system df (SERVER.md 2절 백업 상태)"
+            exit 1
+          fi
