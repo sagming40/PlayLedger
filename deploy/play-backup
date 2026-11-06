@@ -63,15 +63,26 @@ set -a
 set +a
 [[ -n ${R2_BUCKET:-} ]] || { echo "[backup] R2 실패: $R2_ENV에 R2_BUCKET이 없다" >&2; exit 3; }
 
-if ! rclone --config "" --contimeout 10s --low-level-retries 3 copyto "$DEST/$NAME" "r2:$R2_BUCKET/$NAME"; then
+RC=(rclone --config "" --contimeout 10s --low-level-retries 3)
+
+# --s3-no-head ─ 올린 직후 rclone이 보내는 확인용 HEAD를 R2가 501 NotImplemented로 거절한다
+# (Ubuntu 24.04 rclone 1.60.1, 2026-11-06 운영에서 재현. 파일은 올라가는데 매번 1차 시도가 실패로 찍혔다)
+# 대신 아래에서 목록 조회로 크기를 맞춰 본다 ─ 목록 조회는 R2에서 된다
+if ! "${RC[@]}" --s3-no-head copyto "$DEST/$NAME" "r2:$R2_BUCKET/$NAME"; then
 	echo "[backup] R2 실패: 올리지 못했다 (서버 사본은 있다: $DEST/$NAME)" >&2
 	exit 3
 fi
-echo "[backup] R2에 올림: $NAME"
+LOCAL_SIZE=$(stat -c %s "$DEST/$NAME")
+REMOTE_SIZE=$("${RC[@]}" lsf --files-only --format s --include "$NAME" "r2:$R2_BUCKET" || true)
+if [[ $REMOTE_SIZE != "$LOCAL_SIZE" ]]; then
+	echo "[backup] R2 실패: 올린 크기가 다르다 (서버 $LOCAL_SIZE, R2 ${REMOTE_SIZE:-없음})" >&2
+	exit 3
+fi
+echo "[backup] R2에 올림: $NAME ($REMOTE_SIZE 바이트, 크기 확인)"
 
 # 서버와 달리 개수가 아니라 날짜로 지운다 ─ 배포 직전 백업이 끼어도 "14일"이 그대로다
 # 올린 시각이 아니라 원본 파일 시각으로 센다 (rclone이 메타데이터에 담는다)
-if ! rclone --config "" --contimeout 10s --low-level-retries 3 delete "r2:$R2_BUCKET" --include 'playledger-*.dump.age' --min-age "${R2_DAYS}d"; then
+if ! "${RC[@]}" delete "r2:$R2_BUCKET" --include 'playledger-*.dump.age' --min-age "${R2_DAYS}d"; then
 	echo "[backup] R2 실패: 오래된 사본을 지우지 못했다" >&2
 	exit 3
 fi
