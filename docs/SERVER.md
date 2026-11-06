@@ -255,9 +255,9 @@ sudo play-backup
 
 1. **Cloudflare 화면** (개인 Gmail 계정)
    - R2 → 시작하기. 무료 한도(10GB)라도 결제수단 등록을 요구할 수 있다
-   - 버킷 만들기: 이름 `playledger-backups`, 위치 자동, 공개 접근 끔
+   - 버킷 만들기: 이름 `playledger-backups`, 위치 자동, 저장 공간 클래스 **표준**(Infrequent Access는 최소 30일 과금이라 14일 보관에 손해). 공개 개발 URL · 사용자 설정 도메인은 켜지 않는다(기본이 비공개)
    - 버킷 → 설정 → 객체 수명 주기 규칙: 접두사 `playledger-`, **14일 뒤 삭제**. 서버 스크립트도 14일에 지우지만, 서버가 사라져도 사본이 개인정보 안내의 기한을 넘기지 않게 하는 안전장치다
-   - R2 → API 토큰 관리 → 토큰 만들기: 권한 **객체 읽기 및 쓰기**, 버킷 **`playledger-backups`만**, 기한 없음. 액세스 키 ID · 비밀 액세스 키와 S3 주소(`https://<계정 ID>.r2.cloudflarestorage.com`)가 한 번만 보인다. 화면을 캡처하지 않는다. 값은 Bitwarden "API KEYS" 메모에 옮겨 둔다(회사 PC는 웹 금고만 잠깐, 전역 설정 "계정 보안") ─ 서버가 사라지면 새 서버에 다시 넣어야 한다
+   - R2 → API 토큰 관리 → **Account API 토큰 생성**(사용자 토큰이 아니라 계정에 붙는 토큰. 일반 "계정 API 토큰" 메뉴에서 만들면 S3 키가 안 나온다): 권한 **객체 읽기 및 쓰기**, 버킷 **`playledger-backups`만**, 기한 없음. 액세스 키 ID · 비밀 액세스 키와 S3 주소(`https://<계정 ID>.r2.cloudflarestorage.com`)가 한 번만 보인다. 화면을 캡처하지 않는다. 값은 Bitwarden "API 키" 폴더의 "Cloudflare 계정 API 토큰" 보안 메모(마스터 비밀번호 재확인 켬)에 둔다 ─ 내가 쓰는 API 키와 달리 서버가 쓰는 열쇠라 따로 뒀다. 회사 PC는 웹 금고만 잠깐(전역 설정 "계정 보안") ─ 서버가 사라지면 새 서버에 다시 넣어야 한다
 
 2. **PC → 서버** (저장소 폴더):
 
@@ -286,6 +286,7 @@ Cloudflare 화면의 버킷 객체 목록에 같은 이름이 보이면 끝. 실
 - **`web`의 IP 172.30.0.10을 바꾸면 `server/Dockerfile`의 `--forwarded-allow-ips`도 같이 바꾼다.** 어긋나면 모든 사용자가 한 IP로 묶인다
 - **HSTS가 1년이다(2026-11-05부터).** 이 주소를 http로 되돌릴 수 없다. `includeSubDomains` · `preload`는 붙이지 않는다
 - **`play-backup` · `play-release` · `play-restore`는 배포로 바뀌지 않는다.** `/usr/local/bin/`에 손으로 설치한 것이다. 저장소에서 고쳤으면 3.9절 2 · 3단계처럼 다시 올려 설치한다
+- **R2는 rclone이 올린 직후 보내는 확인용 HEAD를 501 `NotImplemented`로 거절한다**(apt rclone 1.60.1). 파일은 올라가는데 1차 시도가 실패로 찍힌다. `play-backup`은 `--s3-no-head`로 올리고 목록(`lsf`)에서 크기를 맞춰 본다. rclone 버전이나 옵션을 바꾸면 시험 파일로 먼저 본다(5절 2026-11-06 R2 설치)
 - **`/etc/playledger/r2.env`도 `.env`처럼 값이 보이게 열지 않는다.** 확인은 `sudo grep -c '=$'`로 한다
 - **`.env`를 값이 보이게 열지 않는다.** 캡처로 비밀값이 나간 적이 있다(5절). 확인은 `sudo grep -c '=$' /srv/playledger/.env`로 한다
 - **서버 탭과 PC 탭을 헷갈린다.** `notepad` · `git rev-parse`는 PC에서, `sudo play-compose`는 서버에서 친다. 프롬프트로 구분한다
@@ -349,3 +350,13 @@ Cloudflare 화면의 버킷 객체 목록에 같은 이름이 보이면 끝. 실
 - R2는 rclone `local` 백엔드로 흉내: 올림 exit 0, 20일 된 사본만 지워지고 10일 된 것 · 다른 이름 파일은 남음. 쓸 수 없는 곳 · `R2_BUCKET` 없음 → exit 3, 서버 사본 있음. 복구 중 지우기 전 백업도 R2로 올라감
 - Ubuntu 24.04 apt rclone **1.60.1**에서 같은 시험 + `r2.env.example` 그대로(Cloudflare provider)에 닿지 않는 주소 → 1초 만에 exit 3. 처음엔 재시도로 2분 넘게 붙잡혀서 `--contimeout 10s --low-level-retries 3`을 넣었다
 - `shellcheck` 4개 파일 통과. 시험 컨테이너 · 볼륨은 지웠다
+
+**2026-11-06 · R2 설치와 첫 업로드 (회사 PC, 서버 명령은 사용자)**
+
+- Cloudflare: 버킷 `playledger-backups`(APAC · 표준 · 공개 URL 꺼짐), 수명 주기 규칙 `playledger` / 접두사 `playledger-` / 14일 후 삭제, 계정 API 토큰 `playledger-backup`(객체 읽기 및 쓰기 · 이 버킷만 · 무기한 · IP 필터 없음)
+- 서버: apt rclone `1.60.1+dfsg-3ubuntu0.24.04.6`, `r2.env` 빈 값 0, 스크립트 3개 설치
+- 첫 `sudo play-backup`: 24,046바이트 → `Failed to copy: NotImplemented … status code: 501` → `Attempt 2/3 succeeded` → "R2에 올림". `lsl`에 24046 · 원본 시각 그대로
+- 시험 파일 `-vv --retries 1`: 5B 100% 보낸 뒤 501, 뒤이은 `deletefile`은 성공(파일은 생겼다). 옵션 비교: 없음 FAIL · `--s3-no-head` **OK** · `--s3-disable-checksum` FAIL · `--s3-use-presigned-request` FAIL · `--s3-upload-cutoff=0` FAIL
+- `play-backup`에 `--s3-no-head` + `lsf` 크기 확인(`bfea511`). 로컬 Ubuntu 24.04 컨테이너에서 정상 exit 0 · 크기 다름 · 목록에 없음 · `lsf` 실패 · 쓸 수 없는 곳 exit 3, shellcheck 통과
+- 다시 설치 뒤 `sudo play-backup`: `ERROR` 줄 없이 "R2에 올림: playledger-20261106T034102Z.dump.age (24046 바이트, 크기 확인)", `lsl`에 2개
+- 14일 정리(`delete --min-age`)는 에러 없이 돌았지만, 실제로 지워지는 것은 11-20 이후에 처음 본다
