@@ -11,6 +11,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from app.core.config import settings
+from app.core.oauth_state import reset_used_states
 from app.core.rate_limit import ALL_LIMITERS
 from app.deps import get_db, get_http_client
 from app.main import app
@@ -67,6 +68,8 @@ def reset_rate_limits():
     """요청 제한은 프로세스 메모리에 남는다 ─ 앞 테스트의 횟수가 다음 테스트를 막지 않게 비운다"""
     for limiter in ALL_LIMITERS:
         limiter.reset()
+    # 쓴 state 목록도 프로세스 메모리에 남는다 (core/oauth_state.py)
+    reset_used_states()
 
 
 @pytest_asyncio.fixture(autouse=True)
@@ -90,8 +93,16 @@ class FakeSteam:
         self.calls: list[int] = []
         # 이상한 응답을 재현할 때 쓴다. 넣어 두면 details보다 먼저 답한다
         self.override = None
+        # Steam OpenID 되묻기(check_authentication). 받은 폼을 적어 두고 openid_answer로 답한다
+        self.openid_calls: list[dict[str, str]] = []
+        self.openid_answer = lambda request: httpx.Response(
+            200, text="ns:http://specs.openid.net/auth/2.0\nis_valid:true\n"
+        )
 
     def handle(self, request: httpx.Request) -> httpx.Response:
+        if request.url.host == "steamcommunity.com":
+            self.openid_calls.append(dict(httpx.QueryParams(request.content.decode())))
+            return self.openid_answer(request)
         appid = int(request.url.params["appids"])
         self.calls.append(appid)
         if self.override is not None:
