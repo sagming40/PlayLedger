@@ -15,7 +15,8 @@
 | 열린 문 | 22 · 80 · 443 |
 | 앱 위치 | `/srv/playledger/` (`compose.yaml` · `.env` · `image.env`), 백업 `/var/backups/playledger/` |
 | 서버 밖 백업 | Cloudflare R2 버킷 `playledger-backups`, 14일 (3.9절, [decisions/0013](decisions/0013-r2-offsite-backup.md)) |
-| 감시 | GitHub Actions `uptime` — 30분마다(7분 · 37분) 밖에서 `/api/health` 본문과 인증서 남은 날(20일 미만이면 실패)을 본다. 실패하면 GitHub 메일. 저장소에 60일 커밋이 없으면 GitHub가 멈추니 Actions 화면에서 다시 켠다. 디스크 여유는 아직 안 본다 |
+| 감시 | GitHub Actions `uptime` — 30분마다(7분 · 37분) 밖에서 `/api/health` 본문과 인증서 남은 날(20일 미만이면 실패)을 본다. 디스크 여유도 같은 본문의 `"disk"`로 본다(남은 공간 10% 미만이면 `low` → 실패). 실패하면 GitHub 메일. 저장소에 60일 커밋이 없으면 GitHub가 멈추니 Actions 화면에서 다시 켠다 |
+| 정기 작업 | 백업 매일 04:30 KST(`play-backup.timer`), Steam 게임 목록 매주 일요일 05:30 KST(`play-steam-sync.timer`, 3.10절) |
 | 기억할 날짜 | **2026-11-30 Vultr 크레딧 만료** — 그 전에 남길지 정한다. Stop은 요금이 계속 나간다, 없애려면 Destroy |
 
 ## 2. 평소에 쓰는 명령
@@ -36,7 +37,7 @@ sudo play-compose ps
 sudo play-compose logs api --tail 50
 ```
 
-**게임 목록 미러링** (서버, 약 20초 ~ 몇 분):
+**게임 목록 미러링** (서버, 약 20초 ~ 몇 분). 매주 일요일에 타이머가 돌린다(3.10절). 손으로 돌릴 때는 배포 중이 아닐 때:
 
 ```bash
 sudo play-compose run --rm api python -m app.scripts.sync_steam_apps
@@ -96,9 +97,11 @@ sudo play-restore ~/restore.dump; rm -f ~/restore.dump    # 풀린 덤프다. �
 **백업 상태** (서버). 실패해도 알려 주는 곳이 없다 ─ 가끔 본다:
 
 ```bash
-systemctl list-timers play-backup.timer      # 다음 · 지난 실행 시각
-systemctl --failed                           # play-backup.service가 있으면 실패한 것 (R2만 실패해도 여기 뜬다)
+systemctl list-timers 'play-*'               # 백업 · 게임 목록 타이머의 다음 · 지난 실행 시각
+systemctl --failed                           # play-backup · play-steam-sync가 있으면 실패한 것 (R2만 실패해도 뜬다)
 sudo journalctl -u play-backup -n 20         # 마지막 실행 출력 ([backup] R2에 올림: … 줄)
+sudo journalctl -u play-steam-sync -n 5      # "받은 게임 …건 · steam_apps …행 · …초"
+df -h /; sudo docker system df               # 디스크. 감시가 disk low로 실패했을 때 무엇이 큰지 본다
 ```
 
 되돌리기: `play-release`는 새 버전이 살아나지 않으면 이전 커밋으로 스스로 돌아간다. 마이그레이션은 되돌리지 않는다(데이터를 잃을 수 있다). 표 때문에 옛 코드가 안 돌면 배포 직전 백업으로 복구한다.
@@ -279,13 +282,31 @@ sudo play-backup                      # 끝에 "[backup] R2에 올림: …"이 �
 
 Cloudflare 화면의 버킷 객체 목록에 같은 이름이 보이면 끝. 실패하면 `[backup] R2 실패: …`와 종료 코드 3이 나오고, 서버 사본은 그대로 있다.
 
+### 3.10 Steam 게임 목록 매주 (타이머)
+
+M9(작업 큐 · 스케줄러) 전까지 새로 나온 게임이 검색에 나오게 한다. 일요일 05:30 KST + 최대 10분. 배포 · 복구와 같은 잠금을 잡아서, 배포가 돌고 있으면 30분까지 기다린다. 반대로 미러가 도는 30초쯤 동안 배포하면 "다른 배포가 진행 중"으로 멈추니 다시 친다.
+
+```powershell
+scp deploy/play-steam-sync.service deploy/play-steam-sync.timer play:~/
+```
+
+```bash
+sudo install -m 644 ~/play-steam-sync.service ~/play-steam-sync.timer /etc/systemd/system/
+rm ~/play-steam-sync.service ~/play-steam-sync.timer
+sudo systemctl daemon-reload
+sudo systemctl enable --now play-steam-sync.timer
+sudo systemctl start play-steam-sync.service   # 한 번 바로 돌려 본다 (30초쯤, 끝날 때까지 프롬프트가 안 돌아온다)
+sudo journalctl -u play-steam-sync -n 5        # "받은 게임 …건 · steam_apps …행 · …초"
+systemctl list-timers 'play-*'
+```
+
 ## 4. 함정
 
 - **Docker는 ufw를 우회한다.** `compose.prod.yaml`에서 포트를 여는 것은 `web`뿐이다. `db` · `api`에 `ports`를 더하지 않는다
 - **요청 제한은 프로세스 메모리에 있다.** 워커를 늘리면 제한도 늘고, 재배포하면 횟수가 0이 된다 (`core/rate_limit.py`)
 - **`web`의 IP 172.30.0.10을 바꾸면 `server/Dockerfile`의 `--forwarded-allow-ips`도 같이 바꾼다.** 어긋나면 모든 사용자가 한 IP로 묶인다
 - **HSTS가 1년이다(2026-11-05부터).** 이 주소를 http로 되돌릴 수 없다. `includeSubDomains` · `preload`는 붙이지 않는다
-- **`play-backup` · `play-release` · `play-restore`는 배포로 바뀌지 않는다.** `/usr/local/bin/`에 손으로 설치한 것이다. 저장소에서 고쳤으면 3.9절 2 · 3단계처럼 다시 올려 설치한다
+- **`play-backup` · `play-release` · `play-restore`와 타이머 파일(`play-*.service` · `.timer`)은 배포로 바뀌지 않는다.** `/usr/local/bin/` · `/etc/systemd/system/`에 손으로 설치한 것이다. 저장소에서 고쳤으면 3.9절 2 · 3단계, 3.10절처럼 다시 올려 설치한다(타이머는 `daemon-reload`까지)
 - **R2는 rclone이 올린 직후 보내는 확인용 HEAD를 501 `NotImplemented`로 거절한다**(apt rclone 1.60.1). 파일은 올라가는데 1차 시도가 실패로 찍힌다. `play-backup`은 `--s3-no-head`로 올리고 목록(`lsf`)에서 크기를 맞춰 본다. rclone 버전이나 옵션을 바꾸면 시험 파일로 먼저 본다(5절 2026-11-06 R2 설치)
 - **`/etc/playledger/r2.env`도 `.env`처럼 값이 보이게 열지 않는다.** 확인은 `sudo grep -c '=$'`로 한다
 - **`.env`를 값이 보이게 열지 않는다.** 캡처로 비밀값이 나간 적이 있다(5절). 확인은 `sudo grep -c '=$' /srv/playledger/.env`로 한다

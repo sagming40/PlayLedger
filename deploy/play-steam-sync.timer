@@ -1,0 +1,13 @@
+# 매주 일요일 아침 Steam 게임 목록 알람 (SERVER.md 3.10절). /etc/systemd/system/에 복사하고 켠다: sudo systemctl enable --now play-steam-sync.timer
+# 백업(매일 04:30 + 최대 10분)과 겹치지 않게 05:30. 겹쳐도 백업은 steam_apps 데이터를 담지 않아 서로 상관없다
+[Unit]
+Description=PlayLedger Steam 게임 목록 매주 일요일 05:30 (KST)
+
+[Timer]
+OnCalendar=Sun *-*-* 05:30:00 Asia/Seoul
+# 그 시각에 서버가 꺼져 있었으면, 켜진 뒤 바로 한 번 돈다
+Persistent=true
+RandomizedDelaySec=10min
+
+[Install]
+WantedBy=timers.target

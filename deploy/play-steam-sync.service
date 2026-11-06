@@ -1,0 +1,13 @@
+# Steam 게임 목록 미러를 한 번 새로 받는다 (SERVER.md 3.10절). /etc/systemd/system/에 복사한다
+# M9(작업 큐 · 스케줄러) 전까지 쓰는 임시 방법 ─ 새로 나온 게임이 검색에 나오게 한다
+# 배포 · 복구와 같은 잠금을 잡는다 ─ 마이그레이션이나 DB 되살리기 도중에 표를 건드리지 않게. 배포가 돌고 있으면 30분까지 기다린다
+[Unit]
+Description=PlayLedger Steam 게임 목록 미러
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/flock -w 1800 /run/lock/playledger-deploy.lock /usr/local/bin/play-compose run --rm -T api python -m app.scripts.sync_steam_apps
+# 잠금 30분 + 미러 1분(2026-11-04 28.8초)에 여유 ─ Steam이 멈춰도 영원히 붙잡지 않는다
+TimeoutStartSec=45min
