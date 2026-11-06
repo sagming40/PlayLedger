@@ -25,6 +25,7 @@ from app.schemas.entry import (
 from app.services.entry import MAX_LIMIT, count_entries, entry_exists, get_entry, list_entries
 from app.services.game import delete_owned_game, find_or_create_game
 from app.services.genre import attach_genres_if_empty, genre_ids_exist, replace_genres
+from app.services.steam_sync import MAX_ENTRIES_PER_USER
 from app.services.steam import (
     fetch_app_details,
     game_by_appid,
@@ -44,7 +45,7 @@ REQUIRED_FIELDS = {"status": "상태는", "playtime_minutes": "플레이타임�
 
 # 한 사람의 기록 상한 ─ 공개 가입이라 요청 제한만으로는 표가 끝없이 커질 수 있다 (decisions/0011)
 # 정확한 잠금은 걸지 않는다. 동시 요청으로 몇 개 넘쳐도 문제가 없는 값이다
-MAX_ENTRIES_PER_USER = 5000
+# 값은 Steam 동기화와 한 곳에서 쓴다 (services/steam_sync.py)
 
 
 async def _get_my_entry_or_404(

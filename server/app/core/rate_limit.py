@@ -67,4 +67,7 @@ register_limiter = RateLimiter(limit=10, window_seconds=60 * 60)
 # 게임 등록 ─ Steam을 대신 불러 주는 경로라 사용자별로 제한한다
 entry_create_limiter = RateLimiter(limit=60, window_seconds=60)
 
-ALL_LIMITERS = (login_ip_limiter, login_failure_limiter, register_limiter, entry_create_limiter)
+# Steam 동기화 시도 ─ 성공 간격(60초)은 steam_synced_at이 센다. 이것은 실패(비공개 · 장애)를 연타해 Steam을 계속 부르는 것을 막는다
+steam_sync_limiter = RateLimiter(limit=10, window_seconds=60 * 60)
+
+ALL_LIMITERS = (login_ip_limiter, login_failure_limiter, register_limiter, entry_create_limiter, steam_sync_limiter)

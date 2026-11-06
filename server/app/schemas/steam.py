@@ -1,6 +1,8 @@
 # app/schemas/steam.py
 # Steam 검색 응답 모양
 
+from datetime import datetime
+
 from pydantic import BaseModel, ConfigDict
 
 
@@ -20,3 +22,18 @@ class SteamLinkStart(BaseModel):
     """
 
     redirect_url: str
+
+
+class SteamSyncRead(BaseModel):
+    """동기화 결과 요약 (ARCHITECTURE 5.1절, services/steam_sync.py SyncResult)"""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    added: int
+    updated: int
+    unchanged: int
+    skipped_manual: int
+    skipped_limit: int
+    skipped_no_title: int
+    same_title_manual: int
+    synced_at: datetime
