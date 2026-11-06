@@ -1,0 +1,376 @@
+# 개발 일지 — M5 배포
+
+> **M5 기간의 날짜 블록을 보관한다.** 고치지 않는다. 지금 상태는 [DEVLOG](../DEVLOG.md), 완료 기준은 [PLAN](../PLAN.md).
+> 2026-11-04 (10) 첫 배포부터 2026-11-06 (6) 닫기 전 점검까지. 같은 날 노트북 개발 환경 블록도 이 기간이라 함께 둔다.
+
+## 2026-11-06 (6) · M5 닫기 전 점검 (데스크톱 B, 자동)
+
+### 한 일
+- 전역 "작업 방식"에 "마일스톤 닫기 전 점검(프로젝트 전체 확인 및 검증)" 5단계를 넣었다(사용자 지시). 저장소 CLAUDE.md "끝날 때"는 PlayLedger에서 볼 문서 · 명령만 남김
+- 진행 순서: 범위 정하기 → 문서 대조 두 갈래(DESIGN · ARCHITECTURE 3장 · REQUIREMENTS 개인정보 / SERVER · README · decisions · PLAN · CLAUDE.md, 읽기 전용 에이전트 둘) + 그동안 전체 검증 · 6장 직접 → 에이전트 결과 중 핵심을 코드에서 다시 확인 → 문서 고침 → 기록
+- 범위: M5는 v1.1이지만 v1.1의 새 기능(F-14)은 M6 몫이다. 그래서 6장 비기능 전부 + M5에서 바뀐 화면 + ARCHITECTURE 3장 계약 + v1.0 기능이 그대로 되는지
+
+### 대조 결과
+
+| 대상 | 판정 | 근거 |
+|---|---|---|
+| 6장 성능 | 구현 | 운영 200개 최대 168ms (2026-11-06 (5)) |
+| 6장 보안 (비밀번호 해싱) | 구현 | `core/security.py` argon2 `PasswordHasher` |
+| 6장 인증 (짧은 access · DB refresh · httpOnly · 남의 데이터) | 구현 | access 15분(`config.py`), `token_hash` CHAR(64), 쿠키 `httponly` · `secure` · `samesite=strict`(`routers/auth.py`), 격리 테스트 `test_entry_isolation.py` 외 4개 |
+| 6장 개인정보 | **문서가 달랐다 → 고침** | REQUIREMENTS "계정을 지우면 바로 사라진다"가 `/privacy`의 "백업에 최대 14일"과 어긋났고 접속 IP가 빠져 있었다 |
+| 6장 설정 관리 | 구현 | `git ls-files`에 `.env` 없음, 비밀값 패턴 검색 0건(오탐 1건: `task-` 안의 `sk-`) |
+| 6장 테스트 | 구현 | `ci.yml` push · PR마다 pytest |
+| 6장 대상 환경 | 구현(M4.5에서 대조) | 반응형 `48rem` |
+| v1.0 기능 F-01 ~ F-11 · F-22 · F-24 · F-31 | 구현 · 로컬에서 다시 따라감 | 아래 "확인" |
+| ARCHITECTURE 3장 계약 26개 항목 | 일치 24, **문서에 빠짐 2 → 고침** | 계정 삭제도 429(로그인과 같은 실패 횟수, `auth.py` `login_failure_limiter`), 복원 실패 시 `restoreFailed` 경고 |
+| DESIGN 3.1 · 3.6 · 4.4 (M5에서 바뀐 화면) | 일치, **문서에 빠짐 2 → 고침** | 설정 화면 구성에 개인정보 링크 · 계정 삭제, 글꼴을 내장한다는 것 |
+| 목업 | S-01 · S-06 "구현이 기준" 표시 있음, S-09는 목업 없음 → README에 적음 | |
+| SERVER ↔ deploy/ | 경로 · 파일 목록 · 타이머 · 포트 일치, **3곳 고침** | 서버 사본은 "최근 14개", 4장 손 설치 목록에 `play-compose`, 복구 때 일요일 게임 목록 시각도 피하기 |
+| ARCHITECTURE 1.1 · 2.5 · 6 · 7장 | **옛 그림 → 고침** | Caddy와 화면이 한 컨테이너, Redis · 워커는 아직 없음(점선), R2 · GHCR · uptime, 트리에 `deploy/` · `scripts/`, 운영 비밀값은 SERVER로 |
+| README | **4곳 고침** | 로드맵 v1.1 상태, LICENSE "추후 추가", 구조 그림의 Redis · 워커 · Discord를 점선 예정으로, 프로젝트 구조에 `deploy/` · `scripts/` |
+| decisions/README | 일치 | 0001 ~ 0013 모두 표에 있음 |
+| CLAUDE.md | **운영 점검 명령 보강** | 타이머 · `--failed` · R2 줄 |
+
+- 에이전트가 잘못 본 것 1건: SERVER 3.9절 "서버 스크립트도 14일에 지우지만"은 R2 쪽 정리라 코드와 맞았다. 헷갈리지 않게 "`play-backup`도 R2에서"로 고쳐 씀
+
+### 확인 (전체 검증)
+- 서버: `pytest` 315 passed (같은 날 (5))
+- 화면: `npm run lint` 통과, `format:check` 통과, `vue-tsc -b --noEmit` 통과, `npm test` 16 파일 202 passed, `npm run build` exit 0
+- 의존성: `npm audit --omit=dev` 0건. pip-audit은 이 PC에 없고 CI `audit` 작업이 돈다 ─ `task deploy`가 그 작업 실패 시 멈추는데 `c34b701` 배포가 통과했다
+- 로컬 앱(내장 브라우저, 시험 계정): 가입 201 → 로그인 → 빈 목록 안내 → Steam 검색 `Hades`(오타 허용 결과 10개) → 등록 201(장르 액션 · RPG 자동) → 상세 시간당 비용 26,000원 ÷ 13시간 = 2,000원/h → 상태 클리어로 PATCH 200, 평점 · 한줄평 칸이 나타남 → 통계(총 1 · 완주율 100% · 장르 2줄) → 라이트 테마 `body` 배경 `rgb(246, 246, 248)` → 계정 삭제 대화상자 눈 버튼으로 `type="text"` → `DELETE /api/auth/me` 204 → "계정을 삭제했어요". DB에 시험 계정 · 기록 0, 함께 쓰는 Steam 게임은 남음(의도)
+  - 관찰: 네트워크 기록에서 `DELETE` 204가 `ERR_ABORTED`로도 찍혔다. 화면 코드는 응답을 기다린 뒤 이동하고 계정도 지워졌다 ─ 본문 없는 204를 창 기록이 그렇게 보여 주는 것으로 본다(확정 아님)
+- 운영: `/api/health` `{"status":"ok","database":"ok","disk":"ok"}`, `/privacy` R2 문장, 타이머 2개 다음 실행, 배포 직전 백업 "R2에 올림 … 24411 바이트, 크기 확인"
+- 운영(사용자): `systemctl --failed` → `0 loaded units listed`. 게임 등록 화면 Steam 검색 `Hades` 결과 나옴(캡처 없음, 등록 안 함). `uptime` #4(손으로 실행) 4단계 모두 통과, "디스크 여유" `{"status":"ok","database":"ok","disk":"ok"}`
+  - 예약 실행은 #1 ~ #3(11-05 22:28 · 11-06 05:48 · 10:29 KST)뿐이다 ─ 30분마다가 아니라 하루 몇 번만 돈다. "현재 상태" ②에서 계속 본다
+- **확인 못 한 것**: 운영에서 Steam 게임을 실제로 골라 등록하기(검색 목록까지만 봤다)
+- 사용자가 결과를 보고 **M5 ✅ 2026-11-06**
+
+### 이번 세션 커밋
+- `docs` 전역 점검 루틴 / `docs(M5)` 닫기 전 점검 문서 고침 / `docs(M5)` M5 닫기 · archive
+
+---
+
+## 2026-11-06 (5) · R2 설치, 업로드 후 HEAD 501 (데스크톱 B, Cloudflare 화면 · 서버 명령은 사용자)
+
+### 한 일
+- 진행 순서: Cloudflare 화면(버킷 → 수명 주기 → 토큰, 단계마다 캡처로 확인) → `scp` · 서버 설치 → 첫 `sudo play-backup` → 501 진단 → `play-backup` 수정 · 로컬 시험 → 서버에 다시 설치 → `task deploy` → `/privacy` 확인
+- `deploy/play-backup`: `--s3-no-head` + `lsf` 크기 확인. `SERVER` 3.9절 · 4장 · 5절, 전역 설정 Bitwarden 표(드라이브 사본 포함)
+- 배포 `f417342`, 배포 직전 백업도 R2에 올라감. `/privacy`에 "같은 백업을 Cloudflare R2 저장소에도 14일 동안 둬요" 문장
+
+### [설계]
+- 확인용 HEAD를 끄면 업로드 검증이 사라진다 ─ 그 자리를 목록 조회(`lsf --format s`)의 크기 비교로 메웠다. 목록 조회는 R2에서 되는 것을 `lsl`로 먼저 봤다. MD5까지 비교하지 않은 것은 age가 파일 전체를 인증해서, 깨진 사본은 풀 때 바로 드러나기 때문
+- 서버 `r2.env`에 `RCLONE_CONFIG_R2_NO_HEAD`를 넣는 길도 있었지만, 서버마다 손으로 맞춰야 해서 저장소의 스크립트에 넣었다
+- 토큰은 사용자 토큰이 아니라 계정 토큰(사람이 아니라 계정에 붙는다). 권한은 객체 읽기 및 쓰기 · 이 버킷만. IP 필터는 12월 이사 때 깨져서 안 걸었다
+- 저장 공간 클래스는 표준 ─ Infrequent Access는 최소 30일 과금이라 14일 보관에 손해
+- Bitwarden에서 R2 키는 "API KEYS" 메모와 따로 둔다(사용자 결정: 내가 쓰는 키가 아니라 서버가 쓰는 열쇠)
+
+### 막힌 것
+- **R2가 업로드 직후 HEAD를 501 `NotImplemented`로 거절.** 증상: 첫 `play-backup`에서 `Failed to copy … 501` → `Attempt 2/3 succeeded`. 원인: 파일은 올라가는데 rclone 1.60.1이 확인용으로 보내는 요청을 R2가 거절한다(재시도 때는 같은 파일이 있어서 성공으로 넘어감). 해결: 시험 파일로 옵션 5가지를 비교해 `--s3-no-head`만 OK인 것을 보고 넣었다. 배운 것: `local` 백엔드 흉내로는 업체마다 다른 S3 구현 차이를 못 잡는다 ─ 실제 업체에 시험 파일 하나를 먼저 올려 본다
+- **Cloudflare에서 토큰 만드는 곳을 헷갈림.** "계정 API 토큰"(계정 관리)이나 "사용자 API 토큰"(내 프로필)에서 만들면 S3 키(액세스 키 ID · 비밀 키)가 안 나온다. R2 화면의 "API 토큰 관리"에서 만들어야 한다 ─ 3.9절에 적었다
+- **수명 주기 규칙에 삭제가 빠질 뻔.** 규칙 창이 "복수 업로드 중단"만 체크된 채로 열린다. "업로드된 개체 삭제"를 직접 체크해야 한다
+- **커밋 안 한 문서 때문에 `task deploy`가 멈춤.** 사용자가 배포하는 동안 내가 `SERVER.md`를 고쳐 둔 채였다 ─ 배포 전에 문서도 커밋하거나, 배포가 끝난 뒤 고친다
+- 사용자 API 토큰 목록에 "Cloudflare Agent Token - 2026-11-06"(권한 24개 넘음)이 있었다 ─ "AI에게 물어보기"에서 링크를 따라가며 생긴 것으로 확인(사용자). 안 쓰면 지우기를 권했다
+
+### 확인
+- 운영: `sudo play-backup` → "R2에 올림: playledger-20261106T034102Z.dump.age (24046 바이트, 크기 확인)", `ERROR` 줄 없음. `lsl` 2개, 배포 직전 백업 `…T035939Z`도 같은 줄. `task deploy` 헬스체크 1번째 통과
+- 로컬: Ubuntu 24.04 apt rclone 1.60.1 컨테이너에서 5가지(정상 exit 0, 나머지 exit 3), shellcheck 3개 통과
+- `/privacy` 화면 텍스트에 R2 문장(내장 브라우저로 읽음)
+- CSP를 좁힌 뒤 커버(사용자 Chrome): `/library` 카드 · 배경 띠 · 상세 화면 2개 모두 보임. Network 필터 `steamstatic.com` → `header_alt_assets_9_koreana.jpg` · `header.jpg` 200(메모리 · 디스크 캐시), Console "No issues"(확장 프로그램 로그뿐)
+- 재부팅(사용자, 04:12 UTC, `uptime` 감시 37분 전): 자세한 것은 `SERVER` 5절
+- 200개 목록 측정(`scripts/measure-list.ps1`, 사용자가 회사 PC에서 실행): 임시 계정에 200개 등록 217초 → 10가지 × 20번. 서버 처리(첫 바이트 - 요청 준비) 중간 19 ~ 46ms · 최대 67ms, 새 연결 · TLS 포함 전체 중간 77 ~ 140ms · 최대 168ms → 1초 기준 통과. 끝에 계정 삭제, 로그인 401. 로컬 개발 서버(25개)는 서버 처리 13 ~ 22ms
+  - 방법을 고른 이유: SQL 직접 넣기(운영 DB 손으로 쓰기) · 백업을 PC에 되살리기(내 PC 성능) · 서버에 두 번째 DB 띄우기(1GB 메모리에서 운영이 스왑으로 밀림) · 서버 안 시드 스크립트(운영 이미지에 쓰기 도구) · 안 재기를 비교해 버렸다. 임시 계정 데이터는 백업에 최대 14일 남는다(지어낸 값)
+  - 시험에서 발견(측정 스크립트): 장르 목록도 로그인이 필요했다(라우터 전체 `get_current_user`). 가려진 입력은 터미널이 없으면 못 받아서 시험용 `-Email` · `MEASURE_PASSWORD` · `-DeleteAfter`를 열었다. Windows에서 `localhost`는 IPv6를 먼저 시도해 전체 시간이 약 200ms 늘었다(`127.0.0.1`로 비교)
+- M5 남은 결정 3개(사용자가 추천안 선택):
+  - 되돌리기 시험 → PLAN에 **M5.5 서버 이사**를 새로 만들고 거기로. 지금 운영에서 하면 몇십 초 멈추고 죽는 커밋을 `main`에 올려야 한다. 새 서버는 DNS 전환 전에 사용자가 0명이다
+  - Steam 미러 → 매주 일요일 05:30 KST 타이머. 서버 설치 · 첫 실행: "받은 게임 198887건 · steam_apps 198907행 · 23.5초", 다음 실행 토 20:36 UTC(일 05:36 KST)
+  - 디스크 → `/api/health`에 `disk` + `uptime` 감시. 배포 `c34b701` 뒤 운영 `{"status":"ok","database":"ok","disk":"ok"}`, 그다음 감시 변경 `66255e1`을 올렸다(먼저 올리면 다음 순찰이 실패한다)
+  - [설계] disk가 503을 만들면 Docker가 api를 unhealthy로 보고 `play-release`가 되돌리기를 시작한다 ─ 디스크는 새 버전 탓이 아니라서 상태 코드 · `status`는 그대로 두고 감시에서만 실패로 잡는다. 숫자는 밖에 내지 않는다
+  - [설계] 미러는 배포 · 복구와 같은 잠금을 `flock -w 1800`으로 기다린다 ─ 마이그레이션 · DB 되살리기 도중에 표를 건드리지 않게. 미러가 도는 30초 동안 배포하면 배포가 멈추니 다시 친다
+  - pytest 315 passed(+5: 디스크 경계 10% ok · 9% low · 11% · 0% · 못 읽음), systemd-analyze verify 통과, 감시 단계는 가짜 응답으로 ok → 0 · low → 1
+  - 사전 검증에서 발견: 감시 메시지에 큰따옴표를 겹쳐 넣어 bash 문자열이 끊길 뻔했다(올리기 전에 고침)
+- **확인 못 한 것**: R2 14일 정리가 실제로 지우는 것(11-20 이후), 매일 04:30 타이머의 R2 업로드(내일 `journalctl -u play-backup`)
+
+### 이번 세션 커밋
+- `fix(M5)` R2 HEAD 501 / `docs(M5)` SERVER R2 기록 / `docs(M5)` DEVLOG · PLAN / `docs(M5)` 커버 확인 / `docs(M5)` 재부팅 / `feat(M5)` 200개 측정 스크립트 / `docs(M5)` 측정 결과
+
+### 다음에 할 일
+- 내일 `sudo journalctl -u play-backup -n 20`에 "R2에 올림 … 크기 확인"이 있는지 본다
+- "현재 상태" ⑥ · ⑦
+
+---
+
+## 2026-11-06 (4) · 운영 복구 스크립트, R2 서버 밖 백업 (데스크톱 B, 자동)
+
+### 한 일
+- 진행 순서: 서버 스크립트 구조 보기 → 설계 · 서버 밖 보관 선택(사용자: R2) → `play-restore` → 내 PC 운영 구성에서 복구 시험 → `play-backup` R2 업로드 · 14일 정리, `play-release`가 R2만 실패한 백업을 받아들이게 → Ubuntu 24.04 rclone 1.60.1에서 시험 → 문서
+- `deploy/play-restore`(새 파일), `deploy/r2.env.example`(새 파일), `deploy/play-backup` · `deploy/play-release` 고침
+- [decisions/0013](decisions/0013-r2-offsite-backup.md), `SERVER` 2절 운영 복구 · 백업 상태, 3.9절 R2 세팅, 4장 함정 3줄, 5절 시험 기록. 개인정보 안내에 R2 한 줄
+
+### [설계]
+- 운영에서 연습하지 않는다 ─ 저장소에 이미 있는 "내 PC에서 운영 구성 확인"(`compose.local.yaml`)을 띄우고, 서버 스크립트는 Docker CLI 컨테이너에서 돌렸다. 바꾼 것은 `play-compose` 하나(그 구성을 부르는 가짜)
+- 열쇠는 PC에만 둔다(3.7절)는 원칙을 지키려고 PC에서 푼 덤프를 서버 홈으로 올린다. `age -d … | ssh play "sudo play-restore -"`로 디스크에 안 남기는 길도 따져 봤지만, sudo 비밀번호를 받으려면 `-t`가 필요하고 터미널을 거치면 바이너리가 깨질 수 있어 뺐다
+- 되살리기 전 확인을 무겁게: `pg_restore -l`로 목차를 읽고 `entries` 데이터가 있는지, 그다음 `restore`를 직접 치게 한다. 터미널이 없으면 묻지 않고 멈춘다(`PLAY_RESTORE_YES=1`은 시험용)
+- 지우기 전에 지금 DB를 `play-backup`으로 한 번 더 뜬다 ─ 잘못 되살려도 돌아갈 곳이 있다. `play-release`와 같은 잠금을 써서 배포와 겹치지 않는다
+- 화면(web)은 멈추지 않고 api만 멈춘다 ─ 화면은 뜨고 `/api`가 502라 화면이 오류 안내를 보여 준다
+- 사전 검증에서 발견: 옛 백업은 지금 코드보다 표가 뒤처질 수 있다 ─ 되살린 뒤 `alembic upgrade head`
+- 사전 검증에서 발견: 백업은 `steam_apps`를 구조만 담아서 되살리면 Steam 검색이 비게 된다 ─ 끝에 게임 목록을 다시 받는다. 실패해도 서비스는 도니 안내만 찍는다
+- 시험에서 발견: 지우기와 만들기 사이에서 멈추면 DB가 없어서, 다시 실행해도 `dropdb`와 지우기 전 백업이 실패해 빠져나올 수 없었다 ─ `--if-exists`, DB가 없으면 백업을 건너뛴다
+- R2 업로드 실패는 종료 코드 3: 서버 사본은 이미 있으니 `play-release` · `play-restore`는 계속하고, 타이머는 실패로 남겨 `systemctl --failed`에 보이게 한다
+- R2는 개수가 아니라 날짜(14일)로 지운다 ─ 서버는 14개를 남기는데 배포 직전 백업이 끼면 14일보다 짧아진다. 개인정보 안내의 "14일"은 R2 쪽이 정확히 지킨다. R2 수명 주기 규칙(14일)은 서버가 사라졌을 때의 안전장치
+- 알림은 아직 없다(`uptime`은 밖에서 R2를 볼 수 없다). `decisions/0013` "감수할 것"
+
+### 막힌 것
+- **Git Bash에서 Windows 프로그램에 `/tmp/...` 경로를 넘겼다.** 증상: `docker cp` · `age`가 `C:\tmp\...`를 찾음. 원인: Git Bash의 `/tmp`는 Windows 프로그램이 모르는 경로다. 해결: Windows 경로(`C:\Users\…\scratchpad`)를 그대로 넘김
+- **Git Bash에서 `curl -d`의 한글이 깨져 400.** 시험 데이터를 영문 제목으로 넣었다(앱 문제 아님)
+- **rclone이 R2에 닿지 않을 때 2분 넘게 재시도.** 배포 직전 백업까지 붙잡힌다 ─ `--contimeout 10s --low-level-retries 3`, 다시 재 보니 1초 만에 exit 3
+- 시험 컨테이너 안의 `rm`을 담은 명령이 안전 장치에 막혔다 ─ 그 줄은 빼고 진행했다(지운 것 없음)
+
+### 확인
+- 관찰값은 `SERVER` 5절 2026-11-06 `play-restore` 블록: 정상 12초 · 옛 버전 · 멈춰야 하는 9가지 · 중간에 멈춘 뒤 다시 실행 · R2 정리 · rclone 1.60.1 · shellcheck 통과
+- 프론트: lint · `format:check` · `vue-tsc` 통과, `npm test` 202 passed
+- **확인 못 한 것**: 실제 R2 업로드(토큰 · 버킷 전), 운영에서 `play-restore`, Steam 키가 있을 때 게임 목록 다시 받기, `ssh -t`로 친 `restore` 입력(컨테이너에서 `script`로 흉내만)
+
+### 이번 세션 커밋
+- `feat(M5)` 서버 스크립트 / `feat(M5)` 개인정보 안내 R2 / `docs(M5)` 문서
+
+### 다음에 할 일
+- "현재 상태" ⑥ R2 설치 → 첫 업로드 확인 → `task deploy`
+
+---
+
+## 2026-11-06 (3) · 노트북 작업 확인, 첫 복구 리허설 (데스크톱 B, 자동 · 서버 명령은 사용자)
+
+### 한 일
+- 진행 순서: 노트북 커밋 확인 → Docker Desktop 켜기 → 서버에서 새 백업 + 개수(사용자) → `scp`(사용자) → 임시 DB에 되살리기 · 세기(bash) → `SERVER` 2절을 PowerShell 명령으로 채움 → 그 명령 그대로 다시 실행 → 기록
+- 노트북 커밋 `26de06d` · `c6a948e` · `503d0c4`: `README` · DEVLOG만 바뀜, CI 성공. 고칠 것 없음
+- `SERVER` 2절 "복구"가 복호화 다음에 주석 한 줄뿐이었다 ─ 실제로 친 명령으로 채웠다
+
+### [설계]
+- 운영 개수와 백업을 맞추려고 서버에서 `sudo play-backup && psql …`을 한 줄로 쳤다. 따로 치면 그 사이 로그인 한 번에 `refresh_tokens`가 달라진다
+- 비교는 표 7개 개수 + `alembic_version`, 되살린 쪽은 외래 키 · 인덱스 수, 사용자 · 게임과 이어지는 entries 수까지 봤다. `steam_apps`는 구조만 백업이라 0이 맞다
+- 임시 DB는 `docker run --rm` 컨테이너 하나 ─ 포트를 열지 않아 개발 DB(5434)와 부딪히지 않는다. 사용자 이름을 운영과 같게(`playledger`) 해서 `--no-owner` 없이 소유자가 그대로 들어간다
+- 풀린 덤프에는 이메일 · 비밀번호 해시가 있다 ─ 화면에는 개수만 찍고, 끝나면 지운다. 잠긴 `.dump.age`는 PC에 남긴다(서버 밖 사본)
+- 운영 DB에 직접 되살리는 순서는 해 보지 않았으니 명령을 지어내 적지 않고 "아직 안 해 봄"으로 남겼다
+
+### 막힌 것
+- 없음. 이 PC의 Docker Desktop이 꺼져 있었지만 켜자마자 준비됐다(첫 `docker info`에 응답)
+
+### 확인
+- 운영(서버, 사용자): 백업 `playledger-20261105T232759Z.dump.age` 24,046바이트. users 2 · games 2 · entries 2 · genres 8 · game_genres 3 · refresh_tokens 14 · `8c2f4a71d9e3`
+- 되살린 쪽(PC): 풀린 덤프 23,846바이트, `pg_restore --exit-on-error` exit 0, 개수 · 버전 모두 같음, `steam_apps` 0, 외래 키 6 · 인덱스 22, 이어지는 entries 2
+- `SERVER` 2절 PowerShell 명령을 그대로 다시 돌려 같은 결과, 7초. 덤프 파일 남지 않음(`Test-Path` False), 컨테이너 남지 않음
+- **확인 못 한 것**: 운영 DB에 직접 되살리기, 오래된 백업(11-04) 되살리기, 노트북 · 집 PC에서의 복구(열쇠가 이 PC에만 있다)
+
+### 다음에 할 일
+- 서버 밖 보관을 자동으로 할지(PLAN에 따로 뺌), 백업 개인키 사본
+
+---
+
+## 2026-11-06 (2) · 노트북 개발 환경 마무리 (노트북, 자동)
+
+### 한 일
+- (1)에서 멈춘 데서 이어서: `playledger_test` 만듦(`README` "시작하기") → `alembic upgrade head`(`1e1d15e51ba2` → `8c2f4a71d9e3`, 개발 DB가 두 마이그레이션 뒤처져 있었다) → 검사
+- `README` 개발 환경 표의 노트북 Python을 3.13.9(Anaconda) → 3.14.7(Miniconda)로
+
+### 막힌 것
+- **같은 날짜 블록이 둘 생길 뻔했다.** 작업 중에 (1) 중간 기록이 먼저 커밋 · push돼 있었다(`26de06d` · `c6a948e`). 그 위에 (2)로 이어 적었다
+
+### 확인
+- `pytest` **310 passed**(82.89초)
+- `npm run lint` 오류 없음, `format:check` 통과, `vue-tsc` exit 0, `npm test` **202 passed**(16 files)
+- DB 컨테이너는 `Recreate`됐지만 볼륨은 남았다(마이그레이션이 이어서 돌았다)
+- **확인 못 한 것**: 노트북 `ssh play`(열쇠 없음), 노트북에서 개발 서버를 띄운 화면, `npm audit` 경고 내용(안 건드림)
+
+### 다음에 할 일
+- 노트북 서버 열쇠(`SERVER` 3.1절, `-C laptop`). 사용자가 친다
+- 열쇠까지 되면 `server/venv.broken`을 지운다
+
+---
+
+## 2026-11-06 (1) · 노트북 개발 환경 복구 (노트북, 자동 · 중간에 멈춤)
+
+### 한 일
+- 진행 순서: `git pull`(이미 최신) → 문서 · 환경 점검 → venv 다시 만들기 → Docker · DB → `npm ci` → (여기서 멈춤)
+- `uptime` 확인(인증 없는 GitHub API): 예약 실행 2건 모두 `success`. 30분 간격인데 하루 2건이라 GitHub 예약 지연인지 지켜본다
+- `server/venv`를 Miniconda 3.14.7로 다시 만들고 `requirements-dev.txt` 설치(목록 45줄). 깨진 것은 `server/venv.broken`으로 남겨 둠
+- Docker Desktop을 켜고 `docker compose up -d` → `playledger-db` healthy
+- `web/`에서 `npm ci` exit 0, `@fontsource-variable/inter` · `noto-sans-kr` 들어옴. npm audit 경고가 떴다(건수는 안 봄)
+- 사용자가 `server/.env`에 `TEST_DATABASE_URL` · Steam 키를 넣었다. 키 이름이 `STAEM_API_KEY`로 오타여서 이름만 `STEAM_API_KEY`로 고쳤다(값은 안 봄). DB 비밀번호 세 곳 일치 확인(값 비교만)
+
+### 막힌 것
+- **venv가 안 돈다.** 증상: `did not find executable at 'C:\ProgramDatanaconda3\python.exe'`. 원인: venv가 옛 경로 `C:\__dev_repos\PlayLedger`에서 Anaconda로 만들어졌는데 Anaconda가 지워졌다. 해결: 남은 Miniconda 3.14.7로 새로 만듦. 배운 것: Python을 지우거나 폴더를 옮기면 venv는 다시 만든다. `README` 개발 환경 표의 노트북 Python(3.13.9 Anaconda)도 이제 틀렸다 ─ 확인 뒤 고친다
+- **Docker Desktop이 꺼져 있었다.** 처음 `Start-Process`로는 안 떠서 한 번 더 켰다
+- **`docker compose exec postgres` 실패.** 서비스 이름은 `db`다(컨테이너 이름 `playledger-db`)
+
+### 확인 못 한 것
+- `playledger_test`가 없다 ─ 아직 안 만들었다. `pytest` · 프론트 검사 4종도 아직 안 돌렸다
+- 노트북 서버 열쇠 `play_vultr` 아직 없음
+
+### 다음에 할 일
+- "현재 상태" 기기별로 할 일의 노트북 줄
+
+---
+
+## 2026-11-05 (2) · 감시 · HSTS 1년 · CSP 좁히기 · 개인정보 안내 (데스크톱 B, 자동)
+
+### 한 일
+- 진행 순서: 운영 응답 헤더 · 커버 도메인 확인 → 설계 · 사전 검증 → Caddyfile → `uptime.yml` → `PrivacyView.vue` → 검사 → 커밋 · push → 문서
+- `.github/workflows/uptime.yml`: 30분마다 `/api/health` 본문 + 인증서 남은 날. `SERVER` 1절에 감시 줄
+- `web/deploy/Caddyfile`: HSTS `max-age=31536000`, CSP `img-src 'self' https://*.steamstatic.com data:`
+- 개인정보 안내에 "어디에 얼마나 남는지" 절 (Vultr 서울 · 12월 이사 예정, 접속 기록, 백업 14일)
+
+### [설계]
+- 커버 도메인: 운영 화면은 로그인이 필요해 네트워크 기록을 못 봤다(비밀번호는 Claude가 넣지 않는다). 대신 Steam `appdetails`의 `header_image`를 appid 4개로 받아 보니 모두 `shared.akamai.steamstatic.com`. 서버가 받은 주소를 그대로 저장하므로(`services/steam.py`) 운영 기록도 같은 이름일 것 ─ **배포 전에 운영 DB에서 호스트를 한 번 센다**(아래 다음에 할 일)
+- 호스트 하나가 아니라 `*.steamstatic.com`: Steam은 CDN 업체를 바꿔 왔지만(akamai · fastly · cloudflare) 이름은 `steamstatic.com` 아래였다. 막혀도 화면은 제목 두 글자로 대신하니 망가지지는 않는다
+- HSTS에 `includeSubDomains` · `preload`를 안 붙인다: `play.` 아래 하위 주소는 없고, preload는 되돌리기가 몇 달 걸린다
+- 감시는 바깥(GitHub)에서: 서버 안 감시는 서버와 같이 죽는다. 정각은 GitHub 예약이 몰려 늦게 돌아서 7분 · 37분
+- 사전 검증에서 발견: 배포하는 몇 초 동안 health가 실패하면 메일이 온다 ─ 20초 간격 4번까지 다시 본다
+- 사전 검증에서 발견: DB가 죽어도 응답이 오면 안 된다 ─ `curl -f`(503 실패) + 본문 `"status":"ok"`까지 본다
+- 사전 검증에서 발견: 저장소에 60일 커밋이 없으면 GitHub가 예약 작업을 끈다 ─ 워크플로 주석 · `SERVER` 1절에 적었다
+- 인증서 기준 20일: Caddy가 30일 전부터 갱신하므로 20일 아래면 갱신이 열흘째 실패한 것. 지금 89일 남음(만료 2027-02-02)
+- 접속 기록 문구는 실제 구성에 맞췄다: Caddy 접근 로그는 꺼져 있지만 uvicorn 접근 로그(IP · 요청 주소)가 Docker 로그(10MB × 3 회전)에 남는다. 그래서 기간이 아니라 "용량이 차면 지워진다"
+- 디스크 여유 확인은 밖에서 볼 수 없어 PLAN에서 따로 뺐다
+
+### 막힌 것
+- **이 PC에 `python` · `gh` · Docker가 없다.** Bash에서 `python`이 없어 Edit로 고쳤고, YAML 검사는 `server/venv`의 Python으로 했다. `gh`가 없어 `workflow_dispatch`로 손으로 돌려 보지 못했다(인증 없는 API로 등록 · `active`만 확인). Docker가 없어 `caddy validate`를 못 했다
+
+### 확인
+- 고치기 전 운영 헤더: `Strict-Transport-Security: max-age=86400`, CSP `img-src 'self' https: data:`
+- CSP: Chrome에서 같은 `img-src` 정책의 iframe으로 `shared.akamai` · `shared.fastly` · `cdn.cloudflare.steamstatic.com` 커버 로드(460px), `steamcdn-a.akamaihd.net`은 차단 ─ 같은 주소를 허용하면 로드돼서 정책 때문에 막힌 것임을 확인
+- `uptime.yml` 두 단계를 로컬 `bash -eo pipefail`로: 운영 ok exit 0 / 없는 주소 4번 실패 exit 1 / 인증서 89일 exit 0 / 기준 100일 exit 1 / 인증서 못 읽음 exit 1. GitHub에 `uptime` 워크플로 `active`
+- 프론트: lint · `format:check` · `vue-tsc` 통과, `npm test` 202 passed
+- 배포 전 운영 DB 커버 호스트(사용자가 서버에서): `shared.akamai.steamstatic.com` 2건뿐
+- 배포(사용자 `task deploy`, `6af62c1`) 뒤 밖에서: HSTS `max-age=31536000`, CSP `img-src 'self' https://*.steamstatic.com data:`, `/api/health` ok, `/privacy`에 새 절이 보임(Chrome 화면). 자세한 건 `SERVER` 5절
+- **확인 못 한 것**: `caddy validate`(배포 헬스체크 통과로 대신), `uptime` 첫 예약 실행(05:37 UTC 차례가 05:43에도 안 보였다 ─ GitHub 예약은 처음에 늦게 돈다), 로그인한 `/library` 커버 화면
+
+### 막힌 것 (배포 전)
+- **안내한 한 줄 명령이 PowerShell에서 깨졌다.** 증상: `ParserError: MissingArgument`, 다시 치니 서버 bash에서 `syntax error near unexpected token '('`. 원인: `ssh -t play "… -c \"select …\""`는 bash 문법인데 PowerShell 5.1은 `\"`를 이스케이프로 읽지 않아 따옴표가 중간에 끊겼다. 해결: 이미 열려 있던 서버 탭에서 따옴표 한 겹으로 쳤다. 배운 것: 사용자 터미널이 PowerShell이면 따옴표가 겹치는 서버 명령은 서버에 들어가서 치게 안내한다(오전 `git commit` 실패와 같은 뿌리)
+
+### 이번 세션 커밋
+- `ci(M5)` uptime `45a514c` / `feat(M5)` HSTS · CSP `058d7c2` / `feat(M5)` 개인정보 안내 `9fb03b9` / `docs(M5)` PLAN · SERVER `cccfac7` / `docs(M5)` 작업 기록 `6af62c1` / `docs(M5)` 배포 기록
+
+### 다음에 할 일
+- `/library` 커버 화면, `uptime` 첫 실행 결과
+
+---
+
+## 2026-11-05 (1) · 집 PC 작업 확인, `task deploy` (데스크톱 B, 자동)
+
+### 한 일
+- 진행 순서: 집 PC 작업 확인 → `cbt-journal` 스크립트 · `play-release` 읽기 → 설계 → 작성 → 임시 클론에서 실패 경로 → 커밋 · push → 실제 대기 경로 → 문서
+- 집 PC 작업 확인: 어제 커밋의 CI 모두 `success`, `f463a1b` ~ `26341bf` 사이 `web` · `server` · `deploy` 변경 없음, 회사 PC에서 lint · `format:check` · `vue-tsc` 통과, `npm test` 202 passed
+- 어제 못 본 로그인 화면의 보기 버튼을 운영 `/login`에서 확인: `password` → `text` → `password`, 라벨 · `aria-pressed` 변경, 포커스 유지(스크립트로 보낸 이벤트), 버튼 44×46px, 칸 오른쪽 여백 44px. 로그인 칸에 `maxlength`가 없는 것은 원래 그렇다
+- `scripts/deploy.ps1` · `Taskfile.yml`, `SERVER` 2절. `README`에는 배포 명령이 없고 `SERVER`를 가리키기만 해서 고칠 곳이 없었다
+
+### [설계]
+- 위치는 `scripts/`: `deploy/`는 서버에 올라가는 파일이다. `Taskfile.yml`도 둔다 ─ 회사 PC Task 3.54.0, 집 PC · 노트북은 `cbt-journal` 때문에 있을 것(확인 안 함)
+- **CI가 도는 중이면 기다린다**(최대 10분, 30초 간격). 어제 멈칫한 경우가 바로 이것이고, CI가 100 ~ 132초라 push하고 바로 쳐도 된다. 로그인 없는 GitHub API는 시간당 60번이라 간격을 넓혔다
+- 사전 검증에서 발견: 기다리는 동안 다른 기기가 push하면 옛 커밋으로 운영을 덮어쓴다 ─ 기다린 뒤 깨끗함 · `origin/main` 비교를 다시 한다
+- 사전 검증에서 발견: `audit`만 실패한 커밋은 이미지가 있어도 run 결과가 `failure`다. 멈추는 쪽으로 뒀다 ─ 취약점을 보고 올릴지는 사람이 정하고, 그때는 `play-release`를 직접 부른다
+- CI 상태를 못 읽으면 통과로 치지 않고 멈춘다. `-SshHost`는 `cbt-journal`과 같은 옵션인데, 운영을 건드리지 않고 ssh 실패 경로를 시험하는 데도 썼다
+- 빌드 · 복사가 없어 `cbt-journal`보다 훨씬 짧다. 이미지는 CI가 만든다
+
+### 막힌 것
+- **커밋 메시지의 큰따옴표로 `git commit`이 실패.** 증상: `error: pathspec 'play-release' did not match`. 원인: Windows PowerShell 5.1이 인자 속 `"`를 그대로 넘겨 `-m` 내용이 쪼개졌다. 해결: 메시지를 파일로 써서 `git commit -F`. 커밋 전이라 들어간 것은 없다
+- **CI 실행이 생각보다 늦게 보인다.** push 뒤 API에서 30초에 없고 60초에 보였다. "없음" 판정 90초는 여유가 작아 180초로 늘렸다(판정이 틀려도 멈출 뿐 배포되지는 않는다)
+
+### 확인
+- 임시 클론(bare + clone, 실제 저장소 · 서버 안 건드림)에서 `deploy.ps1` 실행. 90초 판정일 때 시험한 것이다
+
+| 경우 | 결과 |
+|---|---|
+| 정상 + `-DryRun` | exit 0, 실행할 ssh 명령 출력 |
+| 새 파일이 있음 | exit 1 |
+| push 안 한 커밋 / 뒤처진 커밋 | exit 1 / exit 1 |
+| CI 실패 커밋 `8c66e97` | exit 1, `ci 결과가 failure` |
+| GitHub에 없는 커밋 | 91초 뒤 exit 1, `ci 실행이 없다` |
+| 없는 ssh 별명 | ssh 255 → exit 1 |
+| 도는 중인 `25fef04`, 기다리는 사이 origin 변경 | 60 ~ 121초 대기 → ci 성공 → 커밋 다름으로 exit 1 |
+
+- 실제 저장소에서 `task deploy -- -DryRun`: exit 0, 저장소 깨끗함. 한글 출력 정상, BOM은 커밋 · 클론 뒤에도 남음(LF인 채로 5.1에서 돈다)
+- 실제 배포(사용자가 회사 PC 터미널에서): `task deploy` → `play-release` 완료, 끝줄 `health ok`, 커밋 `53db9d7`. 관찰값은 `SERVER` 5절. passphrase · sudo 입력이 Task를 거쳐도 정상이었다
+- **확인 못 한 것**: GitHub API가 막혔을 때 멈추는 경로, 180초로 늘린 값 자체, 실제 배포 중 CI를 기다리는 경로(DryRun으로만 봤다), 집 PC · 노트북의 Task 설치 여부
+
+### 이번 세션 커밋
+- `feat(M5)` `task deploy` `25fef04` / `docs(M5)` 런북 · 기록, "없음" 판정 180초 `53db9d7` / `docs(M5)` 첫 실제 배포 기록
+
+### 다음에 할 일
+- "현재 상태" ① ~ ⑦
+
+---
+
+## 2026-11-04 (11) · 클린룸 검증, 비밀번호 보기 버튼 (데스크톱 A, 클린룸은 사용자 · 문서와 코드는 자동)
+
+### 한 일
+- 진행 순서: 안 올린 작업 확인 → 사용자가 볼륨까지 지우고 새로 클론 → `README`만 보고 실행 → 발견 정리 → 문서 수정 → 비밀번호 보기 버튼
+- 클린룸(사용자가 직접): `docker compose down -v` → 폴더 삭제 → 클론 → `README` "시작하기". `pytest` **310 passed**(38.89초), `npm run lint` · `format:check` · `vue-tsc` 통과, `npm test` **202 passed**, 화면에서 가입 · 게임 등록
+- 집 PC 서버 열쇠: 회사 PC 없이 Vultr 웹 콘솔로 공개키를 넣었다. `ssh play` → `sudo whoami` = root (`SERVER` 5절)
+- 클린룸 발견 4건을 `README`에서 고침
+  1. `web/` 검사 명령(lint · format:check · vue-tsc · test)이 `README`에 없었다. CLAUDE.md에만 있었다
+  2. `pytest`가 `requirements-dev.txt`에 있다는 안내가 테스트 절에 없었다
+  3. 개발 환경 표의 데스크톱 A Python이 3.13.5 ─ 실제는 3.14.7(Miniconda)
+  4. "배포 구성은 M5에서 작성됩니다" ─ 이미 `docs/SERVER.md`가 있다
+- 비밀번호 보기 버튼 `PasswordInput.vue`: 로그인 · 계정 삭제 칸 (`DESIGN` 3.1절)
+- 외부 리뷰(사용자가 ChatGPT에 맡긴 종합 평가)를 코드와 대조해 PLAN M5에 두 항목 추가: 재부팅 뒤 자동 복구, CSP `img-src` 좁히기. 나머지 권고는 이미 M5 · M6 계획에 있었다
+
+### [설계]
+- 닉네임은 중복 허용 그대로 둔다(`DATA_MODEL` 2.1절). 사용자가 같은 닉네임 가입을 보고 물었다 ─ 기기마다 DB가 따로이기도 하고, 닉네임은 표시 이름이다
+- 게임별 리뷰 · 댓글은 `REQUIREMENTS` F-34로만 적었다. 3.2절 "소셜 기능은 하지 않는다"와 부딪쳐서, 하게 되면 `decisions/`부터
+- 비밀번호 보기 버튼은 4.4절에 적지 않고 바로 넣었다. 사용자가 요청했고 화면 두 곳 · 컴포넌트 하나라 작다
+- 버튼은 `type="button"`(폼 제출 방지), `mousedown.prevent`(칸 포커스 유지 ─ 모바일 키보드가 닫히지 않게), `aria-pressed` · 바뀌는 `aria-label`. Edge의 `::-ms-reveal`을 숨겨 눈이 두 개 보이지 않게
+- 대화상자를 닫으면 컴포넌트가 사라져 다음에 열 때 가려진 상태로 시작한다 ─ 따로 되돌리는 코드를 두지 않았다
+- PC 쪽 배포 스크립트를 만들기로 했다(다음 세션, 회사 PC). 사용자가 `cbt-journal`은 `task deploy` 한 줄인데 왜 다르냐고 물었다 ─ 스택 차이가 아니라 단축 스크립트를 안 만든 차이다. 정해 둔 것:
+  - 확인 순서: 미커밋 없음 → `origin/main`과 같음 → GitHub Actions에서 그 커밋의 `ci`가 `success`(저장소가 공개라 토큰 없이 `api.github.com/repos/sagming40/PlayLedger/actions/runs?head_sha=…`로 볼 수 있다) → 통과하면 `ssh -t play "sudo play-release <전체 커밋>"`. 하나라도 아니면 이유를 말하고 멈춘다
+  - 정할 것: 파일 위치(`scripts/deploy.ps1` 새 폴더 vs `deploy/`. `deploy/`는 서버에 올라가는 파일이라 섞지 않는 쪽이 낫다), `Taskfile.yml`도 둘지(Task는 `cbt-journal` 때문에 기기마다 깔려 있는지 확인), `-DryRun`, CI가 아직 도는 중이면 기다릴지 멈출지
+  - 끝나면 `SERVER` 2절 배포 명령과 `README`를 바꾼다
+- 가입 409 "이미 사용 중인 이메일"이 계정 존재를 알려 준다는 리뷰 지적은 이미 `ARCHITECTURE` 3.10절 · F-27에 감수한 것으로 적혀 있다
+
+### 막힌 것
+- **`pytest`를 찾을 수 없음.** 증상: venv에서 `pytest` → CommandNotFoundException. 원인: `requirements.txt`만 설치됨. `README` 2번에는 `requirements-dev.txt`가 맞게 있었지만 바로 옆 "운영은 requirements.txt만" 주석과 테스트 절에 안내가 없어 놓치기 쉬웠다. 해결: `pip install -r requirements-dev.txt` 후 310 passed, 테스트 절에 한 줄 추가
+- **`ssh play "sudo play-compose ps"`가 sudo 비밀번호를 못 받음.** 원인: Claude가 안내한 명령에 `-t`가 빠졌다. 터미널이 없으면 sudo가 비밀번호를 묻지 못한다. 해결: 한 줄로 칠 때는 `ssh -t play "sudo …"`(배포 명령처럼). 이번에는 `play-release` 출력에 세 컨테이너 Healthy가 이미 있어 따로 안 봐도 됐다
+- `npm run format check`(콜론 없이)를 쳐서 `prettier --write`가 돌았다. 전부 `unchanged`라 바뀐 파일은 없었다
+- 새 컴포넌트가 처음에 `format:check`에서 걸렸다. 커밋 전에 검사를 `&&`로 묶어 돌려서 잡았다(앞 세션 교훈)
+
+### 확인
+- `npm run lint` · `format:check` · `vue-tsc` 통과, `npm test` 202 passed (컴포넌트 테스트 도구가 없어 이 버튼의 자동 테스트는 없다)
+- 화면(내장 브라우저, 설정 → 계정 삭제 대화상자, 삭제는 누르지 않음): 처음 `type=password` · "비밀번호 보기" · 버튼 44×46px · 칸 오른쪽 여백 44px · `autocomplete=current-password` · `maxlength=128` 유지. 누르면 `type=text` · "비밀번호 숨기기" · `aria-pressed=true`, 포커스는 칸에 그대로, 값 유지, 대화상자 열린 채. 다시 누르면 password. 닫았다 열면 password · 빈 값
+- **확인 못 한 것**: 로그인 화면(브라우저가 로그인 상태라 직접 열지 않음, 같은 컴포넌트), Edge에서 눈이 하나만 보이는지, 실제 폰
+
+### 이번 세션 커밋
+- `feat(M5)` 비밀번호 보기 버튼 / `docs(M5)` 클린룸 발견 · 닉네임 · F-34 · M5 항목
+
+### 다음에 할 일
+- "현재 상태" ① ~ ⑦
+
+---
+
+## 2026-11-04 (10) · M5 첫 배포, play.sagming.com 운영 시작 (데스크톱 B, 코드 자동 · 서버 명령 사용자)
+
+### 한 일
+- 진행 순서: 글꼴 내장 + CSP 준비 → 이미지 · 운영 Compose · Caddy를 로컬에서 확인 → CI 이미지 · 배포 · 백업 스크립트 → 서버 세팅 + DNS → 첫 배포 → LTE · 요청 제한 · 계정 삭제 확인 → 화면 수정 후 두 번째 배포
+- 글꼴을 `@fontsource-variable`로 내장, 인라인 테마 스크립트를 `public/theme-init.js`로
+- `server/Dockerfile` · `web/Dockerfile` · `web/deploy/Caddyfile` · `deploy/`, CI `images` 작업, `docs/SERVER.md`
+- 밝은 커버에서 상세 화면 위쪽 글자가 안 보이던 것을 실제 폰으로 발견해 고침
+- 관찰값은 `SERVER` 5절
+
+### [설계]
+- 새 서버 `play-1`: 공개 가입 앱을 개인 기록 앱 `cbt-1`과 분리
+- Caddy도 컨테이너로: 서버에는 Docker만 있으면 되어 12월 이사가 쉽다. `cbt-journal`의 호스트 Caddy와 다르다
+- 이미지는 CI가 전체 커밋 번호 태그로 만들고 서버는 받기만 한다. 실패한 커밋은 배포할 수 없고, SSH 키를 GitHub에 맡기지 않는다. GHCR은 로그인 없이 받아져 서버에 토큰이 없다
+- DB는 내부 망만, API 포트는 밖으로 안 연다. Caddy IP를 고정해 그 주소의 `X-Forwarded-For`만 믿는다
+- 백업에서 `steam_apps` 내용은 뺀다(공개 목록이고 미러링으로 다시 만든다)
+- 사전 검증에서 발견: `/docs`는 Caddy가 `/api`만 넘겨서 404가 아니라 앱의 없는 주소 화면(200)이다 ─ 완료 기준을 고쳤다. 인라인 스크립트가 CSP에 막히는 것도 미리 파일로 뺐다
+
+### 막힌 것
+- **`play-1` 비밀값이 대화에 노출.** 증상: `.env`를 nano로 연 캡처에 DB 비밀번호 · JWT 비밀이 찍힘. 해결: DB를 만들기 전이라 둘 다 새로 생성. 배운 것: 안내에 "캡처 금지"를 써도 부족하다 ─ 값이 보이는 화면을 열게 하지 않는 절차로 만든다
+- **lint 실패를 통과로 적음.** `7189c6a` 설명의 eslint 통과는 틀렸다. 출력 끝줄만 봤고 `theme-init.js`의 no-undef를 CI가 잡았다. `public/`을 lint에서 제외
+- **format 실패인 채 커밋 · push.** `8c66e97`. 검사와 커밋을 `;`로 묶어서 `format 1`을 보고도 커밋됐다. `e1e368c`로 정리. 배운 것: 커밋은 검사를 `&&`로 묶고, 결과는 종료 코드로 본다
+- **CI audit · 첫 이미지**: 위 lint 때문에 첫 이미지가 안 만들어져 익명 pull이 denied로 보였다. 이미지가 생긴 뒤 200이었다
+- Vultr 화면에서 SSH 공개키를 입력칸에 넣기만 하면 사라졌다(사용자가 해결)
+- 사용자가 서버 탭에서 `notepad`를 침 ─ 프롬프트로 탭을 구분하도록 `SERVER` 4절에 적음
+
+### 이번 세션 커밋
+- `feat(M5)` 글꼴 내장 `7189c6a`, 운영 이미지 `eec37b7`, 배포 · 백업 스크립트 `b3e0ee7` / `ci(M5)` 이미지 / `docs(M5)` 런북 / `fix(M5)` lint `fd07964`, 밝은 커버 `8c66e97` · `e1e368c`
+
+### 다음에 할 일
+- "현재 상태" ① ~ ⑥
