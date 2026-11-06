@@ -3,6 +3,7 @@
 # ============================================================
 
 import logging
+import shutil
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
@@ -19,6 +20,23 @@ from app.deps import get_db
 from app.routers import auth, genres, entries, stats, steam
 
 logger = logging.getLogger("playledger")
+
+# 남은 디스크가 이 비율 아래면 헬스체크가 "disk":"low"를 답한다 (SERVER 1절 감시)
+# 23GB 서버에서 약 2.3GB ─ 백업 · 로그 · 이미지가 거의 안 늘어서, 여기까지 오면 무언가 새고 있는 것이다
+DISK_LOW_FREE_RATIO = 0.10
+
+
+def disk_state(path: str = "/") -> str:
+    """서버 디스크 여유를 ok / low / error 셋 중 하나로만 답한다 ─ 숫자는 밖에 보이지 않게
+
+    컨테이너 안의 /는 서버 디스크 위에 있다(Docker 저장소와 DB 볼륨이 같은 디스크). 그래서 여기서 재면 서버를 잰 것이다
+    """
+    try:
+        usage = shutil.disk_usage(path)
+    except OSError:
+        logger.exception("헬스체크: 디스크를 읽지 못함")
+        return "error"
+    return "low" if usage.free < usage.total * DISK_LOW_FREE_RATIO else "ok"
 
 
 @asynccontextmanager
@@ -93,11 +111,15 @@ async def health_check(response: Response, db: AsyncSession = Depends(get_db)) -
     """운영 환경이 "살아 있나"를 물어보는 곳 ─ DB에 닿지 못하면 503
 
     서버만 살아 있고 DB가 죽어 있으면 모든 요청이 실패한다. 그 상태를 ok라고 답하면 안 된다
+
+    disk는 status를 바꾸지 않는다 ─ 503이 되면 Docker가 api를 unhealthy로 보고, play-release가
+    "새 버전이 안 살아났다"며 되돌리기를 시작한다. 디스크는 새 버전 탓이 아니다. 밖의 uptime 감시만 따로 본다
     """
+    disk = disk_state()
     try:
         await db.execute(text("SELECT 1"))
     except (SQLAlchemyError, OSError):
         logger.exception("헬스체크: DB에 닿지 못함")
         response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
-        return {"status": "error", "database": "error"}
-    return {"status": "ok", "database": "ok"}
+        return {"status": "error", "database": "error", "disk": disk}
+    return {"status": "ok", "database": "ok", "disk": disk}

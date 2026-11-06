@@ -199,7 +199,7 @@ refresh 쿠키의 범위가 좁은 것은 `Path=/api/auth`로 심었기 때문�
 | 429 | 로그인 · 가입 · 기록 등록이 너무 잦음 | `Retry-After` 헤더. 메모리에 세므로 서버 한 대 기준이다 (`core/rate_limit.py`) |
 | 403 | `/refresh` · `/logout`을 다른 사이트에서 부름 | 브라우저의 `Sec-Fetch-Site`로 판단. 형제 서브도메인은 SameSite로 막히지 않는다 |
 | 403 | 계정 삭제의 비밀번호가 틀림 | 401이면 화면이 토큰 만료로 알고 재발급을 시도한다 |
-| 503 | `/api/health`에서 DB에 닿지 못함 | 평소 응답 `{"status":"ok","database":"ok"}` |
+| 503 | `/api/health`에서 DB에 닿지 못함 | 평소 응답 `{"status":"ok","database":"ok","disk":"ok"}`. `disk`는 `ok` · `low`(남은 공간 10% 미만) · `error`이고 상태 코드를 바꾸지 않는다 ─ 503이면 배포가 되돌리기를 시작하기 때문. 밖의 `uptime` 감시가 따로 본다 |
 
 운영에서는 `ENABLE_DOCS=false`로 Swagger를 끈다.
 

@@ -4,6 +4,7 @@
 """
 
 import json
+from types import SimpleNamespace
 
 import pytest
 from pydantic import ValidationError
@@ -218,7 +219,30 @@ async def test_cookie_routes_reject_other_sites(client, auth_headers, site, path
 async def test_health_checks_the_database(client):
     res = await client.get("/api/health")
     assert res.status_code == 200
-    assert res.json() == {"status": "ok", "database": "ok"}
+    assert res.json() == {"status": "ok", "database": "ok", "disk": "ok"}
+
+
+@pytest.mark.parametrize(
+    ("free", "expected"),
+    [(11, "ok"), (10, "ok"), (9, "low"), (0, "low")],   # 경계: 정확히 10%는 아직 ok
+)
+async def test_health_reports_low_disk_without_failing(client, monkeypatch, free, expected):
+    """디스크가 부족해도 200 · status ok ─ 503이면 play-release가 엉뚱하게 되돌린다. 숫자는 내보내지 않는다"""
+    usage = SimpleNamespace(total=100, used=100 - free, free=free)
+    monkeypatch.setattr("app.main.shutil.disk_usage", lambda _path: usage)
+    res = await client.get("/api/health")
+    assert res.status_code == 200
+    assert res.json() == {"status": "ok", "database": "ok", "disk": expected}
+
+
+async def test_health_reports_unreadable_disk(client, monkeypatch):
+    def broken(_path):
+        raise OSError("디스크를 읽을 수 없다")
+
+    monkeypatch.setattr("app.main.shutil.disk_usage", broken)
+    res = await client.get("/api/health")
+    assert res.status_code == 200
+    assert res.json()["disk"] == "error"
 
 
 async def test_update_error_message_is_korean(client, auth_headers):
