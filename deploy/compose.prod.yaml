@@ -38,6 +38,8 @@ services:
       JWT_SECRET_KEY: ${JWT_SECRET_KEY:?.env에 JWT_SECRET_KEY가 없다}
       STEAM_API_KEY: ${STEAM_API_KEY:-}
       ENABLE_DOCS: "false"
+      # Steam · Discord에서 돌아올 주소의 앞부분. 비밀값이 아니어서 .env 대신 여기 둔다 (server/app/core/config.py)
+      PUBLIC_BASE_URL: https://play.sagming.com
     # 포트를 밖으로 열지 않는다 ─ Caddy를 거치지 않으면 닿을 수 없다
     networks:
       - edge        # Caddy와 만나고 Steam으로 나간다
