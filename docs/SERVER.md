@@ -360,3 +360,11 @@ Cloudflare 화면의 버킷 객체 목록에 같은 이름이 보이면 끝. 실
 - `play-backup`에 `--s3-no-head` + `lsf` 크기 확인(`bfea511`). 로컬 Ubuntu 24.04 컨테이너에서 정상 exit 0 · 크기 다름 · 목록에 없음 · `lsf` 실패 · 쓸 수 없는 곳 exit 3, shellcheck 통과
 - 다시 설치 뒤 `sudo play-backup`: `ERROR` 줄 없이 "R2에 올림: playledger-20261106T034102Z.dump.age (24046 바이트, 크기 확인)", `lsl`에 2개
 - 14일 정리(`delete --min-age`)는 에러 없이 돌았지만, 실제로 지워지는 것은 11-20 이후에 처음 본다
+
+**2026-11-06 · 재부팅 뒤 자동 복구 (회사 PC, 사용자)**
+
+- 전: `up 1 day, 20:36`, api · web Up 12분(배포 직후), db Up 44시간
+- `sudo reboot` 04:12:23 UTC → 04:13:37 SSH 접속 → `up 1 min`. `uptime` 감시(07 · 37분)와 백업 타이머(04:30 KST)를 피한 시각
+- 뒤: api · db `Up About a minute (healthy)`, web `Up`(web은 헬스체크가 없다 ─ api는 Dockerfile, db는 Compose에 있음). `/api/health` `{"status":"ok","database":"ok"}`. 타이머 다음 실행 11-06 19:38 UTC(04:38 KST, 지연 무작위 10분), 지난 실행 11-05 19:32 UTC. 스왑 `/swapfile` 2.3G, ufw active
+- 인증서(PC에서 `openssl s_client`): Let's Encrypt YE1, 2026-11-04 ~ 2027-02-02
+- 로그인 안내에 "26.04.1 LTS 있음 · 업데이트 1개 · ESM 4개"가 떴다 ─ 24.04는 2029년까지 지원이라 이사(12월) 전에는 올리지 않는다

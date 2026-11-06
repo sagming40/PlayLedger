@@ -356,7 +356,7 @@
 - [ ] 디스크 여유 확인 (밖에서는 볼 수 없다. 서버 안 알림을 만들지 정한다)
 - [x] HSTS를 하루 → 1년으로 (2026-11-05 `6af62c1`, 운영 응답 헤더 `max-age=31536000`)
 - [x] CSP `img-src`를 `https:` 전체에서 `https://*.steamstatic.com`으로 좁히기 (2026-11-05 배포, 운영 헤더 확인 · 운영 DB 커버 호스트 모두 해당. 2026-11-06 Chrome: `/library` 카드 · 상세 화면에 커버 2개, Network `steamstatic.com` 2건 200(캐시), Console CSP 오류 없음) *(계획에 없던 작업)*
-- [ ] 서버 재부팅 뒤 자동 복구 확인 (`sudo reboot` → 세 컨테이너 · `/api/health` · 백업 타이머), 인증서 만료일 확인 *(계획에 없던 작업)*
+- [x] 서버 재부팅 뒤 자동 복구 확인 (`sudo reboot` → 세 컨테이너 · `/api/health` · 백업 타이머), 인증서 만료일 확인 ─ 2026-11-06: 약 70초 뒤 SSH, 컨테이너 3개 Up(api · db healthy), `/api/health` ok, 타이머 다음 실행 잡힘, 스왑 · ufw 켜짐. 인증서 Let's Encrypt 2027-02-02까지(`SERVER` 5절) *(계획에 없던 작업)*
 - [ ] `play-release` 되돌리기 실제 시험 (일부러 죽는 이미지 배포. 아직 한 번도 안 돌았다. 할지 사용자가 정한다)
 - [ ] 200개 목록 응답 시간을 운영 서버에서 다시 측정 (`REQUIREMENTS` 6장, 로컬 21ms)
 - [x] Inter · Noto Sans KR 내장 (`@fontsource-variable`). 외부로 나가는 글꼴 요청 없음, 전 화면 48장 비교에서 레이아웃 변화 없음
