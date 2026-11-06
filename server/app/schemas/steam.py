@@ -11,3 +11,12 @@ class SteamAppRead(BaseModel):
 
     appid: int
     name: str
+
+
+class SteamLinkStart(BaseModel):
+    """연결 시작 응답 ─ 화면은 이 주소로 페이지를 옮긴다 (fetch가 아니라 location 이동)
+
+    시작을 페이지 이동(GET)으로 받지 않는 이유: access 토큰은 메모리에만 있어서 페이지 이동에는 실리지 않는다
+    """
+
+    redirect_url: str

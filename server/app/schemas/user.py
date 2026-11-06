@@ -71,6 +71,9 @@ class UserRead(BaseModel):
     email: EmailStr
     nickname: str
     created_at: datetime
+    # 설정 화면의 Steam 연동 영역이 쓴다 (DESIGN S-06). Steam ID는 공개 프로필 번호라 본인에게 보여도 된다
+    steam_id: str | None
+    steam_synced_at: datetime | None
 
 
 class LoginRequest(BaseModel):

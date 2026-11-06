@@ -17,7 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.deps import get_db
-from app.routers import auth, genres, entries, stats, steam
+from app.routers import auth, genres, entries, stats, steam, steam_link
 
 logger = logging.getLogger("playledger")
 
@@ -65,6 +65,7 @@ app.include_router(auth.router)
 app.include_router(entries.router)
 app.include_router(genres.router)
 app.include_router(steam.router)
+app.include_router(steam_link.router)
 app.include_router(stats.router)
 
 
