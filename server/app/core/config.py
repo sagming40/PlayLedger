@@ -36,6 +36,11 @@ class Settings(BaseSettings):
     # Swagger 문서(/docs). 개발에서 쓰므로 기본은 켠다. 운영 .env에서 false로 끈다
     enable_docs: bool = True
 
+    # 사용자가 보는 화면의 주소. 외부 사이트(Steam · Discord)에서 돌아올 주소를 여기서 만든다(ARCHITECTURE 5.4절)
+    # 요청의 Host 헤더로 만들지 않는다 ─ 헤더는 보내는 쪽이 바꿀 수 있다. 택배 반송 주소를 손님이 불러 주는 대로 적지 않는 것과 같다
+    # 개발은 Vite(5173)가 /api를 8001로 넘겨 주므로 화면 주소 하나로 된다. 운영 .env는 https://play.sagming.com
+    public_base_url: str = "http://localhost:5173"
+
     # 어느 파일을 읽을지 알려주는 설정표
     model_config = SettingsConfigDict(
         env_file=SERVER_DIR / ".env",

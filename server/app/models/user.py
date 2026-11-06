@@ -28,6 +28,10 @@ class User(Base):
     # Steam ID는 64bit Integer지만 String으로 받는다. (DATA_MODEL 2.0절 공통 규칙)
     steam_id: Mapped[str | None] = mapped_column(String(20), unique=True)
 
+    # 마지막으로 Steam 라이브러리를 받아 온 시각. 설정 화면 표시 · 사람별 동기화 제한에 쓴다 (DATA_MODEL 2.1절)
+    # 연결을 해제하면 steam_id와 함께 비운다 ─ 다른 Steam을 새로 붙였을 때 옛 시각이 남아 있으면 "방금 동기화함"으로 보인다
+    steam_synced_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
     # server_default = 값을 주지 않으면 DB가 자동으로 지금 시각을 넣는다
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
