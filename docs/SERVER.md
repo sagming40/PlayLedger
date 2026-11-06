@@ -120,7 +120,7 @@ ssh-keygen -t ed25519 -f "$HOME\.ssh\play_vultr" -C "company-pc"   # passphrase�
 Get-Content "$HOME\.ssh\play_vultr.pub"                            # Vultr에 붙여 넣을 공개키
 ```
 
-**다른 PC를 추가할 때** (서버는 이미 있다. 집 PC는 2026-11-04에 넣었다(5절), 노트북은 아직 안 함)
+**다른 PC를 추가할 때** (서버는 이미 있다. 집 PC는 2026-11-04, 노트북은 2026-11-06에 넣었다(5절))
 
 1. 그 PC에서 위 명령으로 열쇠를 만든다(`-C`는 `home-pc` · `laptop`).
 2. 공개키 한 줄을 서버에 넣는다. 이미 접속되는 PC(회사 PC)로 `ssh play` 해서 치거나, Vultr 웹 콘솔(Server Information → View Console, root로 로그인)에서 친다. root · 비밀번호 SSH는 막혀 있어도 웹 콘솔은 된다.
@@ -389,3 +389,9 @@ systemctl list-timers 'play-*'
 - 뒤: api · db `Up About a minute (healthy)`, web `Up`(web은 헬스체크가 없다 ─ api는 Dockerfile, db는 Compose에 있음). `/api/health` `{"status":"ok","database":"ok"}`. 타이머 다음 실행 11-06 19:38 UTC(04:38 KST, 지연 무작위 10분), 지난 실행 11-05 19:32 UTC. 스왑 `/swapfile` 2.3G, ufw active
 - 인증서(PC에서 `openssl s_client`): Let's Encrypt YE1, 2026-11-04 ~ 2027-02-02
 - 로그인 안내에 "26.04.1 LTS 있음 · 업데이트 1개 · ESM 4개"가 떴다 ─ 24.04는 2029년까지 지원이라 이사(12월) 전에는 올리지 않는다
+
+**2026-11-06 · 노트북 열쇠 추가 (노트북, 사용자)**
+
+- 3.1절 "다른 PC를 추가할 때"를 웹 콘솔로: 노트북에서 `play_vultr`(`-C laptop`, passphrase 있음) → Vultr 웹 콘솔(noVNC)에 root로 들어가 공개키를 `>>`로 추가 → `tail -n 3`으로 `company-pc` · `home-pc` · `laptop` 세 줄 확인 → `~/.ssh/config`에 `Host play`
+- `ssh -t play "sudo whoami"` → 호스트 지문 `yes` → `root`. 이제 세 기기 모두 접속된다
+- 접속할 때 본 것: 디스크 35.1%(22.88GB 중) · 메모리 39% · 스왑 0%. 업데이트 1개 · ESM 4개 · 26.04.1 안내는 위와 같아 그대로 둔다
