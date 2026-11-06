@@ -358,7 +358,7 @@
 - [x] CSP `img-src`를 `https:` 전체에서 `https://*.steamstatic.com`으로 좁히기 (2026-11-05 배포, 운영 헤더 확인 · 운영 DB 커버 호스트 모두 해당. 2026-11-06 Chrome: `/library` 카드 · 상세 화면에 커버 2개, Network `steamstatic.com` 2건 200(캐시), Console CSP 오류 없음) *(계획에 없던 작업)*
 - [x] 서버 재부팅 뒤 자동 복구 확인 (`sudo reboot` → 세 컨테이너 · `/api/health` · 백업 타이머), 인증서 만료일 확인 ─ 2026-11-06: 약 70초 뒤 SSH, 컨테이너 3개 Up(api · db healthy), `/api/health` ok, 타이머 다음 실행 잡힘, 스왑 · ufw 켜짐. 인증서 Let's Encrypt 2027-02-02까지(`SERVER` 5절) *(계획에 없던 작업)*
 - [ ] `play-release` 되돌리기 실제 시험 (일부러 죽는 이미지 배포. 아직 한 번도 안 돌았다. 할지 사용자가 정한다)
-- [ ] 200개 목록 응답 시간을 운영 서버에서 다시 측정 (`REQUIREMENTS` 6장, 로컬 21ms)
+- [x] 200개 목록 응답 시간을 운영 서버에서 다시 측정 (`REQUIREMENTS` 6장, 로컬 21ms) ─ 2026-11-06 `scripts/measure-list.ps1`, 임시 계정 200개 · 10가지 조합 × 20번: 서버 처리 최대 67ms, 새 연결 포함 전체 최대 168ms. 임시 계정은 지웠다(로그인 401). 12월 이사 뒤 같은 스크립트로 다시 잰다
 - [x] Inter · Noto Sans KR 내장 (`@fontsource-variable`). 외부로 나가는 글꼴 요청 없음, 전 화면 48장 비교에서 레이아웃 변화 없음
 - [x] 배포 후 `개인정보 안내` 다시 대조 (백업 14일 · Vultr 서울 · 접속 기록, 2026-11-05 운영 화면 확인. 12월 이사 때 호스팅 업체를 다시 고친다)
 - [x] PC 쪽 배포 스크립트 (2026-11-05 첫 실제 배포 `53db9d7`) ─ 미커밋 없음 · push됨 · 그 커밋의 CI 성공(이미지 있음)을 확인한 뒤에만 `ssh -t play "sudo play-release <커밋>"`을 부른다. 2026-11-04에 CI가 도는 중인 커밋을 배포하려 했다. `cbt-journal`의 `task deploy`(`Taskfile.yml` → `scripts/deploy.ps1`)와 같은 모양 *(계획에 없던 작업)*
