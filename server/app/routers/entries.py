@@ -185,7 +185,7 @@ async def create_entry(
     # ⑤ 보유 기록 만들기
     # model_dump = schema를 Dictionary로 펼친다. title · genre_ids는 entries의 column이 아니라 제외
     # user_id · game_id · source는 요청이 아니라 server가 채운다 (client를 신뢰하지 않는다)
-    # Steam에서 고른 게임도 source는 MANUAL이다 ─ STEAM이면 M8 동기화가 입력한 플레이타임을 덮어쓴다 (ARCHITECTURE 5.3절)
+    # Steam에서 고른 게임도 source는 MANUAL이다 ─ STEAM이면 M6 동기화가 입력한 플레이타임을 덮어쓴다 (ARCHITECTURE 5.3절)
     entry = Entry(
         user_id=user.id,
         game_id=game.id,

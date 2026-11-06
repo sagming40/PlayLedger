@@ -126,7 +126,7 @@ async def test_register_fills_korean_name_cover_genres_release(client, auth_head
     assert body["game"]["cover_url"] == HOLLOW["header_image"]
     # 인디(23)는 고정 목록에 없어 빠진다
     assert {g["name"] for g in body["game"]["genres"]} == {"액션", "어드벤처"}, body["game"]["genres"]
-    # STEAM이면 M8 동기화가 입력한 플레이타임을 덮어쓴다
+    # STEAM이면 M6 동기화가 입력한 플레이타임을 덮어쓴다
     assert body["source"] == "MANUAL"
     assert body["playtime_minutes"] == 90
 

@@ -17,24 +17,24 @@ flowchart TB
         Web["web 컨테이너<br/>Caddy + Vue 빌드 결과물"]
         API["api 컨테이너<br/>FastAPI"]
         DB[("db 컨테이너<br/>PostgreSQL")]
-        Worker["작업 워커 (M9)"]
-        Redis[("Redis (M9)")]
+        Worker["작업 워커 (M7)"]
+        Redis[("Redis (M7)")]
     end
 
     Steam["Steam Web API"]
-    Discord["Discord OAuth (M11)"]
+    Discord["Discord OAuth (M8)"]
     R2["Cloudflare R2<br/>잠긴 백업 사본"]
     Uptime["GitHub Actions uptime<br/>밖에서 /api/health"]
 
     User -->|"HTTPS 443"| Web
     Web -->|"/api (edge 네트워크)"| API
     API --> DB
-    API -.->|"M9"| Redis
+    API -.->|"M7"| Redis
     Worker -.-> Redis
     Worker -.-> DB
     API -->|"M2.5"| Steam
-    Worker -.->|"M9"| Steam
-    API -.->|"M11"| Discord
+    Worker -.->|"M7"| Steam
+    API -.->|"M8"| Discord
     Host -->|"play-backup 매일"| R2
     Uptime -->|"30분마다"| Web
 ```
@@ -113,7 +113,7 @@ flowchart LR
 
 **게임을 찾거나 만드는 입구는 하나다**
 
-게임 등록 API, Steam 동기화(M8), 테스트 데이터 시드(M4)는 모두 `services`의 같은 함수를 거쳐 게임을 얻는다.
+게임 등록 API, Steam 동기화(M6), 테스트 데이터 시드(M4)는 모두 `services`의 같은 함수를 거쳐 게임을 얻는다.
 입구가 여러 개면 한 곳만 중복 판별을 빠뜨려도 공유 테이블 `games`에 중복이 쌓인다.
 v0에서 관리자 화면이 정규화를 거치지 않아 같은 게임이 2행 생긴 것이 이 경우다.
 나중에 별칭 조회(`DATA_MODEL` 5장)를 붙일 때도 이 함수 하나만 고치면 된다.
@@ -126,7 +126,7 @@ v0에서 관리자 화면이 정규화를 거치지 않아 같은 게임이 2행
 | 접근 방식 | SQLAlchemy(async) 경유. 복잡한 집계 쿼리는 HeidiSQL에서 SQL을 먼저 검증한 뒤 옮긴다 |
 | 구조 변경 | Alembic 마이그레이션으로만 변경. DB를 손으로 직접 고치지 않는다 |
 
-### 2.4 Redis (M9 부터)
+### 2.4 Redis (M7 부터)
 
 | 항목 | 내용 |
 |---|---|
@@ -137,7 +137,7 @@ v0에서 관리자 화면이 정규화를 거치지 않아 같은 게임이 2행
 
 | 서비스 | 역할 | 호출 주체 |
 |---|---|---|
-| Steam Web API | 게임 목록 미러(M2.5), 보유 게임과 누적 플레이타임(M8) | **서버와 워커만** |
+| Steam Web API | 게임 목록 미러(M2.5), 보유 게임과 누적 플레이타임(M6) | **서버와 워커만** |
 | Steam 스토어 `appdetails` (비공식) | 고른 게임의 한국어 이름 · 커버 · 장르 · 출시일 (M2.5) | **서버만** |
 | Discord OAuth | 외부 로그인 | **서버만** |
 | Cloudflare R2 | 잠긴 DB 백업 사본 14일 (M5, [decisions/0013](decisions/0013-r2-offsite-backup.md)) | **서버의 `play-backup`만** (앱 코드는 부르지 않는다) |
@@ -443,7 +443,7 @@ refresh 토큰을 전부 폐기하고** 쿠키를 삭제한 뒤 401을 반환한
 2. **함수 시그니처** — `services`의 조회 함수는 `user_id`를 필수 인자로 받는다. 빠뜨리면 조용히 새는 대신 실행 즉시 에러가 나고, 이는 3번 테스트에서 잡힌다
 3. **자동 테스트** — "A 계정의 기록이 B 계정에 안 보임"을 pytest로 매 push마다 검증한다
 
-### 4.3 Discord 로그인 (M11)
+### 4.3 Discord 로그인 (M8)
 
 ```mermaid
 sequenceDiagram
@@ -453,15 +453,15 @@ sequenceDiagram
     participant Dc as Discord
 
     B->>A: GET /api/auth/discord/login
-    A-->>B: Discord 인증 페이지로 이동 (state 값 포함)
+    A-->>B: state를 서명 쿠키에 담고 Discord 인증 페이지로 이동 (scope=identify)
     B->>Dc: Discord 로그인 + 권한 동의
     Dc-->>B: 우리 콜백 주소로 이동 (code, state)
-    B->>A: GET /api/auth/discord/callback (code, state)
-    A->>A: state 일치 확인 (위조 요청 차단)
+    B->>A: GET /api/auth/discord/callback (code, state, state 쿠키)
+    A->>A: state가 쿠키와 같고 만료 전 · 처음 쓰는지 확인, 쿠키 지움
     A->>Dc: code + client secret으로 토큰 교환
-    Dc-->>A: Discord 토큰
-    A->>Dc: 사용자 정보 조회
-    A->>A: 사용자 찾기 또는 생성 (oauth_accounts)
+    Dc-->>A: Discord 토큰 (저장하지 않음)
+    A->>Dc: 사용자 정보 조회 (ID · 이름만)
+    A->>A: oauth_accounts에 있으면 그 사용자, 없으면 새 사용자 (이메일 없음)
     A-->>B: refresh 토큰 쿠키 설정 + 프론트 페이지로 이동
     B->>A: POST /api/auth/refresh (4.1절 새로고침 복원과 동일)
     A-->>B: access 토큰
@@ -472,15 +472,30 @@ Discord가 주는 것은 "이 사람이 Discord의 몇 번 사용자다"라는 �
 돌려줄 수 없다. 그래서 refresh 쿠키만 심고 프론트로 보낸 뒤,
 4.1절의 새로고침 복원 방식으로 access 토큰을 받는다.
 
+**지키는 규칙** (M8 사전 검증, [decisions/0018](decisions/0018-discord-manual-link.md))
+
+| 상황 | 규칙 |
+|---|---|
+| 계정 연결 | 로그인한 상태에서 설정의 `Discord 연결`로만. 같은 흐름이고 state에 지금 사용자 ID를 함께 담는다. 이메일이 같아도 자동으로 잇지 않는다 (이메일 인증이 없어 남이 먼저 만든 계정에 붙을 수 있다) |
+| 처음 보는 Discord | 새 계정(이메일 · 비밀번호 없음, 닉네임은 Discord 이름). 화면은 "이미 이메일 계정이 있다면 그 계정에서 연결하세요"를 한 번 보이고 그 자리에서 지울 수 있게 한다 |
+| `state` 보관 | 서명한 쿠키 `SameSite=Lax` · `HttpOnly` · `Secure`, 경로는 `/api/auth/discord`, 5분, 한 번 쓰면 지운다. refresh 쿠키(`Strict`)는 외부 사이트에서 돌아오는 이동에 실리지 않아 같은 방식으로 둘 수 없다. Steam 연결(5.4절)과 같은 모듈 |
+| 콜백에서 쿠키 심기 | `Strict` 쿠키를 외부에서 이어진 이동의 응답에서 심는 것이 브라우저마다 같은지 구현 첫 단계에서 Chrome · Edge · 안드로이드로 확인한다. 안 되면 콜백이 60초짜리 한 번 쓰는 교환권을 주고, 화면이 그것을 `POST`해 같은 사이트 안에서 쿠키를 받는다 |
+| 같은 Discord로 두 탭 동시 첫 로그인 | `oauth_accounts` UNIQUE에 걸린 쪽은 다시 조회해 먼저 만든 사용자로 로그인한다 (사용자 행도 하나만 남는다) |
+| 이미 다른 계정에 연결된 Discord를 연결 | 409 |
+| 비밀번호 없는 계정의 Discord 해제 | 마지막 로그인 수단이라 409 |
+| 비밀번호 없는 계정 삭제 | 비밀번호 대신 `계정 삭제`를 입력해 확인 (3.1절 403 규칙은 비밀번호 있는 계정에만) |
+| 동의 거절(`error=access_denied`) · Discord 장애 | 로그인 화면으로 보내 이유를 보인다. 사용자를 만들지 않는다 |
+| 요청 제한 | 시작 · 콜백을 IP마다 센다 (`core/rate_limit.py`) |
+
 ---
 
 ## 5. Steam 동기화 흐름
 
-### 5.1 병합 규칙 (M8, M10)
+### 5.1 병합 규칙 (M6, M11)
 
 ```mermaid
 flowchart TD
-    Start["동기화 시작<br/>버튼(M8) 또는 주기 실행(M9)"] --> Call["Steam API 호출<br/>보유 게임 + 누적 플레이타임(분)"]
+    Start["동기화 시작<br/>버튼(M6) 또는 주기 실행(M7)"] --> Call["Steam API 호출<br/>보유 게임 + 누적 플레이타임(분)"]
     Call --> G{"게임마다:<br/>games에 steam_appid 있음?"}
     G -->|"있음"| UseG["기존 game 사용"]
     G -->|"없음"| NewG["games에 새로 추가<br/>응답의 영어 이름만, 상세는 나중에 (0016)"]
@@ -489,13 +504,13 @@ flowchart TD
     E -->|"없음"| NewE["새로 생성, source = STEAM<br/>0분이면 미시작, 아니면 플레이중<br/>세션은 만들지 않음 (기준점)"]
     E -->|"source = MANUAL"| Skip["건드리지 않음"]
     E -->|"source = STEAM"| Diff{"누적값이<br/>달라졌나?"}
-    Diff -->|"달라짐"| Upd["플레이타임을 Steam 값으로<br/>+ 늘어난 만큼만 오늘 세션 (M10)"]
+    Diff -->|"달라짐"| Upd["플레이타임을 Steam 값으로<br/>+ 늘어난 만큼만 오늘 세션 (M11)"]
     Diff -->|"그대로"| Same["변경 없음"]
 ```
 
 동기화가 끝나면 "추가 N개 · 갱신 M개 · 변경 없음 K개 · 직접 입력이라 건너뜀 S개"와, 제목이 같은 직접 등록 게임이 있으면 그 수를 반환한다.
 
-**지키는 규칙** (M8 사전 검증, [decisions/0015](decisions/0015-steam-openid-link.md) · [0016](decisions/0016-steam-sync-details-later.md))
+**지키는 규칙** (M6 사전 검증, [decisions/0015](decisions/0015-steam-openid-link.md) · [0016](decisions/0016-steam-sync-details-later.md))
 
 | 상황 | 규칙 |
 |---|---|
@@ -505,7 +520,7 @@ flowchart TD
 | Steam이 죽거나 느림 | 502 · 504. 동기화 하나를 트랜잭션 하나로 묶어 아무것도 저장하지 않는다 |
 | 기록 상한 5,000개 | 넣을 수 있는 데까지 넣고 건너뛴 수를 알린다 |
 | Steam에서 사라진 게임 | 지우지 않는다 |
-| 플레이타임이 줄어듦 | Steam 값으로 맞춘다. 세션(M10)은 늘어난 만큼만 만든다 |
+| 플레이타임이 줄어듦 | Steam 값으로 맞춘다. 세션(M11)은 늘어난 만큼만 만든다 |
 | 구매가 · 평점 · 한줄평 · 상태 | 동기화가 절대 바꾸지 않는다. 상태는 새로 만들 때만 정한다 |
 
 **출처(`source`)를 바꾸는 것은 사용자뿐이다**
@@ -520,7 +535,7 @@ flowchart TD
 이를 세션으로 기록하면 히트맵에 하루 300시간이 찍힌다. 첫 값은 기준점으로만
 저장하고, 다음 동기화부터 증가분을 세션으로 만든다.
 
-### 5.2 자동 동기화 (M9)
+### 5.2 자동 동기화 (M7)
 
 ```mermaid
 sequenceDiagram
@@ -569,11 +584,11 @@ sequenceDiagram
 ```
 
 - **외부 호출은 DB 잠금을 잡기 전에 한다.** Steam이 느릴 때 게임 행을 잠근 채 기다리면 같은 게임을 등록하는 다른 사용자까지 멈춘다
-- **보유 기록의 `source`는 `MANUAL`이다.** `STEAM`이면 M8 동기화가 사용자가 입력한 플레이타임을 덮어쓴다(5.1절). 게임이 Steam에 있는지는 `games.steam_appid`가 말한다
+- **보유 기록의 `source`는 `MANUAL`이다.** `STEAM`이면 M6 동기화가 사용자가 입력한 플레이타임을 덮어쓴다(5.1절). 게임이 Steam에 있는지는 `games.steam_appid`가 말한다
 - 등록 요청은 `title` 또는 `steam_appid` 중 정확히 하나만 받는다
-- 미러링은 `server/`에서 `python -m app.scripts.sync_steam_apps`로 손으로 돌린다 (M9 전까지). 운영은 매주 타이머(`SERVER` 3.10절). 테이블이 비어 있어도 직접 입력은 된다
+- 미러링은 `server/`에서 `python -m app.scripts.sync_steam_apps`로 손으로 돌린다 (M7 전까지). 운영은 매주 타이머(`SERVER` 3.10절). 테이블이 비어 있어도 직접 입력은 된다
 
-### 5.4 Steam 계정 연결 (M8, [decisions/0015](decisions/0015-steam-openid-link.md))
+### 5.4 Steam 계정 연결 (M6, [decisions/0015](decisions/0015-steam-openid-link.md))
 
 ```mermaid
 sequenceDiagram
@@ -594,9 +609,9 @@ sequenceDiagram
 ```
 
 - 콜백은 Steam 응답을 그대로 믿지 않는다. 같은 값을 Steam에 되물어 `is_valid:true`일 때만 받는다. `claimed_id`는 `https://steamcommunity.com/openid/id/<17자리 숫자>` 모양만 받는다
-- 무작위 값은 짧게 살고 한 번만 쓴다. 다른 사이트가 내 브라우저로 콜백을 불러 내 계정에 남의 Steam을 붙이는 것을 막는다(M11 OAuth의 `state`와 같은 역할)
+- 무작위 값은 4.3절 Discord의 `state`와 같은 서명 쿠키 모듈에 둔다(`SameSite=Lax`, 짧게, 한 번만, 시작한 사용자 ID 포함). 다른 사이트가 내 브라우저로 콜백을 불러 내 계정에 남의 Steam을 붙이는 것을 막는다. M6에서 만들고 M8이 그대로 쓴다
 - 다른 계정에 이미 연결된 Steam이면 409. 연결 해제는 `steam_id`만 비운다
-- 엔드포인트 이름과 무작위 값을 어디에 두는지는 구현하며 정하고, 계약은 Swagger가 원본이다
+- 엔드포인트 이름은 구현하며 정하고, 계약은 Swagger가 원본이다
 
 ---
 
@@ -615,7 +630,7 @@ playledger/
 │   │   ├── services/           # 계산 · 중복 판별 · 병합
 │   │   ├── deps.py             # 현재 사용자, DB 세션
 │   │   ├── scripts/            # 손으로 돌리는 작업 (Steam 게임 목록 미러링)
-│   │   └── workers/            # 작업 큐 작업 (M9)
+│   │   └── workers/            # 작업 큐 작업 (M7)
 │   ├── alembic/                # 마이그레이션 이력
 │   ├── tests/
 │   ├── requirements.txt
@@ -639,7 +654,7 @@ playledger/
 ├── scripts/                    # PC 쪽 배포(task deploy) · 200개 측정
 ├── Taskfile.yml
 ├── LICENSE
-├── docker-compose.yml          # 개발용 PostgreSQL만 (운영은 deploy/compose.prod.yaml, M9에 Redis)
+├── docker-compose.yml          # 개발용 PostgreSQL만 (운영은 deploy/compose.prod.yaml, M7에 Redis)
 ├── .env.example                # Compose용 DB 계정 키 이름 (값은 루트 .env)
 ├── docs/
 ├── .gitattributes              # 줄바꿈 규칙 (LF 고정)

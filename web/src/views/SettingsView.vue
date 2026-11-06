@@ -98,7 +98,7 @@ async function onDelete(password: string) {
       </div>
     </SurfacePanel>
 
-    <!-- Steam 연동 ─ M8에서 연결한다. 자리와 안내 문구만 먼저 보여준다 (DESIGN 3.6절) -->
+    <!-- Steam 연동 ─ M6에서 연결한다. 자리와 안내 문구만 먼저 보여준다 (DESIGN 3.6절) -->
     <SurfacePanel class="flex flex-col gap-3.5">
       <div class="flex items-center gap-2.5">
         <h2 class="text-base font-bold">Steam 연동</h2>
@@ -124,7 +124,7 @@ async function onDelete(password: string) {
       </div>
     </SurfacePanel>
 
-    <!-- Discord 연결 ─ M11 -->
+    <!-- Discord 연결 ─ M8 -->
     <SurfacePanel class="flex flex-wrap items-center justify-between gap-3">
       <div class="flex items-center gap-2.5">
         <h2 class="text-base font-bold">Discord 연결</h2>

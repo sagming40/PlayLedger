@@ -2,7 +2,7 @@
 """Steam 게임 목록을 steam_apps로 미러링한다 (decisions/0008)
 
 실행: server/에서 python -m app.scripts.sync_steam_apps
-스케줄러가 생기는 M9 전까지는 손으로 돌린다. 여러 번 돌려도 행이 늘지 않는다.
+스케줄러가 생기는 M7 전까지는 손으로 돌린다. 여러 번 돌려도 행이 늘지 않는다.
 """
 
 import asyncio
