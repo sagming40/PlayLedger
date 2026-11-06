@@ -136,6 +136,11 @@ erDiagram
 **`steam_id`가 UNIQUE인 이유**
 
 두 계정이 같은 Steam ID를 연결하면, 한 사람의 라이브러리가 두 계정에 복제된다.
+UNIQUE만 있으면 남의 공개 ID를 먼저 적어 진짜 주인을 막을 수 있어서, 사용자가 적는 값이 아니라 Steam OpenID로 주인을 확인한 값만 저장한다 ([decisions/0015](decisions/0015-steam-openid-link.md), `ARCHITECTURE` 5.4절).
+
+**마지막 동기화 시각** *(구현 전, M8)*
+
+설정 화면에 "마지막 동기화"를 보이고 동기화 요청 제한을 사람마다 세려고 `users`에 마지막 동기화 시각을 둔다. 연결을 해제하면 함께 비운다. 이름과 타입은 마이그레이션이 원본이 된다.
 
 **`nickname`이 UNIQUE가 아닌 이유**
 
@@ -248,6 +253,10 @@ Steam 게임까지 포함하면 같은 제목이 여러 행일 수 있어 어느
 | `title` | 한국어 이름 | `steam_apps`의 영어 이름 |
 | `cover_url` | `header_image` 주소 | NULL. 다음 사람이 같은 게임을 등록할 때 채운다 |
 | `released_at` | `2017년 2월 24일` 형식만 날짜로 읽는다 | NULL. `coming_soon`, `Q1 2027` 같은 값도 NULL이고 등록은 성공한다 |
+
+**동기화(M8)로 처음 만들어지는 Steam 게임** ([decisions/0016](decisions/0016-steam-sync-details-later.md))
+
+동기화는 `appdetails`를 부르지 않고 `GetOwnedGames` 응답의 영어 이름으로 행을 만든다. `cover_url` · `released_at` · 장르는 비운 채 시작하고, 나중에 한 번에 몇 개씩 위 표처럼 채운다. 언제 · 몇 개씩인지는 구현하면서 여기에 적는다. 위 표의 "다음 사람이 등록할 때 채운다"도 같은 채우기가 맡게 된다.
 
 **`cover_url`을 계산하지 않고 저장하는 이유**
 
@@ -367,6 +376,10 @@ API 응답이 덮어쓰면 안 된다. 동기화 규칙:
 - 구매가, 평점, 한줄평은 Steam에 없는 정보이므로 항상 보존
 
 이 컬럼 하나가 "자동 수집 데이터와 수동 데이터의 충돌"이라는 문제 전체를 해결한다.
+`source`는 **게임의 출처가 아니라 플레이타임의 출처**다. Steam 검색으로 등록한 기록도 사용자가 플레이타임을 적었으니 `MANUAL`이다.
+`source`를 바꾸는 것은 사용자뿐이다 ─ `STEAM` 기록의 플레이타임을 손으로 고치면 `MANUAL`이 되고, Steam 게임의 기록은 상세 화면에서 `STEAM`으로 되돌릴 수 있다. 직접 등록한 게임(appid 없음)은 늘 `MANUAL`이다 (`ARCHITECTURE` 5.1절).
+
+동기화로 새로 만든 기록의 `status`는 플레이타임이 0분이면 `BACKLOG`, 1분 이상이면 `PLAYING`이다. 그 뒤로 동기화는 `status`를 바꾸지 않는다. `purchased_at` · `purchase_price`는 Steam이 주지 않아 비어 있다.
 
 **보유 기록의 `game_id`는 바꾸지 않는다**
 

@@ -23,3 +23,6 @@
 | [0011](0011-manual-games-per-user.md) | 직접 등록한 게임은 사용자별로 나누고 Steam 게임만 공유 | 채택 |
 | [0012](0012-caddy-proxy.md) | 프록시는 Nginx 대신 Caddy | 채택 |
 | [0013](0013-r2-offsite-backup.md) | 서버 밖 백업은 Cloudflare R2에 14일 | 채택 |
+| [0014](0014-steam-discord-before-m6.md) | M8 Steam 동기화 · M11 Discord 로그인을 M6 · M7보다 먼저 | 채택 |
+| [0015](0015-steam-openid-link.md) | Steam 계정 연결은 Steam OpenID로 주인 확인 (ID 입력 안 함) | 채택 |
+| [0016](0016-steam-sync-details-later.md) | 동기화는 게임 목록만으로, 상세 정보는 나중에 조금씩 | 채택 |

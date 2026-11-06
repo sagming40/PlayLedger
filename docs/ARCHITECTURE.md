@@ -483,17 +483,36 @@ flowchart TD
     Start["동기화 시작<br/>버튼(M8) 또는 주기 실행(M9)"] --> Call["Steam API 호출<br/>보유 게임 + 누적 플레이타임(분)"]
     Call --> G{"게임마다:<br/>games에 steam_appid 있음?"}
     G -->|"있음"| UseG["기존 game 사용"]
-    G -->|"없음"| NewG["games에 새로 추가"]
+    G -->|"없음"| NewG["games에 새로 추가<br/>응답의 영어 이름만, 상세는 나중에 (0016)"]
     UseG --> E{"내 entries에<br/>기록 있음?"}
     NewG --> E
-    E -->|"없음"| NewE["새로 생성, source = STEAM<br/>세션은 만들지 않음 (기준점)"]
+    E -->|"없음"| NewE["새로 생성, source = STEAM<br/>0분이면 미시작, 아니면 플레이중<br/>세션은 만들지 않음 (기준점)"]
     E -->|"source = MANUAL"| Skip["건드리지 않음"]
-    E -->|"source = STEAM"| Diff{"누적값이<br/>늘었나?"}
-    Diff -->|"늘었음"| Upd["플레이타임 갱신<br/>+ 증가분을 오늘 세션으로 기록 (M10)"]
+    E -->|"source = STEAM"| Diff{"누적값이<br/>달라졌나?"}
+    Diff -->|"달라짐"| Upd["플레이타임을 Steam 값으로<br/>+ 늘어난 만큼만 오늘 세션 (M10)"]
     Diff -->|"그대로"| Same["변경 없음"]
 ```
 
-동기화가 끝나면 "추가 N개 · 갱신 M개 · 변경 없음 K개"를 반환한다.
+동기화가 끝나면 "추가 N개 · 갱신 M개 · 변경 없음 K개 · 직접 입력이라 건너뜀 S개"와, 제목이 같은 직접 등록 게임이 있으면 그 수를 반환한다.
+
+**지키는 규칙** (M8 사전 검증, [decisions/0015](decisions/0015-steam-openid-link.md) · [0016](decisions/0016-steam-sync-details-later.md))
+
+| 상황 | 규칙 |
+|---|---|
+| 같은 사용자가 동시에 두 번 | 사용자마다 잠금을 잡아 줄 세운다. 넣을 때 이미 있으면 넘어간다(`ON CONFLICT`). 다른 사람이 같은 게임을 동시에 동기화하거나, 내가 그 게임을 검색으로 등록해도 같다 |
+| 너무 잦은 동기화 | 사용자마다 요청 제한 (`core/rate_limit.py`) |
+| 비공개 프로필 | Steam은 에러 대신 빈 응답(`game_count` 없음)을 준다. 게임 0개와 구분해 409 + 공개 안내 (R-01) |
+| Steam이 죽거나 느림 | 502 · 504. 동기화 하나를 트랜잭션 하나로 묶어 아무것도 저장하지 않는다 |
+| 기록 상한 5,000개 | 넣을 수 있는 데까지 넣고 건너뛴 수를 알린다 |
+| Steam에서 사라진 게임 | 지우지 않는다 |
+| 플레이타임이 줄어듦 | Steam 값으로 맞춘다. 세션(M10)은 늘어난 만큼만 만든다 |
+| 구매가 · 평점 · 한줄평 · 상태 | 동기화가 절대 바꾸지 않는다. 상태는 새로 만들 때만 정한다 |
+
+**출처(`source`)를 바꾸는 것은 사용자뿐이다**
+
+- `STEAM` 기록의 플레이타임을 손으로 고치면 `MANUAL`이 된다. 다음 동기화가 사용자가 고친 값을 덮어쓰지 않게 한다
+- Steam 게임(appid 있음)의 기록은 상세 화면 스위치로 `MANUAL` ↔ `STEAM`을 바꿀 수 있다. Steam 검색으로 등록한 기록도 여기서 Steam 플레이타임을 받게 된다. `STEAM`으로 바꾸면 다음 동기화가 값을 채운다
+- 직접 등록한 게임(appid 없음)은 늘 `MANUAL`이다
 
 **처음 가져올 때 세션을 만들지 않는 이유**
 
@@ -552,7 +571,32 @@ sequenceDiagram
 - **외부 호출은 DB 잠금을 잡기 전에 한다.** Steam이 느릴 때 게임 행을 잠근 채 기다리면 같은 게임을 등록하는 다른 사용자까지 멈춘다
 - **보유 기록의 `source`는 `MANUAL`이다.** `STEAM`이면 M8 동기화가 사용자가 입력한 플레이타임을 덮어쓴다(5.1절). 게임이 Steam에 있는지는 `games.steam_appid`가 말한다
 - 등록 요청은 `title` 또는 `steam_appid` 중 정확히 하나만 받는다
-- 미러링은 `server/`에서 `python -m app.scripts.sync_steam_apps`로 손으로 돌린다 (M9 전까지). 테이블이 비어 있어도 직접 입력은 된다
+- 미러링은 `server/`에서 `python -m app.scripts.sync_steam_apps`로 손으로 돌린다 (M9 전까지). 운영은 매주 타이머(`SERVER` 3.10절). 테이블이 비어 있어도 직접 입력은 된다
+
+### 5.4 Steam 계정 연결 (M8, [decisions/0015](decisions/0015-steam-openid-link.md))
+
+```mermaid
+sequenceDiagram
+    participant B as 브라우저 (로그인됨)
+    participant A as API
+    participant S as steamcommunity.com/openid
+
+    B->>A: 연결 시작
+    A-->>B: 무작위 값을 만들어 두고 Steam 주소로 보냄 (return_to = 우리 콜백)
+    B->>S: Steam 로그인
+    S-->>B: 콜백 주소로 돌려보냄 (claimed_id · 서명)
+    B->>A: 콜백 (무작위 값 · Steam 응답)
+    A->>A: 무작위 값이 이 사용자 것인지 확인
+    A->>S: check_authentication (응답을 그대로 되물음)
+    S-->>A: is_valid:true
+    A->>A: claimed_id에서 SteamID64를 꺼내 users.steam_id에 저장
+    A-->>B: 설정 화면으로 (연결됨 · 이미 다른 계정 · 실패)
+```
+
+- 콜백은 Steam 응답을 그대로 믿지 않는다. 같은 값을 Steam에 되물어 `is_valid:true`일 때만 받는다. `claimed_id`는 `https://steamcommunity.com/openid/id/<17자리 숫자>` 모양만 받는다
+- 무작위 값은 짧게 살고 한 번만 쓴다. 다른 사이트가 내 브라우저로 콜백을 불러 내 계정에 남의 Steam을 붙이는 것을 막는다(M11 OAuth의 `state`와 같은 역할)
+- 다른 계정에 이미 연결된 Steam이면 409. 연결 해제는 `steam_id`만 비운다
+- 엔드포인트 이름과 무작위 값을 어디에 두는지는 구현하며 정하고, 계약은 Swagger가 원본이다
 
 ---
 
