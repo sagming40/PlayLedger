@@ -99,7 +99,17 @@ class FakeSteam:
             200, text="ns:http://specs.openid.net/auth/2.0\nis_valid:true\n"
         )
 
+        # 보유 게임 목록(GetOwnedGames). owned에 게임 dict 목록을 넣어 두면 그대로 답한다. 이상한 답은 owned_answer로
+        self.owned: list[dict] = []
+        self.owned_calls = 0
+        self.owned_answer = None
+
     def handle(self, request: httpx.Request) -> httpx.Response:
+        if request.url.path.startswith("/IPlayerService/GetOwnedGames"):
+            self.owned_calls += 1
+            if self.owned_answer is not None:
+                return self.owned_answer(request)
+            return httpx.Response(200, json={"response": {"game_count": len(self.owned), "games": self.owned}})
         if request.url.host == "steamcommunity.com":
             self.openid_calls.append(dict(httpx.QueryParams(request.content.decode())))
             return self.openid_answer(request)
