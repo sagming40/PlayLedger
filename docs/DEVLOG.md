@@ -8,11 +8,11 @@
 | 항목 | 내용 |
 |---|---|
 | 단계 | **M5 ✅ 2026-11-06** (기록은 [DEVLOG_M5](archive/DEVLOG_M5.md), 닫기 전 점검 표는 그 파일 2026-11-06 (6)). **M6 🔄 Steam 동기화** ─ 번호를 다시 매겼다(2026-11-06 (8), [decisions/0017](decisions/0017-milestone-renumber.md)): M6 Steam 동기화 → M7 자동 동기화 → M8 Discord → 확장 M9 · M10 · M11(순서 없음). 옛 번호는 [archive/README](archive/README.md) 대응표. M5.5 서버 이사는 12월. `v1.0.0` 태그 있음. **`https://play.sagming.com` 운영 중**, 배포된 커밋 `c34b701` (`task deploy`) |
-| 진행 중 | **M6 Steam 계정 연결(서버) · 보유 게임 조회는 끝, 운영 배포 전 ─ 다음은 병합 규칙(`ARCHITECTURE` 5.1절)과 동기화 API**(2026-11-06 (11) · (12)). 화면 버튼(S-06)은 아직 없어서 `/settings?steam=` 결과를 화면이 안 읽는다. 방식: 마이그레이션까지 사용자가 직접 쳤고 그 뒤로는 **자동**(사용자 지시). 먼저 읽을 것: `PLAN` M6 작업 목록, [decisions/0016](decisions/0016-steam-sync-details-later.md) · [0019](decisions/0019-steam-purchase-info.md), `ARCHITECTURE` 5.1 · 5.4절. 운영 중인 것: 매일 백업(서버 14개 + R2 14일) · 디스크 감시(`/api/health` `disk`) · Steam 매주 타이머 · `uptime`. R2 14일 정리가 실제로 지우는 것은 11-20 이후에 처음 본다. `uptime` 예약 실행은 지금까지 3번(11-05 22:28 · 11-06 05:48 · 10:29 KST) ─ 30분마다인데 하루 몇 번만 돌아서 며칠 지켜본다 |
-| 다음에 할 일 | ① `uptime` 실행 간격을 며칠 지켜본다, 새 "디스크 여유" 단계가 통과하는지 본다 ② 11-08(일) 아침 `journalctl -u play-steam-sync`로 첫 예약 실행을 본다 ③ 11-20 이후 R2 버킷에서 14일 지난 사본이 지워졌는지 본다(`SERVER` 5절 맨 아래) ④ M6 `PLAN` 작업 목록 순서대로(Steam 계정 연결 → 게임 목록 → 병합 → 상세 채우기 → 출처 · 구매 정보 → 화면). 로컬 시험은 사용자의 실제 Steam 계정(게임 세부 정보 공개 필요) ⑤ M6.5 구매 기록 가져오기 ─ 시작할 때 사용자에게 Steam 구매 기록 · 라이선스 목록 페이지 복사본을 받아 형식부터 본다 ⑥ M6.7 비밀번호 변경 · 찾기 + 이메일 인증(새 단계, 메일 발송 서비스부터 정한다) ⑦ 12월 M5.5 서버 이사, M7 · M8, 그다음 확장 셋. 코드 · 문서는 Claude 자동, 서버 명령은 사용자가 친다. **Vultr 크레딧 2026-11-30 만료, 12월 AWS 이사** |
+| 진행 중 | **M6 서버 쪽 동기화는 끝났다 ─ Steam 연결(OpenID) · 보유 게임 조회 · 병합 · `POST /api/steam/sync`**(2026-11-06 (11) · (12), 2026-11-07 (1)). 운영에는 아직 안 올렸다(배포된 커밋은 그대로 `c34b701`). **화면은 하나도 없다** ─ 설정의 Steam 영역(S-06)이 없어 연결 · 동기화를 버튼으로 못 하고, 콜백 결과 `/settings?steam=`도 화면이 안 읽는다. **여기서 이어 간다: S-06 Steam 연동 영역(연결 · 지금 동기화 · 결과 요약 · 마지막 동기화 · 해제 · 오류 문구)** → 운영 배포 → 운영에서 내 계정으로 동기화(완료 기준). 방식은 **자동**(사용자 지시, 2026-11-06). 먼저 읽을 것: `ARCHITECTURE` 5.1절 · 5.4절의 "구현하며 정한 것" 표, `DESIGN` S-06(1장 · 3.4 · 3.6절), 목업 `Settings.dc.html`. 남은 M6 작업(상세 채우기 · 출처 규칙 · 구매 정보 · S-10 · 개인정보 안내)은 `PLAN` M6 작업 목록. 운영 중인 것: 매일 백업(서버 14개 + R2 14일) · 디스크 감시(`/api/health` `disk`) · Steam 매주 타이머 · `uptime`. R2 14일 정리가 실제로 지우는 것은 11-20 이후에 처음 본다. `uptime` 예약 실행은 지금까지 3번(11-05 22:28 · 11-06 05:48 · 10:29 KST) ─ 30분마다인데 하루 몇 번만 돌아서 며칠 지켜본다 |
+| 다음에 할 일 | ① `uptime` 실행 간격을 며칠 지켜본다, 새 "디스크 여유" 단계가 통과하는지 본다 ② 11-08(일) 아침 `journalctl -u play-steam-sync`로 첫 예약 실행을 본다 ③ 11-20 이후 R2 버킷에서 14일 지난 사본이 지워졌는지 본다(`SERVER` 5절 맨 아래) ④ M6 S-06 화면 → 운영 배포(`task deploy`, 운영 `PUBLIC_BASE_URL`은 `compose.prod.yaml`에 이미 있다) → 상세 채우기 → 출처 규칙 · 스위치 → 구매 정보 · S-10. 로컬 시험은 사용자의 실제 Steam 계정(게임 세부 정보 공개 필요), 방법은 2026-11-07 (1) "다른 기기에서 로컬 시험" ⑤ M6.5 구매 기록 가져오기 ─ 시작할 때 사용자에게 Steam 구매 기록 · 라이선스 목록 페이지 복사본을 받아 형식부터 본다 ⑥ M6.7 비밀번호 변경 · 찾기 + 이메일 인증(새 단계, 메일 발송 서비스부터 정한다) ⑦ 12월 M5.5 서버 이사, M7 · M8, 그다음 확장 셋. 코드 · 문서는 Claude 자동, 서버 명령은 사용자가 친다. **Vultr 크레딧 2026-11-30 만료, 12월 AWS 이사** |
 | 판단이 남은 것 | 모바일 첫 줄이 요약 줄 도착 때 24px 밀리는 것. S-05 방치 일수 색(180일 미만도 포인트 색). 개인정보 안내 문구(법률 검토 안 받음). 아이폰 확인. 비밀번호 보기 버튼을 Edge · 실제 폰에서 아직 안 봤다(운영에는 올라감). 백업 개인키 사본(`SERVER` 3.7절) |
-| 기기별로 할 일 | **회사 PC · 노트북 공통**: `git pull` 뒤 `alembic upgrade head`(새 마이그레이션 `e4a48be57f0f` ─ `users.steam_synced_at`). 새 패키지는 없다. M6 코드를 시작하면 OpenID 콜백 시험에 로컬 API(`8001`) · 화면(`5173`)이 둘 다 떠 있어야 한다. **노트북**: 개발 환경 끝남(2026-11-06 (2), Task 3.54.0 있음). 서버 열쇠 · `venv.broken` 정리도 끝(2026-11-06 (10)). **서버 접속**: 세 기기 모두 된다(`ssh play`, 열쇠는 기기마다 따로). **전역 설정**(노트북 열쇠 반영): 집 PC는 원본 `~/.claude/CLAUDE.md`를 드라이브 사본 `desktop_hm_CLAUDE.md`로 맞춘다. 회사 PC는 드라이브 `.claude/README.md` "회사 PC에 올릴 것"을 반영한다 |
-| 집 PC에만 있는 것 | 클린룸으로 새로 만든 개발 DB(확인용 계정 · 게임 기록). `.claude/launch.json`은 실행 중인 `5173`에 붙기만 하는 설정으로 새로 만들었다(커밋 안 함) |
+| 기기별로 할 일 | **회사 PC · 노트북 공통**: `docker compose up -d` → `git pull` → `server/`에서 `alembic upgrade head`(새 마이그레이션 `e4a48be57f0f` ─ `users.steam_synced_at`) → `pytest`(394 passed가 기대값). 새 패키지는 없다. Steam 시험에는 `server/.env`의 `STEAM_API_KEY`가 있어야 하고(없으면 동기화가 502), OpenID 콜백 시험은 로컬 API(`8001`) · 화면(`5173`)이 둘 다 떠 있어야 한다. `PUBLIC_BASE_URL`은 비워 두면 된다(기본 `http://localhost:5173`). **노트북**: 개발 환경 끝남(2026-11-06 (2), Task 3.54.0 있음). 서버 열쇠 · `venv.broken` 정리도 끝(2026-11-06 (10)). **서버 접속**: 세 기기 모두 된다(`ssh play`, 열쇠는 기기마다 따로). **전역 설정**(노트북 열쇠 반영): 집 PC는 원본 `~/.claude/CLAUDE.md`를 드라이브 사본 `desktop_hm_CLAUDE.md`로 맞춘다. 회사 PC는 드라이브 `.claude/README.md` "회사 PC에 올릴 것"을 반영한다 |
+| 집 PC에만 있는 것 | 클린룸으로 새로 만든 개발 DB(확인용 계정 · 게임 기록). Steam 시험 계정 `steamlink-…@example.com` 둘(id 2 · 3, 비밀번호는 무작위라 아무도 모른다) ─ id 3에 사용자 Steam이 연결돼 있고 동기화로 17개(STEAM 16 · 직접 입력 1)가 들어 있다. `.claude/launch.json`(커밋 안 함)에 `web`(붙기만) · `api-dev`(uvicorn 8001) · `web-dev`(npm run dev) 세 설정 |
 | 회사 PC에만 있는 것 | **백업 개인키**(`~/playledger-backup.key`), 잠긴 운영 백업 8개(`~/playledger-backups/`, 11-06 받음). `.claude/worktrees/brave-hawking-fc3e7c`(병합됨, 지워도 된다). 헤드리스 Edge 확인 스크립트는 저장소에 없다 ─ 필요하면 [DEVLOG_M4.5](archive/DEVLOG_M4.5.md)를 보고 새로 만든다 |
 
 ## 작성 규칙
@@ -21,6 +21,44 @@
 - 기기 표기는 `README` 개발 환경 표를 따른다 (데스크톱 A · 데스크톱 B · 노트북)
 - **막혔던 점은 해결됐어도 반드시 남긴다.** 같은 실수를 반복하지 않기 위한 기록이고, 나중에 이 프로젝트를 설명할 때 "어떤 문제를 어떻게 해결했는가"가 결과물보다 더 중요한 이야기가 된다
 - 환경 버전은 여기 적지 않는다. `requirements.txt` · `package.json` · `ci.yml`이 원본이고, 기기별 런타임은 `README`에 있다
+
+---
+
+## 2026-11-07 (1) · M6 병합 규칙 + 동기화 API (데스크톱 A, 자동)
+
+### 한 일
+- 설계 · 사전 검증을 먼저 보여 주고 사용자 확인 뒤 구현(진행 순서: 병합 서비스 → 테스트 → API · 오류 · 제한 → 로컬 실제 동기화 → 문서)
+- `services/steam_sync.py` `merge_owned_games` ─ 사용자 행 잠금 → 잠근 뒤 `steam_id` · 60초 간격 다시 확인 → 게임 · 기록 한 번에 읽기 → STEAM 기록 플레이타임만 갱신(`source='STEAM'` SQL 재확인) → 상한 → 없는 게임 `ON CONFLICT DO NOTHING` → 새 기록(`STEAM`, 0분 `BACKLOG` · 아니면 `PLAYING`) `ON CONFLICT DO NOTHING` → 같은 제목 직접 등록 게임 수 → `steam_synced_at`. commit 한 번
+- `routers/steam.py` `POST /api/steam/sync` ─ 미연결 · 비공개 409, Steam 시간 초과 504 · 그 밖 502, 60초 간격 429(`Retry-After`), 실패 포함 1시간 10번(`core/rate_limit.py` `steam_sync_limiter`). Steam 호출은 잠금 밖
+- 기록 상한 상수를 `services/steam_sync.py` 하나로 모았다(등록 API가 가져다 쓴다, 동작 변경 없음)
+- 테스트 `test_steam_sync.py` 25개, `conftest` FakeSteam이 `GetOwnedGames`도 답한다(`owned` · `owned_answer`)
+- 문서: `ARCHITECTURE` 5.1절 "구현하며 정한 것" 표, `DATA_MODEL` 2.1절 `steam_synced_at`, `PLAN` M6 작업 6개 체크 · 진행 표, 이 DEVLOG "현재 상태"(다른 기기에서 이어 가도록)
+
+### [설계]
+- 사용자 확인: `BACKLOG`인 Steam 기록의 플레이타임이 늘어도 상태는 바꾸지 않는다(5.1절 "상태는 새로 만들 때만" 그대로)
+- 넣지 않을 게임(상한 초과)은 공용 `games`에도 만들지 않는다 ─ 2만 개 라이브러리가 공용 표를 채우지 않게
+- 성공 간격은 DB(`steam_synced_at`), 실패 연타는 메모리 제한으로 나눴다 ─ 실패는 `synced_at`을 바꾸지 않아 DB 간격만으로는 비공개 상태 연타가 Steam을 계속 부른다
+- 목록은 `IN (...)` 대신 `= ANY(배열)` ─ 원소마다 값이 하나씩 늘지 않는다
+
+### 막힌 것
+- **동시 실행 테스트가 실제로는 겹치지 않았다** ─ 증상: 사용자 잠금(`with_for_update`)을 빼도 23개가 모두 통과. 원인: `asyncio.gather`로 두 동기화를 띄워도 앞의 것이 금방 끝나 뒤의 것이 간격 검사에 걸렸다. 해결: 테스트가 잠금을 직접 쥐고 "기다리는 중(`not task.done()`)"을 확인한 뒤 놓는 `test_sync_waits_for_user_lock`. 배운 것: 동시성 테스트는 순서를 테스트가 지휘해야 하고, 막는 코드를 빼 봐서 실패하는지로 확인한다
+- **`source='STEAM'` 재확인을 빼도 통과** ─ 겹치는 경우(다른 탭이 MANUAL로 바꾸고 아직 commit 전)를 만드는 `test_source_changed_to_manual_during_sync`를 더했다
+- **`entries` ON CONFLICT를 빼도 통과 ─ 버그가 아니라 실제로 닿지 않는 길** ─ 검색 등록의 FK 검사가 `users` 행에 KEY SHARE 잠금을 걸어 동기화의 `FOR UPDATE`와 줄을 선다. 그래서 동기화는 commit된 MANUAL 기록을 읽고 건너뛴다. 두 번째 방어선으로 남기고 주석 · 테스트 설명을 실제 동작으로 고쳤다
+- 막는 코드 빼 보기의 최종 결과(임시 스크립트, 저장소에 없음): 사용자 잠금 · `games` ON CONFLICT · STEAM 재확인 · 잠근 뒤 간격 재확인을 각각 빼면 해당 테스트가 실패, `entries` ON CONFLICT만 통과(위 이유)
+- 처음 bash 한 줄로 빼 보기를 돌리다가 heredoc이 꼬여 pytest가 멈췄다 ─ 중단하고 원본 복구(`git status`로 확인), Python 스크립트 + 실행마다 90초 제한으로 다시 했다
+- 날짜가 바뀐 뒤 첫 `pytest`가 `ConnectionRefusedError` ─ DB 컨테이너가 꺼져 있었다(`docker compose up -d`)
+
+### 검증 (관찰값)
+- `pytest` **394 passed**(동기화 25 포함)
+- 로컬 API(`8001`)로 실제 동기화(시험 계정 id 3, 사용자 Steam, 개발 키): 먼저 문명 5를 검색 등록(MANUAL, CLEARED · 600분 · 3,300원 · 평점 5) → `POST /api/steam/sync` **200** `added 16 · skipped_manual 1 · 나머지 0` → 즉시 다시 **429 `Retry-After: 60`** → 기록 17개(STEAM 16 · MANUAL 1, Steam 라이브러리 17개와 같다), 상태 BACKLOG 3 · PLAYING 13, **문명 5의 상태 · 플레이타임 · 구매가 · 평점 · 한줄평 · updated_at이 그대로**
+- **확인 못 한 것**: 운영 배포 · 운영에서의 동기화, 5,000개급 라이브러리의 실제 소요 시간(테스트는 상한을 2로 줄여 봄), 실제 비공개 프로필 응답
+
+### 다른 기기에서 로컬 시험
+- 화면 버튼이 없는 동안 Steam 연결은 브라우저로 한다: `5173`에서 로그인한 탭의 콘솔에서 `fetch('/api/steam/link/start', {method:'POST', headers:{Authorization:'Bearer <access>'}})`의 `redirect_url`로 이동 → Steam 로그인 → **동의 화면의 "로그인"까지 5분 안에**. access 토큰은 화면이 메모리에만 들고 있으니, 화면이 떠 있는 탭에서 `/api/auth/refresh`를 따로 부르지 않는다(재발급 동시 요청 함정, 2026-11-06 (11))
+- 동기화는 Swagger(`8001/docs`) `POST /api/steam/sync`에 그 access 토큰을 넣어 부른다. 60초 안에 다시 부르면 429가 정상이다
+
+### 다음에 할 일
+- S-06 Steam 연동 영역(화면) → 운영 배포 → 운영에서 내 계정으로 동기화
 
 ---
 

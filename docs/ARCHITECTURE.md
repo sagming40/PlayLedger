@@ -529,6 +529,22 @@ flowchart TD
 - Steam 게임(appid 있음)의 기록은 상세 화면 스위치로 `MANUAL` ↔ `STEAM`을 바꿀 수 있다. Steam 검색으로 등록한 기록도 여기서 Steam 플레이타임을 받게 된다. `STEAM`으로 바꾸면 다음 동기화가 값을 채운다
 - 직접 등록한 게임(appid 없음)은 늘 `MANUAL`이다
 
+**구현하며 정한 것** (2026-11-07, `routers/steam.py` `POST /api/steam/sync` · `services/steam_sync.py`)
+
+| 상황 | 규칙 |
+|---|---|
+| 순서 | 싼 검사(미연결 409 · 60초 간격 429) → Steam 호출(**잠금 밖**, 읽기 트랜잭션은 닫는다) → 사용자 행 `FOR UPDATE` → 합치기 → commit 한 번 |
+| 잠근 뒤 다시 보는 것 | `steam_id`가 받아 올 때와 같은지(해제 · 다른 Steam이면 409, 넣지 않음), 60초 간격(앞사람이 방금 끝냈으면 429) |
+| 요청 제한 | 성공 간격은 `users.steam_synced_at` 60초(DB라 재시작해도 남음). 실패(비공개 · 장애)를 연타해 Steam을 계속 부르지 않게 사용자별 1시간 10번(`core/rate_limit.py`) |
+| 오류 | 미연결 · 비공개 409(R-01 안내 문구), Steam 시간 초과 504 · 그 밖 502(키 문제 401 · 403 포함, 원인은 로그에만) |
+| 한 번에 | 게임 · 기록을 게임마다 묻지 않고 `= ANY(배열)` 한 번으로 읽고, 넣을 때는 5,000행씩 끊는다(asyncpg 값 32,767개 한도) |
+| 상한 | 넣을 몫만큼만, appid 순으로 고정. 넣지 않을 게임은 공용 `games`에도 만들지 않는다. 갱신은 상한과 상관없다 |
+| 새 게임 제목 | `usable_title(Steam 영어 이름, 미러 이름)`, 둘 다 못 쓰면 건너뛰고 `skipped_no_title`로 센다 |
+| 갱신 SQL | `source='STEAM'`을 SQL에서 한 번 더 본다 ─ 읽은 뒤 다른 탭에서 `MANUAL`로 바꾼 기록을 덮어쓰지 않는다(기록 수정은 사용자 행을 잠그지 않아 실제로 겹친다) |
+| 검색 등록과 겹침 | 등록의 FK 검사가 `users`에 KEY SHARE를 걸어 동기화 잠금과 줄을 선다. `entries` `ON CONFLICT DO NOTHING`은 두 번째 방어선 |
+| 결과 | `added` · `updated` · `unchanged` · `skipped_manual` · `skipped_limit` · `skipped_no_title` · `same_title_manual` · `synced_at` (본문 모양은 Swagger) |
+| 상태 | 새로 만들 때만 정한다. `BACKLOG`인 Steam 기록의 플레이타임이 늘어도 상태는 그대로(사용자 확인, 2026-11-07) |
+
 **처음 가져올 때 세션을 만들지 않는 이유**
 
 첫 동기화 시점의 누적값(예: 300시간)은 "지금까지의 전부"이지 "오늘 한 것"이 아니다.
