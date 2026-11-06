@@ -23,6 +23,7 @@ from app.schemas.entry import INT_MAX
 
 APP_LIST_URL = "https://api.steampowered.com/IStoreService/GetAppList/v1/"
 APP_DETAILS_URL = "https://store.steampowered.com/api/appdetails"
+OWNED_GAMES_URL = "https://api.steampowered.com/IPlayerService/GetOwnedGames/v1/"
 
 # 한 번에 받는 개수와 한 번에 넣는 개수는 따로 정한다
 # asyncpg는 쿼리 하나에 값을 32767개까지만 받는다 (5000행 × 2컬럼 = 10000개)
@@ -47,6 +48,30 @@ class SteamDetails:
     cover_url: str | None
     steam_genre_ids: list[str]
     released_at: date | None
+
+
+@dataclass(frozen=True)
+class OwnedGame:
+    """GetOwnedGames의 게임 하나. 이름은 영어고 없을 수도 있다 ─ 제목은 병합이 미러 이름과 함께 고른다"""
+
+    appid: int
+    name: str | None
+    playtime_minutes: int   # Steam의 playtime_forever ─ 처음부터의 누적(분)
+
+
+class SteamProfilePrivate(Exception):
+    """프로필 · 게임 세부 정보가 비공개라 목록을 못 봤다. 게임 0개와 다르다 (ARCHITECTURE 5.1절, R-01)"""
+
+
+class SteamUnavailable(Exception):
+    """Steam에 닿지 못했거나 답이 이상하다. timeout이면 504, 아니면 502로 알린다 (ARCHITECTURE 5.1절)
+
+    메시지에 주소 · 키 · Steam ID를 넣지 않는다 ─ 로그에 그대로 남는다
+    """
+
+    def __init__(self, reason: str, *, timeout: bool = False):
+        super().__init__(reason)
+        self.timeout = timeout
 
 
 # ─── 미러링 ─────────────────────────────────────────────
@@ -145,6 +170,76 @@ async def sync_steam_apps(
         total += await upsert_steam_apps(db, apps)
         await db.commit()
     return total
+
+
+# ─── 보유 게임 (동기화) ──────────────────────────────────
+
+
+async def fetch_owned_games(
+    client: httpx.AsyncClient, api_key: str, steam_id: str
+) -> list[OwnedGame]:
+    """이 Steam 계정의 게임 전부와 누적 플레이타임을 한 번에 받는다 (decisions/0016)
+
+    비유: 도서관 대출 기록 조회. 기록이 "0권"인 것과 "열람 거부"는 다르다 ─
+    Steam은 비공개 프로필에 오류 대신 빈 상자({"response": {}})를 준다. game_count가 없으면 거부로 읽는다
+    DB 잠금을 잡기 전에 부를 것 ─ fetch_app_details와 같은 이유
+    """
+    if not api_key:
+        raise SteamUnavailable("STEAM_API_KEY가 비어 있음")
+
+    try:
+        res = await client.get(
+            OWNED_GAMES_URL,
+            params={
+                "steamid": steam_id,
+                "include_appinfo": "true",            # 이름 ─ 미러에 없는 게임도 제목을 얻는다
+                "include_played_free_games": "true",  # 무료 게임도 한 번이라도 했으면 라이브러리에 있다
+                "format": "json",
+            },
+            headers={"x-webapi-key": api_key},        # 키는 URL에 싣지 않는다 (fetch_app_pages와 같음)
+        )
+    except httpx.TimeoutException:
+        raise SteamUnavailable("Steam 응답 시간 초과", timeout=True) from None
+    except httpx.HTTPError as e:
+        raise SteamUnavailable(f"Steam 연결 실패: {type(e).__name__}") from None
+
+    # 401 · 403은 우리 키 문제다. 사용자가 고칠 수 없으니 장애와 같게 보이고 로그로 안다
+    if res.status_code != 200:
+        raise SteamUnavailable(f"Steam 응답 오류: HTTP {res.status_code}")
+
+    try:
+        body = res.json()["response"]
+    except (ValueError, KeyError, TypeError):
+        raise SteamUnavailable("Steam 응답 형식이 예상과 다름") from None
+    if not isinstance(body, dict):
+        raise SteamUnavailable("Steam 응답 형식이 예상과 다름")
+    if "game_count" not in body:
+        raise SteamProfilePrivate
+
+    games = body.get("games", [])   # 진짜 0개면 games 자체가 빠진다
+    if not isinstance(games, list):
+        raise SteamUnavailable("Steam 응답 형식이 예상과 다름")
+
+    owned: dict[int, OwnedGame] = {}
+    for game in games:
+        # 행 하나가 이상해도 나머지는 받는다 (upsert_steam_apps와 같은 생각)
+        if not isinstance(game, dict):
+            continue
+        appid, minutes, name = game.get("appid"), game.get("playtime_forever", 0), game.get("name")
+        # bool은 int의 자식이다 ─ true가 appid 1로 들어오지 않게 따로 막는다
+        if not (isinstance(appid, int) and not isinstance(appid, bool) and 1 <= appid <= INT_MAX):
+            continue
+        if not (isinstance(minutes, int) and not isinstance(minutes, bool) and minutes >= 0):
+            minutes = 0
+        # 제목으로 쓸 수 있는지(길이 · 기호뿐)는 병합이 usable_title로 고른다. 여기서는 깨진 글자만 버린다
+        name = name.replace("\x00", "").strip() if isinstance(name, str) else None
+        if not name or contains_broken_text(name):
+            name = None
+        # 같은 appid가 두 번 오면 앞의 것을 쓴다 ─ 병합이 같은 기록을 두 번 만들려다 부딪히지 않게
+        owned.setdefault(
+            appid, OwnedGame(appid=appid, name=name, playtime_minutes=min(minutes, INT_MAX))
+        )
+    return list(owned.values())
 
 
 # ─── 검색 ───────────────────────────────────────────────
