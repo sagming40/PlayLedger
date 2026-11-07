@@ -121,5 +121,37 @@ export const useAuthStore = defineStore('auth', () => {
     user.value = null
   }
 
-  return { user, isReady, restoreFailed, isAuthenticated, sessionEnd, restore, login, register, logout, deleteAccount }
+  /**
+   * 서버의 지금 내 정보로 다시 맞춘다 (S-06 ─ 다른 탭에서 Steam을 연결 · 해제했을 때)
+   * 실패하면 지금 값을 그대로 둔다. 401이면 client.ts가 로그인 상태를 비운다
+   */
+  async function reloadUser() {
+    try {
+      const fresh = await authApi.me()
+      // 기다리는 사이 로그아웃했다 ─ 끝난 세션을 되살리지 않는다
+      if (user.value !== null) user.value = fresh
+    } catch {
+      // 화면은 이미 오류 문구를 보이고 있다. 여기서 또 알리지 않는다
+    }
+  }
+
+  /** 응답으로 이미 아는 값만 고친다 (동기화 결과의 synced_at · Steam 이름) ─ /me를 또 부르지 않는다 */
+  function patchUser(patch: Partial<User>) {
+    if (user.value !== null) user.value = { ...user.value, ...patch }
+  }
+
+  return {
+    user,
+    isReady,
+    restoreFailed,
+    isAuthenticated,
+    sessionEnd,
+    restore,
+    login,
+    register,
+    logout,
+    deleteAccount,
+    reloadUser,
+    patchUser,
+  }
 })

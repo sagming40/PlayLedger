@@ -11,6 +11,10 @@ export interface User {
   email: string
   nickname: string
   created_at: string
+  // S-06 Steam 연동 영역 (server/app/schemas/user.py UserRead). 연결 안 했으면 셋 다 null
+  steam_id: string | null
+  steam_synced_at: string | null // UTC 시각 ─ ...Z (시각 파서로 읽는다)
+  steam_persona_name: string | null // 못 받았으면 null ─ 화면은 "Steam 계정 연결됨"으로 보인다
 }
 
 // 아래 4개 함수는 "주문서 양식"이다

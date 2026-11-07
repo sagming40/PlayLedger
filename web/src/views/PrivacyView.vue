@@ -21,6 +21,10 @@ const backTo = computed(() => (auth.isAuthenticated ? '/settings' : '/login'))
         <li>이메일, 닉네임 ─ 로그인과 화면 표시에 써요</li>
         <li>비밀번호 ─ 원문이 아니라 되돌릴 수 없게 변환한 값만 저장해요</li>
         <li>게임 기록 ─ 직접 입력한 제목, 구매일, 구매가, 플레이타임, 평점, 한줄평이에요</li>
+        <li>
+          Steam을 연결하면 Steam 계정 번호(Steam ID), Steam 이름, 마지막 동기화 시각 ─ 내 라이브러리를 가져오고 설정 화면에 보여 주는 데
+          써요. 연결을 해제하면 지워지고, 가져온 게임 기록은 남아요
+        </li>
         <li>로그인 유지 쿠키 ─ 14일 동안 로그인을 유지하고, 스크립트가 읽을 수 없어요</li>
         <li>화면 테마 ─ 서버가 아니라 이 브라우저에만 저장해요</li>
       </ul>
@@ -31,6 +35,10 @@ const backTo = computed(() => (auth.isAuthenticated ? '/settings' : '/login'))
       <ul class="list-disc pl-5">
         <li>입력한 내용을 다른 회사나 사람에게 넘기거나 팔지 않고, 광고에 쓰지 않아요</li>
         <li>Steam 게임을 고르면 서버가 Steam에 게임 번호만 물어봐요. 내 계정 정보는 보내지 않아요</li>
+        <li>
+          Steam을 연결할 때는 Steam 로그인 화면으로 가서 Steam이 직접 확인해요. 비밀번호는 PLAYLEDGER로 오지 않아요. 동기화할 때는 서버가
+          Steam ID로 보유 게임 · 플레이타임 · Steam 이름을 Steam에 물어봐요
+        </li>
         <li>커버 이미지는 브라우저가 Steam 서버에서 직접 받아요. 이때 Steam에 접속 IP가 전달돼요</li>
         <li>접속 IP는 비밀번호 대입을 막는 요청 제한과 서버 접속 기록에 쓰여요</li>
       </ul>
