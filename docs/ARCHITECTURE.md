@@ -542,7 +542,8 @@ flowchart TD
 | 새 게임 제목 | `usable_title(Steam 영어 이름, 미러 이름)`, 둘 다 못 쓰면 건너뛰고 `skipped_no_title`로 센다 |
 | 갱신 SQL | `source='STEAM'`을 SQL에서 한 번 더 본다 ─ 읽은 뒤 다른 탭에서 `MANUAL`로 바꾼 기록을 덮어쓰지 않는다(기록 수정은 사용자 행을 잠그지 않아 실제로 겹친다) |
 | 검색 등록과 겹침 | 등록의 FK 검사가 `users`에 KEY SHARE를 걸어 동기화 잠금과 줄을 선다. `entries` `ON CONFLICT DO NOTHING`은 두 번째 방어선 |
-| 결과 | `added` · `updated` · `unchanged` · `skipped_manual` · `skipped_limit` · `skipped_no_title` · `same_title_manual` · `synced_at` (본문 모양은 Swagger) |
+| 결과 | `added` · `updated` · `unchanged` · `skipped_manual` · `skipped_limit` · `skipped_no_title` · `same_title_manual` · `synced_at` · `steam_persona_name` (본문 모양은 Swagger) |
+| Steam 이름 | 라이브러리를 받은 **뒤에만** `GetPlayerSummaries`를 부른다(잠금 밖, 비공개 · 장애로 멈출 동기화에 호출을 더하지 않는다). 못 받으면 옛 이름을 두고 동기화는 성공. 물어본 Steam ID의 행만 받는다 (`fetch_persona_name`, 2026-11-07) |
 | 상태 | 새로 만들 때만 정한다. `BACKLOG`인 Steam 기록의 플레이타임이 늘어도 상태는 그대로(사용자 확인, 2026-11-07) |
 
 **처음 가져올 때 세션을 만들지 않는 이유**
@@ -639,6 +640,8 @@ sequenceDiagram
 | Steam에 되묻기 전에 거르는 것 | `mode` · `ns` · `op_endpoint`, 응답의 `return_to`가 우리가 보낸 주소와 같은지(다른 사이트용 확인서), `claimed_id` 모양과 `identity` 일치, 서명 항목에 `claimed_id` · `return_to` 등이 다 있는지, 값 개수 · 길이 |
 | state 쪽지 | access 토큰 키에서 갈라 낸 다른 키로 서명(서로 바꿔 쓸 수 없다), `purpose`로 Steam · Discord 구분, 한 번 쓴 nonce는 메모리에 적어 둔다(프로세스 하나 기준, `--workers 1`) |
 | 동시에 | 연결은 "비어 있을 때만" 조건부 UPDATE 한 번 ─ 두 탭이 와도 덮어쓰지 않는다. 두 계정이 같은 Steam이면 UNIQUE에 걸린 쪽이 `taken` |
+| Steam 이름 | `linked`일 때만, 연결을 commit한 뒤 받는다. 저장은 "그 Steam이 아직 붙어 있을 때만" 조건부 UPDATE ─ 받는 사이 다른 탭에서 해제했으면 남기지 않는다. 못 받아도 `linked` (2026-11-07) |
+| 화면 (S-06) | `?steam=` 결과를 문구로 보이고 `router.replace`로 주소에서 지운다(새로고침 · 뒤로 가기에 다시 뜨지 않게). 모르는 값은 무시. 시작 · 동기화의 409는 다른 탭에서 연결 · 해제한 경우라 `/me`로 다시 맞춘다 (`composables/useSteamLink.ts`) |
 
 ---
 
