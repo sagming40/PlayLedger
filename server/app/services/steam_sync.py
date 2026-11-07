@@ -57,6 +57,7 @@ class SyncResult:
     skipped_no_title: int = 0    # 이름을 쓸 수 없어 게임을 만들지 못함
     same_title_manual: int = 0   # 새 Steam 기록 중, 내가 직접 등록한 게임과 제목이 같은 것
     synced_at: datetime | None = None
+    steam_persona_name: str | None = None   # 동기화 뒤의 Steam 이름 ─ 화면이 바로 고쳐 보인다
 
 
 def _any(ids: Iterable[int]):
@@ -73,7 +74,12 @@ def retry_after_seconds(synced_at: datetime | None, now: datetime) -> int:
 
 
 async def merge_owned_games(
-    db: AsyncSession, user_id: int, steam_id: str, owned: list[OwnedGame]
+    db: AsyncSession,
+    user_id: int,
+    steam_id: str,
+    owned: list[OwnedGame],
+    *,
+    persona_name: str | None = None,
 ) -> SyncResult:
     """받아 온 보유 게임 목록을 합치고 commit한다. 트랜잭션 하나 ─ 중간에 실패하면 아무것도 남지 않는다"""
     # 앞에서 읽기만 한 트랜잭션이 열려 있으면 닫는다 ─ 잠금은 새 트랜잭션에서 잡아야 최신 값을 본다
@@ -215,6 +221,10 @@ async def merge_owned_games(
         )
 
     user.steam_synced_at = now
+    # Steam 이름은 받은 때만 바꾼다 ─ 이번에 못 받았으면 옛 이름을 지우지 않는다 (models/user.py)
+    if persona_name is not None:
+        user.steam_persona_name = persona_name
     result.synced_at = now
+    result.steam_persona_name = user.steam_persona_name
     await db.commit()
     return result

@@ -115,7 +115,7 @@ async def link_steam_account(db: AsyncSession, user_id: int, steam_id: str) -> L
         updated = await db.scalar(
             update(User)
             .where(User.id == user_id, User.steam_id.is_(None))
-            .values(steam_id=steam_id, steam_synced_at=None)
+            .values(steam_id=steam_id, steam_synced_at=None, steam_persona_name=None)
             .returning(User.id)
         )
         await db.commit()
@@ -134,8 +134,24 @@ async def link_steam_account(db: AsyncSession, user_id: int, steam_id: str) -> L
 
 
 async def unlink_steam_account(db: AsyncSession, user_id: int) -> None:
-    """연결을 푼다. 기록(entries)은 남긴다 (decisions/0015). 마지막 동기화 시각도 같이 비운다 (DATA_MODEL 2.1절)"""
+    """연결을 푼다. 기록(entries)은 남긴다 (decisions/0015). 마지막 동기화 시각 · Steam 이름도 같이 비운다 (DATA_MODEL 2.1절)"""
     await db.execute(
-        update(User).where(User.id == user_id).values(steam_id=None, steam_synced_at=None)
+        update(User)
+        .where(User.id == user_id)
+        .values(steam_id=None, steam_synced_at=None, steam_persona_name=None)
+    )
+    await db.commit()
+
+
+async def save_persona_name(db: AsyncSession, user_id: int, steam_id: str, name: str | None) -> None:
+    """연결 직후 받은 Steam 이름을 적는다. 못 받았으면(None) 아무것도 하지 않는다
+
+    "그 Steam이 아직 붙어 있을 때만" 조건부 UPDATE ─ 이름을 받는 사이 다른 탭에서 해제했으면
+    해제된 계정에 이름만 남지 않게 한다 (link_steam_account와 같은 생각)
+    """
+    if name is None:
+        return
+    await db.execute(
+        update(User).where(User.id == user_id, User.steam_id == steam_id).values(steam_persona_name=name)
     )
     await db.commit()

@@ -37,3 +37,5 @@ class SteamSyncRead(BaseModel):
     skipped_no_title: int
     same_title_manual: int
     synced_at: datetime
+    # 이번에 못 받았으면 옛 이름, 한 번도 못 받았으면 null (services/steam.py fetch_persona_name)
+    steam_persona_name: str | None

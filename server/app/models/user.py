@@ -32,6 +32,11 @@ class User(Base):
     # 연결을 해제하면 steam_id와 함께 비운다 ─ 다른 Steam을 새로 붙였을 때 옛 시각이 남아 있으면 "방금 동기화함"으로 보인다
     steam_synced_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
+    # 설정 화면에 보이는 Steam 이름(personaname). 연결할 때 · 동기화할 때마다 새로 받는다 (DATA_MODEL 2.1절)
+    # 못 받으면 비워 두거나 옛 값을 둔다 ─ 이름은 보여 주기용이라 연결 · 동기화를 실패시키지 않는다
+    # Steam은 32자까지 받지만 넉넉히 둔다. 넘으면 자른다 (services/steam.py PERSONA_NAME_MAX)
+    steam_persona_name: Mapped[str | None] = mapped_column(String(64))
+
     # server_default = 값을 주지 않으면 DB가 자동으로 지금 시각을 넣는다
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()

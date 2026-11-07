@@ -74,6 +74,8 @@ class UserRead(BaseModel):
     # 설정 화면의 Steam 연동 영역이 쓴다 (DESIGN S-06). Steam ID는 공개 프로필 번호라 본인에게 보여도 된다
     steam_id: str | None
     steam_synced_at: datetime | None
+    # Steam 이름(personaname). 연결 · 동기화 때 받는다. 못 받았으면 null ─ 화면은 "Steam 계정 연결됨"으로 보인다
+    steam_persona_name: str | None
 
 
 class LoginRequest(BaseModel):

@@ -24,6 +24,9 @@ from app.schemas.entry import INT_MAX
 APP_LIST_URL = "https://api.steampowered.com/IStoreService/GetAppList/v1/"
 APP_DETAILS_URL = "https://store.steampowered.com/api/appdetails"
 OWNED_GAMES_URL = "https://api.steampowered.com/IPlayerService/GetOwnedGames/v1/"
+PLAYER_SUMMARIES_URL = "https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v2/"
+
+PERSONA_NAME_MAX = 64  # users.steam_persona_name 컬럼 길이와 같아야 한다 (models/user.py)
 
 # 한 번에 받는 개수와 한 번에 넣는 개수는 따로 정한다
 # asyncpg는 쿼리 하나에 값을 32767개까지만 받는다 (5000행 × 2컬럼 = 10000개)
@@ -240,6 +243,48 @@ async def fetch_owned_games(
             appid, OwnedGame(appid=appid, name=name, playtime_minutes=min(minutes, INT_MAX))
         )
     return list(owned.values())
+
+
+# ─── Steam 이름 ─────────────────────────────────────────
+
+
+async def fetch_persona_name(
+    client: httpx.AsyncClient, api_key: str, steam_id: str
+) -> str | None:
+    """설정 화면에 보일 Steam 이름(personaname). 어떤 이유로든 못 받으면 None (예외를 내보내지 않는다)
+
+    이름은 보여 주기용이다 ─ 받지 못했다고 연결 · 동기화를 실패시키지 않는다 (fetch_app_details와 같은 생각)
+    비공개 프로필도 이름은 공개라 동기화가 409인 사람도 이름은 받는다
+    DB 잠금을 잡기 전에 부를 것
+    """
+    if not api_key:
+        return None
+    try:
+        res = await client.get(
+            PLAYER_SUMMARIES_URL,
+            params={"steamids": steam_id, "format": "json"},
+            headers={"x-webapi-key": api_key},   # 키는 URL에 싣지 않는다 (fetch_app_pages와 같음)
+        )
+        if res.status_code != 200:
+            return None
+        players = res.json()["response"]["players"]
+        if not isinstance(players, list):
+            return None
+        for player in players:
+            # 물어본 사람의 것만 받는다 ─ 목록에 다른 사람이 섞여 와도 남의 이름을 붙이지 않는다
+            if not isinstance(player, dict) or player.get("steamid") != steam_id:
+                continue
+            name = player.get("personaname")
+            if not isinstance(name, str):
+                return None
+            # NUL은 PostgreSQL에 못 넣는다. 깨진 글자 · 빈 이름은 이름이 없는 것으로 본다
+            name = name.replace("\x00", "").strip()[:PERSONA_NAME_MAX].strip()
+            if not name or contains_broken_text(name):
+                return None
+            return name
+        return None
+    except (httpx.HTTPError, ValueError, KeyError, TypeError):
+        return None
 
 
 # ─── 검색 ───────────────────────────────────────────────

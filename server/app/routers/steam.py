@@ -21,6 +21,7 @@ from app.services.steam import (
     SteamProfilePrivate,
     SteamUnavailable,
     fetch_owned_games,
+    fetch_persona_name,
     search_steam_apps,
 )
 from app.services.steam_sync import (
@@ -100,9 +101,12 @@ async def sync_library(
             status_code=status.HTTP_504_GATEWAY_TIMEOUT if e.timeout else status.HTTP_502_BAD_GATEWAY,
             detail="Steam이 응답하지 않습니다. 잠시 후 다시 시도해 주세요",
         ) from None
+    # 이름은 라이브러리를 받은 뒤에만 묻는다 ─ 비공개 · 장애로 멈출 동기화에 호출을 더하지 않는다
+    # 못 받으면 None이고 옛 이름을 그대로 둔다 (services/steam.py fetch_persona_name)
+    persona_name = await fetch_persona_name(http, settings.steam_api_key, steam_id)
 
     try:
-        return await merge_owned_games(db, user.id, steam_id, owned)
+        return await merge_owned_games(db, user.id, steam_id, owned, persona_name=persona_name)
     except SyncNotLinked:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=NOT_LINKED) from None
     except SyncTooSoon as e:

@@ -17,10 +17,12 @@ from app.core.oauth_state import STATE_TTL_SECONDS, consume_state, create_state
 from app.deps import get_current_user, get_db, get_http_client
 from app.models.user import User
 from app.schemas.steam import SteamLinkStart
+from app.services.steam import fetch_persona_name
 from app.services.steam_openid import (
     SteamOpenIDUnavailable,
     build_login_url,
     link_steam_account,
+    save_persona_name,
     unlink_steam_account,
     verify_assertion,
 )
@@ -95,6 +97,11 @@ async def link_callback(
         else:
             if steam_id is not None:
                 result = await link_steam_account(db, user_id, steam_id)
+                if result == "linked":
+                    # 연결하자마자 이름이 보이게 한다. 못 받아도 연결은 성공 ─ 다음 동기화가 다시 받는다
+                    # 연결을 commit한 뒤에 부른다 ─ Steam을 기다리는 동안 DB를 붙들지 않는다
+                    name = await fetch_persona_name(http, settings.steam_api_key, steam_id)
+                    await save_persona_name(db, user_id, steam_id, name)
 
     # 303 ─ "다른 곳을 GET으로 보라". 새로고침해도 콜백이 다시 불리지 않는다
     redirect = RedirectResponse(f"{_base_url()}/settings?steam={result}", status_code=status.HTTP_303_SEE_OTHER)
