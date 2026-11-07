@@ -77,7 +77,7 @@ async def test_first_sync_adds_steam_entries(client, auth_headers, session_facto
 
     body = await sync(client, headers)
 
-    assert {k: v for k, v in body.items() if k != "synced_at"} == {
+    assert {k: v for k, v in body.items() if k not in ("synced_at", "steam_persona_name")} == {
         "added": 3, "updated": 0, "unchanged": 0, "skipped_manual": 0,
         "skipped_limit": 0, "skipped_no_title": 0, "same_title_manual": 0,
     }
@@ -446,3 +446,64 @@ async def test_too_soon_is_checked_after_lock(auth_headers, session_factory):
         with pytest.raises(SyncTooSoon) as caught:
             await merge_owned_games(db, 1, STEAM_A, OWNED)
     assert 1 <= caught.value.retry_after <= 61
+
+
+# ─── Steam 이름 (services/steam.py fetch_persona_name) ─────────────────────
+
+
+async def test_sync_refreshes_persona_name(client, auth_headers, session_factory, fake_steam):
+    """Steam에서 이름을 바꿨으면 다음 동기화가 고친다"""
+    headers = await linked_user(auth_headers, session_factory)
+    fake_steam.owned = [HOLLOW]
+    fake_steam.personas = {STEAM_A: "옛 이름"}
+    assert (await sync(client, headers))["steam_persona_name"] == "옛 이름"
+
+    fake_steam.personas = {STEAM_A: "새 이름"}
+    await allow_next_sync(session_factory)
+    assert (await sync(client, headers))["steam_persona_name"] == "새 이름"
+    me = await client.get("/api/auth/me", headers=headers)
+    assert me.json()["steam_persona_name"] == "새 이름"
+
+
+async def test_persona_failure_keeps_old_name_and_sync_succeeds(client, auth_headers, session_factory, fake_steam):
+    headers = await linked_user(auth_headers, session_factory)
+    fake_steam.owned = [HOLLOW]
+    fake_steam.personas = {STEAM_A: "옛 이름"}
+    await sync(client, headers)
+
+    fake_steam.persona_answer = steam_timeout
+    fake_steam.owned = [HOLLOW, CIV]
+    await allow_next_sync(session_factory)
+    body = await sync(client, headers)
+    assert body["added"] == 1                      # 동기화는 그대로 됐다
+    assert body["steam_persona_name"] == "옛 이름"   # 못 받았으면 지우지 않는다
+
+
+async def test_private_profile_does_not_ask_name(client, auth_headers, session_factory, fake_steam):
+    """라이브러리를 못 받으면 이름도 묻지 않는다 ─ 실패할 동기화에 Steam 호출을 더하지 않는다"""
+    headers = await linked_user(auth_headers, session_factory)
+    fake_steam.owned_answer = lambda r: httpx.Response(200, json={"response": {}})
+    assert (await client.post(SYNC, headers=headers)).status_code == 409
+    assert fake_steam.persona_calls == 0
+
+
+async def test_persona_name_is_per_user(client, auth_headers, session_factory, fake_steam):
+    """두 사람이 각자 동기화해도 각자의 이름만 보인다"""
+    headers_a = await linked_user(auth_headers, session_factory)
+    headers_b = await linked_user(auth_headers, session_factory, email=B, steam_id=STEAM_B)
+    fake_steam.personas = {STEAM_A: "에이", STEAM_B: "비"}
+    await sync(client, headers_a)
+    await sync(client, headers_b)
+
+    assert (await client.get("/api/auth/me", headers=headers_a)).json()["steam_persona_name"] == "에이"
+    assert (await client.get("/api/auth/me", headers=headers_b)).json()["steam_persona_name"] == "비"
+
+
+async def test_unlinked_while_fetching_name_saves_nothing(auth_headers, session_factory):
+    """이름을 받아 오는 사이 해제했다 ─ merge가 잠근 뒤 steam_id를 다시 봐서 이름도 넣지 않는다"""
+    await linked_user(auth_headers, session_factory, steam_id=STEAM_B)
+    async with session_factory() as db:
+        with pytest.raises(SyncNotLinked):
+            await merge_owned_games(db, 1, STEAM_A, OWNED, persona_name="남의 이름")
+    async with session_factory() as db:
+        assert (await db.get(User, 1)).steam_persona_name is None

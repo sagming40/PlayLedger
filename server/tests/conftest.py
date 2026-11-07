@@ -104,7 +104,19 @@ class FakeSteam:
         self.owned_calls = 0
         self.owned_answer = None
 
+        # Steam 이름(GetPlayerSummaries). personas[steam_id]에 이름을 넣어 두면 그 사람만 답한다. 이상한 답은 persona_answer로
+        self.personas: dict[str, str] = {}
+        self.persona_calls = 0
+        self.persona_answer = None
+
     def handle(self, request: httpx.Request) -> httpx.Response:
+        if request.url.path.startswith("/ISteamUser/GetPlayerSummaries"):
+            self.persona_calls += 1
+            if self.persona_answer is not None:
+                return self.persona_answer(request)
+            ids = request.url.params["steamids"].split(",")
+            players = [{"steamid": i, "personaname": self.personas[i]} for i in ids if i in self.personas]
+            return httpx.Response(200, json={"response": {"players": players}})
         if request.url.path.startswith("/IPlayerService/GetOwnedGames"):
             self.owned_calls += 1
             if self.owned_answer is not None:

@@ -358,3 +358,76 @@ async def test_unlink_clears_id_and_sync_time(client, auth_headers, session_fact
 async def test_requires_login(client, method, path):
     res = await client.request(method, path)
     assert res.status_code == 401
+
+
+# ─── Steam 이름 (services/steam.py fetch_persona_name) ─────────────────────
+
+
+@pytest.fixture
+def steam_key(monkeypatch):
+    """이름을 받으려면 키가 있어야 한다. 다른 연결 테스트는 키 없이 돌아 Steam 이름을 묻지 않는다"""
+    monkeypatch.setattr(settings, "steam_api_key", "secret-key-for-test")
+
+
+async def test_link_saves_persona_name(client, auth_headers, fake_steam, steam_key):
+    fake_steam.personas = {STEAM_A: "할로우 덕후"}
+    headers = await auth_headers(A)
+    assert await callback(client, assertion(await start(client, headers))) == "linked"
+
+    body = await me(client, headers)
+    assert body["steam_persona_name"] == "할로우 덕후"
+    assert fake_steam.persona_calls == 1
+
+
+@pytest.mark.parametrize(
+    "respond",
+    [lambda r: httpx.Response(500), lambda r: httpx.Response(200, json={"response": {"players": []}})],
+    ids=["500", "no-player"],
+)
+async def test_link_succeeds_without_persona_name(client, auth_headers, fake_steam, steam_key, respond):
+    """이름을 못 받아도 연결은 성공한다 ─ 이름은 다음 동기화가 다시 받는다"""
+    fake_steam.persona_answer = respond
+    headers = await auth_headers(A)
+    assert await callback(client, assertion(await start(client, headers))) == "linked"
+
+    body = await me(client, headers)
+    assert body["steam_id"] == STEAM_A
+    assert body["steam_persona_name"] is None
+
+
+async def test_failed_link_does_not_ask_name(client, auth_headers, fake_steam, steam_key):
+    """다른 계정이 쓰는 Steam(taken)이면 이름도 묻지 않는다"""
+    fake_steam.personas = {STEAM_A: "할로우 덕후"}
+    assert await callback(client, assertion(await start(client, await auth_headers(A)))) == "linked"
+    calls = fake_steam.persona_calls
+
+    headers_b = await auth_headers(B)
+    assert await callback(client, assertion(await start(client, headers_b))) == "taken"
+    assert fake_steam.persona_calls == calls
+    assert (await me(client, headers_b))["steam_persona_name"] is None
+
+
+async def test_unlink_clears_persona_name(client, auth_headers, fake_steam, steam_key):
+    fake_steam.personas = {STEAM_A: "할로우 덕후", STEAM_B: "새 계정"}
+    headers = await auth_headers(A)
+    assert await callback(client, assertion(await start(client, headers))) == "linked"
+
+    assert (await client.delete("/api/steam/link", headers=headers)).status_code == 204
+    assert (await me(client, headers))["steam_persona_name"] is None
+
+    # 다른 Steam을 붙이면 그 Steam의 이름이 된다 ─ 옛 이름이 남지 않는다
+    assert await callback(client, assertion(await start(client, headers), steam_id=STEAM_B)) == "linked"
+    assert (await me(client, headers))["steam_persona_name"] == "새 계정"
+
+
+async def test_name_not_saved_after_unlink(client, auth_headers, session_factory):
+    """이름을 받는 사이 다른 탭에서 해제했다 ─ 풀린 계정에 이름만 남지 않는다 (save_persona_name 조건부 UPDATE)"""
+    from app.services.steam_openid import save_persona_name
+
+    headers = await auth_headers(A)
+    assert await callback(client, assertion(await start(client, headers))) == "linked"
+    assert (await client.delete("/api/steam/link", headers=headers)).status_code == 204
+
+    async with session_factory() as db:
+        await save_persona_name(db, 1, STEAM_A, "늦게 온 이름")
+    assert (await me(client, headers))["steam_persona_name"] is None
